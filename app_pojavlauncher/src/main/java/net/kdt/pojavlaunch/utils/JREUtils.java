@@ -223,6 +223,14 @@ public class JREUtils {
                 envMap.put("MG_DIR_PATH", Tools.DIR_DATA + "/MobileGlues");
                 envMap.put("POJAVEXEC_EGL","libmobileglues.so");
             }
+            if (LOCAL_RENDERER.equals("opengles3_desktopgl_zink_kopper")){
+                envMap.put("POJAVEXEC_EGL","libEGL_mesa.so"); // Use Mesa EGL
+            }
+            if (LOCAL_RENDERER.toLowerCase().contains("zink")){
+                // This is sketch but it fixes a lot of things, if it causes problems we can just undo it.
+                envMap.put("MESA_GL_VERSION_OVERRIDE","4.6COMPAT");
+                envMap.put("MESA_GLSL_VERSION_OVERRIDE","460");
+            }
         }
         if(LauncherPreferences.PREF_BIG_CORE_AFFINITY) envMap.put("POJAV_BIG_CORE_AFFINITY", "1");
         envMap.put("AWTSTUB_WIDTH", Integer.toString(CallbackBridge.windowWidth > 0 ? CallbackBridge.windowWidth : CallbackBridge.physicalWidth));
@@ -477,7 +485,7 @@ public class JREUtils {
                 renderLibrary = "libng_gl4es.so"; break;
             case "vulkan_zink": renderLibrary = "libOSMesa.so"; break;
             case "opengles_mobileglues": renderLibrary = "libmobileglues.so"; break;
-            case "opengles3_desktopgl_zink": renderLibrary = "libglxshim.so"; break;
+            case "opengles3_desktopgl_zink_kopper": renderLibrary = "libglxshim.so"; break;
             case "opengles3_ltw" : renderLibrary = "libltw.so"; break;
             default:
                 Log.w("RENDER_LIBRARY", "No renderer selected, defaulting to opengles2");
