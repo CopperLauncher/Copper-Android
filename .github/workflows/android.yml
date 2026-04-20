@@ -55,11 +55,19 @@ jobs:
           ./scripts/languagelist_updater.sh
           mkdir out
 
+      - name: Decode Release Keystore
+        run: |
+          echo "${{ secrets.AAMC_KEYSTORE_BASE64 }}" | base64 -d > app_pojavlauncher/aamc_upload.jks
+
       - name: Build Release .apk
         run: |
           # Build the launcher
-          gradle :app_pojavlauncher:assembleRelease
-          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-release.apk out/app-release.apk
+          gradle :app_pojavlauncher:assembleRelease -PabiSplits
+          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-universal-release.apk out/app-release.apk
+          for f in app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-*-release.apk; do
+            abi=$(echo "$f" | sed 's/.*app_pojavlauncher-\(.*\)-release.apk/\1/')
+            [ "$abi" != "universal" ] && cp "$f" "out/app-release-${abi}.apk"
+          done
 
       - name: Gen md5sums
         run: |
@@ -99,4 +107,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release
-          path: out/app-release.*
+          path: out/app-release*
