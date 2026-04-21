@@ -800,7 +800,7 @@ public final class Tools {
             library.downloads.artifact.path != null)
             return library.downloads.artifact.path;
         String[] libInfos = library.name.split(":");
-        return libInfos[0].replaceAll("\\.", "/") + "/" + libInfos[1] + "/" + libInfos[2] + "/" + libInfos[1] + "-" + libInfos[2] + ".jar";
+        return libInfos[0].replaceAll("\\.", "/") + "/" + libInfos[1] + "/" + libInfos[2] + "/" + libInfos[1] + "-" + libInfos[2] + (libInfos.length == 4 ? "-" + libInfos[3] : "") + ".jar";
     }
 
     private static String getLibClasspath(JMinecraftVersionList.Version info){
