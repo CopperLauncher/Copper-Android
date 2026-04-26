@@ -179,7 +179,7 @@ android {
 
     splits {
         abi {
-            enable true
+            enable gradle.startParameter.taskNames.any { it.contains('Release') }
             reset()
             include "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
             universalApk true
@@ -245,7 +245,3 @@ dependencies {
     implementation 'top.fifthlight.touchcontroller:proxy-client-android:0.0.4'
 
     implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
-
-    implementation "net.java.dev.jna:jna:5.13.0@aar"
-
-}
