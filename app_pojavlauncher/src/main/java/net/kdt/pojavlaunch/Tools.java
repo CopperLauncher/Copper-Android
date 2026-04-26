@@ -435,7 +435,6 @@ public final class Tools {
 
         javaArgList.addAll(Arrays.asList(getMinecraftJVMArgs(versionId, gamedir)));
         javaArgList.add("-cp"); javaArgList.add(launchClasspath);
-
         // Some modloaders (babric) don't fully respect java.libary.path and only use the native lib dir
         // This arg makes them use it. LWJGL prioritizes this path during native loading as well.
         javaArgList.add("-Dorg.lwjgl.librarypath="+lwjglNativesDir);
