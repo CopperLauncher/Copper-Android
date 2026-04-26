@@ -57,13 +57,16 @@ jobs:
 
       - name: Build Release .apk
         run: |
-          # Build the launcher
           gradle :app_pojavlauncher:assembleRelease
-          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-release.apk out/app-release.apk
+          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-arm64-v8a-release.apk   out/app-arm64-v8a-release.apk
+          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-armeabi-v7a-release.apk out/app-armeabi-v7a-release.apk
+          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-x86-release.apk         out/app-x86-release.apk
+          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-x86_64-release.apk      out/app-x86_64-release.apk
+          mv app_pojavlauncher/build/outputs/apk/release/app_pojavlauncher-universal-release.apk   out/app-universal-release.apk
 
       - name: Gen md5sums
         run: |
-          md5sum out/app-release.apk > out/app-release.md5
+          for f in out/app-*-release.apk; do md5sum "$f" > "$f.md5"; done
 
       - name: Build Debug .apk
         run: |
@@ -95,8 +98,32 @@ jobs:
         with:
           name: app-debug-noruntime
           path: out/app-debug-noruntime.*
-      - name: Upload release APK
+      - name: Upload arm64-v8a release APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
-          path: out/app-release.*
+          name: app-arm64-v8a-release
+          path: out/app-arm64-v8a-release.*
+
+      - name: Upload armeabi-v7a release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-armeabi-v7a-release
+          path: out/app-armeabi-v7a-release.*
+
+      - name: Upload x86 release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-x86-release
+          path: out/app-x86-release.*
+
+      - name: Upload x86_64 release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-x86_64-release
+          path: out/app-x86_64-release.*
+
+      - name: Upload universal release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-universal-release
+          path: out/app-universal-release.*
