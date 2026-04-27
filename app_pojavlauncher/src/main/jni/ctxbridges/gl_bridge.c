@@ -126,7 +126,7 @@ void gl_swap_surface(gl_render_window_t* bundle) {
         }
         if (bundle->surface != NULL) eglDestroySurface_p(g_EglDisplay, bundle->surface);
     } else {
-        LOGW("Native surface dimensions (%d x %d) are invalid! Assuming android has already released window.\n",
+        LOGW("Native surface dimensions (%d x %d) are invalid! Assuming given nativeSurface is bad.\n",
              nativeWindowWidth, nativeWindowHeight);
     }
     if(bundle->newNativeSurface != NULL) {
