@@ -88,6 +88,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
         mModpackApi = new ModsInstallApi(context.getString(R.string.curseforge_api_key), mSearchFilters);
+        ((ModsInstallApi) mModpackApi).mActivityContext = context;
     }
 
     @Override
@@ -201,6 +202,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private final SearchFilters mFilters;
         private final ModrinthApi mModrinthApi = new ModrinthApi();
         private final Handler mMainHandler = new Handler(Looper.getMainLooper());
+        private Context mActivityContext;
 
         ModsInstallApi(String curseforgeApiKey, SearchFilters filters) {
             super(curseforgeApiKey);
@@ -277,9 +279,12 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private void showDepsDialog(Context context, String url, String fileName,
                                     String[] depIds, String[] depTypes,
                                     String[] labels, boolean[] checkedDefaults) {
+            // context here is getApplicationContext() from ModItemAdapter — no window token.
+            // Use the stored Activity reference instead.
+            Context dialogCtx = mActivityContext != null ? mActivityContext : context;
             boolean[] selected = checkedDefaults.clone();
 
-            new AlertDialog.Builder(context)
+            new AlertDialog.Builder(dialogCtx)
                     .setTitle(R.string.mod_deps_title)
                     .setMultiChoiceItems(labels, selected,
                             (dialog, which, isChecked) -> selected[which] = isChecked)
