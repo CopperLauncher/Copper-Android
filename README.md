@@ -1,6 +1,6 @@
 <h1 align="center">Golden Launcher</h1>
 
-<img src="https://raw.githubusercontent.com/CopperLauncher/Copper-Android/refs/heads/v3_openjdk/app_pojavlauncher/src/main/assets/amethyst.png" align="left" width="130" height="130" alt="Golden logo">
+<img src="https://raw.githubusercontent.com/lukeiscooldev/Golden-Launcher/a26a15dfa1d53748b92aaddc90c03886b25c7c92/app_pojavlauncher/src/main/goldenlauncher.png" align="left" width="150" height="150" alt="Golden logo">
 
 <p align="center">
   <img src="https://img.shields.io/github/commit-activity/m/CopperLauncher/Copper-Android" alt="GitHub commit activity"/>
@@ -16,7 +16,7 @@
 </p>
 </p>
 
-Copper is a fork of [Amethyst](https://github.com/AngelAuraMC/Amethyst-Android) that allows you to play Minecraft: Java Edition on your Android devices.
+Gold is a fork of [Copper](https://github.com/Copper-launcher/Copper-Android) that allows you to play Minecraft: Java Edition on your Android devices.
 
 ## Table of Contents
 
@@ -36,12 +36,12 @@ Copper is a fork of [Amethyst](https://github.com/AngelAuraMC/Amethyst-Android) 
 
 ## Introduction
 
-* Copper is a Minecraft: Java Edition launcher for Android based on [Boardwalk](https://github.com/zhuowei/Boardwalk) and [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)
+* Gold is a Minecraft: Java Edition launcher for Android based on [Boardwalk](https://github.com/zhuowei/Boardwalk) and [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)
 * This launcher can launch almost all available Minecraft versions ranging from rd-132211 to 1.21 snapshots (including Combat Test versions)
 * Modding via Forge and Fabric are also supported.
 * This repository contains source code for Android.
 
-## Getting Copper
+## Getting Gold
 
 You can get Copper via three methods:
 
@@ -107,15 +107,15 @@ If you need more control over the build process, follow these steps:
 
 ## Known Issues
 
-See Copper's [issue tracker](https://github.com/CopperLauncher/CopperLauncher/issues) for a list of known issues and their current status.
+See Copper/Gold's [issue tracker](https://github.com/CopperLauncher/CopperLauncher/issues) for a list of known issues and their current status.
 
 ## Support
 
-For support, please join our [Discord server](https://dsc.gg/Copper-launcher)
+For support, please join our [Discord server](https://discord.gg/VtC376EM6a)
 
 ## License
 
-Copper is licensed under [GNU LGPLv3](https://github.com/Copper-launcher/Copper-Android/blob/v3_openjdk/LICENSE).
+Gold is licensed under [GNU LGPLv3](https://github.com/Copper-launcher/Copper-Android/blob/v3_openjdk/LICENSE).
 
 ## Credits & Dependencies
 
@@ -139,6 +139,7 @@ Copper is licensed under [GNU LGPLv3](https://github.com/Copper-launcher/Copper-
 * [SDL3](https://github.com/libsdl-org/SDL): [zlib License](https://github.com/libsdl-org/SDL/blob/main/LICENSE.txt)
 * [sdl2-compat](https://github.com/libsdl-org/sdl2-compat): [zlib License](https://github.com/libsdl-org/sdl2-compat/blob/main/LICENSE.txt)
 * Thanks to [MCHeads](https://mc-heads.net) for providing Minecraft avatars.
+* This launcher is forked from [Copper](https://github.com/CopperLauncher/Copper-android)
 
 ## Roadmap
 
