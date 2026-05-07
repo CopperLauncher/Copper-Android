@@ -108,6 +108,26 @@ public class CurseforgeApi implements ModpackApi{
         }
         if(index == CURSEFORGE_PAGINATION_ERROR) return null;
         int length = allModDetails.size();
+
+        // Check if ALL versions have null downloadUrl (fully restricted mod)
+        boolean allRestricted = length > 0;
+        for (int i = 0; i < length; i++) {
+            JsonElement url = allModDetails.get(i).get("downloadUrl");
+            if (url != null && !url.isJsonNull()) {
+                allRestricted = false;
+                break;
+            }
+        }
+        if (allRestricted || length == 0) {
+            // All versions restricted - return a ModDetail with one entry that signals this.
+            // The version name shown in spinner makes it clear, tapping Install shows CF dialog.
+            return new ModDetail(item,
+                    new String[]{"Blocked by the author! By clicking the install button it will open the CurseForge page."},
+                    new String[]{null},
+                    new String[]{null},
+                    new String[]{null});
+        }
+
         String[] versionNames = new String[length];
         String[] mcVersionNames = new String[length];
         String[] versionUrls = new String[length];
@@ -118,7 +138,7 @@ public class CurseforgeApi implements ModpackApi{
 
             JsonElement downloadUrl = modDetail.get("downloadUrl");
             if (downloadUrl == null || downloadUrl.isJsonNull()) {
-                versionUrls[i] = null; // restricted — handleInstallation will show CF website dialog
+                versionUrls[i] = null;
             } else {
                 versionUrls[i] = downloadUrl.getAsString();
             }
