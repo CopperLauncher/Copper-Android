@@ -233,9 +233,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
             String url = modDetail.versionUrls[selectedVersion];
 
-            // Check if this is a CF-restricted mod (edge CDN fallback URL or null)
+            // Check if this is a CF-restricted mod using the flag set during search
             boolean isCfRestricted = modDetail.apiSource == Constants.SOURCE_CURSEFORGE
-                    && (url == null || url.isEmpty());
+                    && (modDetail.isRestricted || url == null || url.isEmpty());
 
             if (isCfRestricted) {
                 // Show dialog directing user to download from CurseForge website

@@ -78,10 +78,7 @@ public class CurseforgeApi implements ModpackApi{
             JsonElement allowModDistribution = dataElement.get("allowModDistribution");
             // Gson automatically casts null to false, which leans to issues
             // So, only check the distribution flag if it is non-null
-            if(!allowModDistribution.isJsonNull() && !allowModDistribution.getAsBoolean()) {
-                Log.i("CurseforgeApi", "Skipping modpack "+dataElement.get("name").getAsString() + " because curseforge sucks");
-                continue;
-            }
+            boolean restricted = !allowModDistribution.isJsonNull() && !allowModDistribution.getAsBoolean();
             JsonObject logo = dataElement.getAsJsonObject("logo");
             String thumbnailUrl = (logo != null && logo.has("thumbnailUrl") && !logo.get("thumbnailUrl").isJsonNull())
                     ? logo.get("thumbnailUrl").getAsString() : "";
@@ -91,6 +88,7 @@ public class CurseforgeApi implements ModpackApi{
                     dataElement.get("name").getAsString(),
                     dataElement.get("summary").getAsString(),
                     thumbnailUrl);
+            modItem.isRestricted = restricted;
             modItemList.add(modItem);
         }
         if(curseforgeSearchResult == null) curseforgeSearchResult = new CurseforgeSearchResult();
@@ -103,6 +101,14 @@ public class CurseforgeApi implements ModpackApi{
 
     @Override
     public ModDetail getModDetails(ModItem item) {
+        // Short-circuit for restricted mods — no point fetching versions
+        if (item.isRestricted) {
+            return new ModDetail(item,
+                    new String[]{"Blocked by the author!"},
+                    new String[]{null},
+                    new String[]{null},
+                    new String[]{null});
+        }
         ArrayList<JsonObject> allModDetails = new ArrayList<>();
         int index = 0;
         while(index != CURSEFORGE_PAGINATION_END_REACHED &&
