@@ -82,12 +82,15 @@ public class CurseforgeApi implements ModpackApi{
                 Log.i("CurseforgeApi", "Skipping modpack "+dataElement.get("name").getAsString() + " because curseforge sucks");
                 continue;
             }
+            JsonObject logo = dataElement.getAsJsonObject("logo");
+            String thumbnailUrl = (logo != null && logo.has("thumbnailUrl") && !logo.get("thumbnailUrl").isJsonNull())
+                    ? logo.get("thumbnailUrl").getAsString() : "";
             ModItem modItem = new ModItem(Constants.SOURCE_CURSEFORGE,
                     searchFilters.isModpack,
                     dataElement.get("id").getAsString(),
                     dataElement.get("name").getAsString(),
                     dataElement.get("summary").getAsString(),
-                    dataElement.getAsJsonObject("logo").get("thumbnailUrl").getAsString());
+                    thumbnailUrl);
             modItemList.add(modItem);
         }
         if(curseforgeSearchResult == null) curseforgeSearchResult = new CurseforgeSearchResult();

@@ -44,7 +44,7 @@ public class ModDetail extends ModItem {
         return "ModDetail{" +
                 "versionNames=" + Arrays.toString(versionNames) +
                 ", mcVersionNames=" + Arrays.toString(mcVersionNames) +
-                ", versionIds=" + Arrays.toString(versionUrls) +
+                ", versionUrls=" + Arrays.toString(versionUrls) +
                 ", id='" + id + '\'' +
                 ", title='" + title + '\'' +
                 ", description='" + description + '\'' +
