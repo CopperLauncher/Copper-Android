@@ -11,7 +11,7 @@
 
     <!-- dark circle behind badge -->
     <path
-        android:fillColor="#1e1e1e"
+        android:fillColor="#FFFFFF"
         android:pathData="M18.6,13.6 A5,5 0 1 1 18.6,23.6 A5,5 0 1 1 18.6,13.6 Z" />
 
     <!-- Modrinth badge: translate(14,14) scale(0.009) -->
