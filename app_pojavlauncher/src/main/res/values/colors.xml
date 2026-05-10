@@ -1,25 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Control Buttons (copper glow style) -->
-    <color name="control_button_color">#66FFA500</color>
-    <color name="control_button_pressed_color">#99FF8C00</color>
+    <!-- =========================
+         ACCENT / ORANGE SYSTEM
+    ========================== -->
 
-    <!-- Main Button (hot copper highlight) -->
-    <color name="minebutton_color">#FFA500</color>
+    <!-- Primary Orange (main actions, highlights) -->
+    <color name="minebutton_color">#FF8A00</color>
 
-    <!-- BACKGROUND SYSTEM (COPPER METAL THEME) -->
-    <!-- Instead of pure black, we use dark copper layers -->
+    <!-- Control Buttons -->
+    <color name="control_button_color">#33FF8A00</color>  <!-- soft transparent orange -->
+    <color name="control_button_pressed_color">#66E67600</color>
 
-    <color name="background_app">#1A0F0A</color>          <!-- deep burnt copper base -->
-    <color name="background_overlay">#2A140B</color>      <!-- warm copper shadow -->
-    <color name="background_surface">#3A1C10</color>      <!-- metallic copper layer -->
-    <color name="divider">#4A2415</color>                <!-- soft copper edge -->
-    <color name="background_status_bar">#120A07</color>   <!-- darker copper top -->
-    <color name="background_bottom_bar">#24110A</color>   <!-- warm copper bottom -->
+    <!-- Accent Variants -->
+    <color name="accent_light">#FFA94D</color>
+    <color name="accent_dark">#E67600</color>
 
-    <!-- Text (warm contrast for copper UI) -->
-    <color name="primary_text">#FFF1E6</color>
-    <color name="secondary_text">#FFB36B</color>
+    <!-- =========================
+         BACKGROUND SYSTEM (WARM LIGHT / OFF-WHITE)
+    ========================== -->
+
+    <!-- Main app background (soft warm white) -->
+    <color name="background_app">#FAF6F0</color>
+
+    <!-- Secondary background (slightly darker for contrast) -->
+    <color name="background_overlay">#F3E9DE</color>
+
+    <!-- Surface / cards -->
+    <color name="background_surface">#EEDBCC</color>
+
+    <!-- Divider / separators -->
+    <color name="divider">#E2C9B5</color>
+
+    <!-- Status / system bars (slightly deeper for contrast) -->
+    <color name="background_status_bar">#EFE2D6</color>
+    <color name="background_bottom_bar">#EAD6C6</color>
+
+    <!-- =========================
+         TEXT COLORS
+    ========================== -->
+
+    <!-- Primary text (dark warm brown instead of pure black) -->
+    <color name="primary_text">#3B2A22</color>
+
+    <!-- Secondary text -->
+    <color name="secondary_text">#7A5A48</color>
+
+    <!-- Muted text / hints -->
+    <color name="muted_text">#A07A66</color>
 
 </resources>
