@@ -1,29 +1,5 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-
-    <!-- folder -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="
-            M2,2h8l2,2h10v18H2z
-            M4,6v14h16V6z" />
-
-    <!-- eyes -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M7,9h2v2H7z" />
-
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M13,9h2v2h-2z" />
-
-    <!-- mouth -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="
-            M9,13h4v1h1v3h-2v-2h-1v2H9z" />
-
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:height="120dp" android:viewportHeight="21" android:viewportWidth="21" android:width="120dp">
+      
+    <path android:fillColor="#FFFFFF" android:pathData="m1.5,1.5c0,0 12.6,0 12.6,0 0,0 0,1.8 0,1.8 0,0 1.8,0 1.8,0 0,0 0,1.8 0,1.8 0,0 1.8,0 1.8,0 0,0 0,1.8 0,1.8 0,0 1.8,0 1.8,0 0,0 0,12.6 0,12.6 0,0 -9,0 -9,0 0,0 0,-1.8 0,-1.8 0,0 7.2,0 7.2,0 0,0 0,-9 0,-9 0,0 -5.4,0 -5.4,0 0,0 0,-5.4 0,-5.4 0,0 -9,0 -9,0 0,0 0,7.2 0,7.2 0,0 -1.8,0 -1.8,0 0,0 0,-9 0,-9zM15.9,5.1c0,0 -1.8,0 -1.8,0 0,0 0,1.8 0,1.8 0,0 1.8,0 1.8,0 0,0 0,-1.8 0,-1.8zM5.1,10.5c0,0 1.8,0 1.8,0 0,0 0,1.8 0,1.8 0,0 1.8,0 1.8,0 0,0 0,1.8 0,1.8 0,0 1.8,0 1.8,0 0,0 0,1.8 0,1.8 0,0 -1.8,0 -1.8,0 0,0 0,-1.8 0,-1.8 0,0 -1.8,0 -1.8,0 0,0 0,5.4 0,5.4 0,0 -1.8,0 -1.8,0 0,0 0,-5.4 0,-5.4 0,0 -1.8,0 -1.8,0 0,0 0,1.8 0,1.8 0,0 -1.8,0 -1.8,0 0,0 0,-1.8 0,-1.8 0,0 1.8,0 1.8,0 0,0 0,-1.8 0,-1.8 0,0 1.8,0 1.8,0 0,0 0,-1.8 0,-1.8z" android:strokeWidth="0.018"/>
+    
 </vector>
