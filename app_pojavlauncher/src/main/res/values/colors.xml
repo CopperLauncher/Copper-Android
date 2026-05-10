@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Control Buttons -->
+    <!-- Control Buttons (kept warm ember orange) -->
     <color name="control_button_color">#4DFF8A00</color>
     <color name="control_button_pressed_color">#4DFFB74D</color>
 
     <!-- Main Button (Play/Launch) -->
     <color name="minebutton_color">#D35400</color>
 
-    <!-- Backgrounds -->
-    <color name="background_app">#0F0A07</color>
-    <color name="background_overlay">#1A120D</color>
-    <color name="divider">@color/background_overlay</color>
-    <color name="background_status_bar">#0A0604</color>
-    <color name="background_bottom_bar">#1F140E</color>
+    <!-- Backgrounds (BLENDED DARK CHOCOLATE + ORANGE) -->
+    <color name="background_app">#120A06</color>
+    <color name="background_overlay">#26130B</color>
+    <color name="divider">#2E170D</color>
+    <color name="background_status_bar">#0C0705</color>
+    <color name="background_bottom_bar">#1C0F09</color>
 
-    <!-- Text -->
-    <color name="primary_text">#FFF3E0</color>
-    <color name="secondary_text">#FFB74D</color>
+    <!-- Text (warm parchment + amber contrast) -->
+    <color name="primary_text">#F5E6D3</color>
+    <color name="secondary_text">#D6A36A</color>
 
 </resources>
