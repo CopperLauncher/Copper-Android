@@ -79,6 +79,12 @@ public class CurseforgeApi implements ModpackApi{
             // Gson automatically casts null to false, which leans to issues
             // So, only check the distribution flag if it is non-null
             boolean restricted = !allowModDistribution.isJsonNull() && !allowModDistribution.getAsBoolean();
+            // For modpacks, skip restricted entries entirely (same as before)
+            // For individual mods, keep them so we can show the CF website dialog
+            if (restricted && searchFilters.isModpack) {
+                Log.i("CurseforgeApi", "Skipping modpack "+dataElement.get("name").getAsString() + " because curseforge sucks");
+                continue;
+            }
             JsonObject logo = dataElement.getAsJsonObject("logo");
             String thumbnailUrl = (logo != null && logo.has("thumbnailUrl") && !logo.get("thumbnailUrl").isJsonNull())
                     ? logo.get("thumbnailUrl").getAsString() : "";
