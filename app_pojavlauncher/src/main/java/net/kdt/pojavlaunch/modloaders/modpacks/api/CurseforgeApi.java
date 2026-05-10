@@ -89,6 +89,16 @@ public class CurseforgeApi implements ModpackApi{
                     dataElement.get("summary").getAsString(),
                     thumbnailUrl);
             modItem.isRestricted = restricted;
+            // Capture the mod page URL from CF API for use in restriction dialog
+            JsonObject links = dataElement.getAsJsonObject("links");
+            if (links != null && links.has("websiteUrl") && !links.get("websiteUrl").isJsonNull()) {
+                modItem.websiteUrl = links.get("websiteUrl").getAsString();
+            } else {
+                // Fallback using slug if available, otherwise numeric id
+                String slug = dataElement.has("slug") && !dataElement.get("slug").isJsonNull()
+                        ? dataElement.get("slug").getAsString() : modItem.id;
+                modItem.websiteUrl = "https://www.curseforge.com/minecraft/mc-mods/" + slug;
+            }
             modItemList.add(modItem);
         }
         if(curseforgeSearchResult == null) curseforgeSearchResult = new CurseforgeSearchResult();
