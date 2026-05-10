@@ -1,22 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- Control Buttons (kept warm ember orange) -->
-    <color name="control_button_color">#4DFF8A00</color>
-    <color name="control_button_pressed_color">#4DFFB74D</color>
+    <!-- Control Buttons (copper glow style) -->
+    <color name="control_button_color">#66FFA500</color>
+    <color name="control_button_pressed_color">#99FF8C00</color>
 
-    <!-- Main Button (Play/Launch) -->
-    <color name="minebutton_color">#D35400</color>
+    <!-- Main Button (hot copper highlight) -->
+    <color name="minebutton_color">#FFA500</color>
 
-    <!-- Backgrounds (BLENDED DARK CHOCOLATE + ORANGE) -->
-    <color name="background_app">#120A06</color>
-    <color name="background_overlay">#26130B</color>
-    <color name="divider">#2E170D</color>
-    <color name="background_status_bar">#0C0705</color>
-    <color name="background_bottom_bar">#1C0F09</color>
+    <!-- BACKGROUND SYSTEM (COPPER METAL THEME) -->
+    <!-- Instead of pure black, we use dark copper layers -->
 
-    <!-- Text (warm parchment + amber contrast) -->
-    <color name="primary_text">#F5E6D3</color>
-    <color name="secondary_text">#D6A36A</color>
+    <color name="background_app">#1A0F0A</color>          <!-- deep burnt copper base -->
+    <color name="background_overlay">#2A140B</color>      <!-- warm copper shadow -->
+    <color name="background_surface">#3A1C10</color>      <!-- metallic copper layer -->
+    <color name="divider">#4A2415</color>                <!-- soft copper edge -->
+    <color name="background_status_bar">#120A07</color>   <!-- darker copper top -->
+    <color name="background_bottom_bar">#24110A</color>   <!-- warm copper bottom -->
+
+    <!-- Text (warm contrast for copper UI) -->
+    <color name="primary_text">#FFF1E6</color>
+    <color name="secondary_text">#FFB36B</color>
 
 </resources>
