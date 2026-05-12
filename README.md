@@ -1,4 +1,4 @@
-<h1 align="center">Copper Launcher</h1>
+<h1 align="center">CopperX</h1>
 
 <img src="https://raw.githubusercontent.com/CopperLauncher/Copper-Android/refs/heads/v3_openjdk/app_pojavlauncher/src/main/assets/amethyst.png" align="left" width="130" height="130" alt="Copper logo">
 
