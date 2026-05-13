@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/minSdk-26-blue" alt="Min SDK"/>
   <img src="https://github.com/CopperLauncher/Copper-Android/workflows/Android%20CI/badge.svg" alt="Android CI"/>
   <img src="https://badges.crowdin.net/pojavlauncher/localized.svg" alt="Crowdin"/>
-  <a href="https://discord.com/invite/r8wUtzMzUe"><img src="https://img.shields.io/discord/1355213558631366897?color=5865F2&logo=discord&logoColor=white&label=&style=flat" alt="Discord"></a>
+  <a href="https://discord.gg/ZjjF7c9zaN"><img src="https://img.shields.io/discord/1355213558631366897?color=5865F2&logo=discord&logoColor=white&label=&style=flat" alt="Discord"></a>
   <a href="https://github.com/CopperLauncher"><img src="https://img.shields.io/badge/github-CopperLauncher-orange?logo=github" alt="GitHub"></a>
   <a href="https://www.curseforge.com/members/maxjubayeryt/projects"><img src="https://img.shields.io/badge/curseforge-maxjubayeryt-orange?logo=curseforge" alt="CurseForge"></a>
   <a href="https://modrinth.com/user/maxjubayeryt"><img src="https://img.shields.io/badge/modrinth-maxjubayeryt-green?logo=modrinth" alt="Modrinth User"></a>
@@ -111,7 +111,7 @@ See Copper's [issue tracker](https://github.com/CopperLauncher/CopperLauncher/is
 
 ## Support
 
-For support, please join our [Discord server](https://dsc.gg/Copper-launcher)
+For support, please join our [Discord server](https://discord.gg/ZjjF7c9zaN)
 
 ## License
 
