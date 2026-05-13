@@ -9,9 +9,11 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -34,6 +36,60 @@ public class MainMenuFragment extends Fragment {
     public static final String TAG = "MainMenuFragment";
 
     private mcVersionSpinner mVersionSpinner;
+    // Non-null only in landscape — the right content pane
+    private FrameLayout mRightPane;
+    // Intercepts back press when right pane has a back stack
+    private OnBackPressedCallback mRightPaneBackCallback;
+
+    /** Returns true when the two-pane landscape layout is active. */
+    private boolean isTwoPane() {
+        return mRightPane != null;
+    }
+
+    /**
+     * Called from LauncherActivity: opens a fragment in the right pane when in landscape,
+     * otherwise does nothing and returns false so the caller can fall back.
+     */
+    public boolean tryOpenInRightPane(Class<? extends Fragment> fragmentClass, String tag, @Nullable Bundle args) {
+        if (!isTwoPane()) return false;
+        openPane(fragmentClass, tag, args);
+        return true;
+    }
+
+    /**
+     * In landscape: loads a fragment into the right pane via child fragment manager
+     * so the left sidebar stays visible.
+     * In portrait: falls back to the standard full-screen activity swap.
+     */
+    private void openPane(Class<? extends Fragment> fragmentClass, String tag, @Nullable Bundle args) {
+        if (isTwoPane()) {
+            getChildFragmentManager()
+                    .beginTransaction()
+                    .setReorderingAllowed(true)
+                    .replace(R.id.right_pane_container, fragmentClass, args, tag)
+                    .addToBackStack(tag)
+                    .commit();
+        } else {
+            Tools.swapFragment(requireActivity(), fragmentClass, tag, args);
+        }
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Register a back-press interceptor that only activates when the right pane
+        // has something on its back stack, so Back clears the pane before exiting.
+        mRightPaneBackCallback = new OnBackPressedCallback(false) {
+            @Override
+            public void handleOnBackPressed() {
+                getChildFragmentManager().popBackStack();
+            }
+        };
+        requireActivity().getOnBackPressedDispatcher().addCallback(this, mRightPaneBackCallback);
+        getChildFragmentManager().addOnBackStackChangedListener(() ->
+                mRightPaneBackCallback.setEnabled(
+                        getChildFragmentManager().getBackStackEntryCount() > 0));
+    }
 
     public MainMenuFragment() {
         super(R.layout.fragment_launcher);
@@ -54,6 +110,9 @@ public class MainMenuFragment extends Fragment {
         Button mPlayButton = view.findViewById(R.id.play_button);
         mVersionSpinner = view.findViewById(R.id.mc_version_spinner);
 
+        // Detect two-pane landscape layout
+        mRightPane = view.findViewById(R.id.right_pane_container);
+
         // Wiki
         mNewsButton.setOnClickListener(v -> Tools.openURL(requireActivity(), Tools.URL_HOME));
 
@@ -64,10 +123,10 @@ public class MainMenuFragment extends Fragment {
         mCustomControlButton.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
 
-        // Mod Store → individual mod search
+        // Mod Store → use right pane in landscape, full-swap in portrait
         if (mModStoreButton != null)
             mModStoreButton.setOnClickListener(v ->
-                    Tools.swapFragment(requireActivity(), ModsSearchFragment.class, ModsSearchFragment.TAG, null));
+                    openPane(ModsSearchFragment.class, ModsSearchFragment.TAG, null));
 
         // Execute .jar
         if (hasOnlineProfile()) {
@@ -84,9 +143,9 @@ public class MainMenuFragment extends Fragment {
         if (mShareLogsButton != null)
             mShareLogsButton.setOnClickListener(v -> shareLog(requireContext()));
 
-        // Manage Mods & Tools → new UI
+        // Manage Mods & Tools → right pane in landscape, full-swap in portrait
         mManageModsButton.setOnClickListener(v ->
-                Tools.swapFragment(requireActivity(), ManageModsFragment.class, ManageModsFragment.TAG, null));
+                openPane(ManageModsFragment.class, ManageModsFragment.TAG, null));
 
         // Open game directory (original behaviour)
         if (mOpenDirectoryButton != null) {
