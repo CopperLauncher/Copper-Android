@@ -127,14 +127,19 @@ public class LauncherActivity extends BaseActivity {
     /* Listener for the settings fragment */
     private final View.OnClickListener mSettingButtonListener = v -> {
         Fragment fragment = getSupportFragmentManager().findFragmentById(mFragmentView.getId());
-        if(fragment instanceof MainMenuFragment){
-            // In landscape two-pane mode, load Settings into the right pane
+        if (fragment instanceof MainMenuFragment) {
             MainMenuFragment mmf = (MainMenuFragment) fragment;
-            if (!mmf.tryOpenInRightPane(LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null)) {
-                Tools.swapFragment(this, LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null);
+            // In two-pane landscape: if right pane already has content, pressing the
+            // gear/home button pops back to home. If pane is at home, open settings.
+            if (mmf.isRightPaneActive()) {
+                mmf.clearRightPane();
+            } else {
+                if (!mmf.tryOpenInRightPane(LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null)) {
+                    Tools.swapFragment(this, LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null);
+                }
             }
-        } else{
-            // The setting button doubles as a home button now
+        } else {
+            // Portrait: the settings button doubles as a home button when not on main menu
             Tools.backToMainMenu(this);
         }
     };

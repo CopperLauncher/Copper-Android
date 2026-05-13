@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/background_app">
 
-    <!-- Vertical guideline splitting left sidebar (~33%) from right content pane -->
+    <!-- Guideline: left sidebar = 33%, right pane = 67% -->
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/pane_guideline"
         android:layout_width="0dp"
@@ -15,7 +15,7 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.33" />
 
-    <!-- LEFT SIDEBAR -->
+    <!-- ══════════════ LEFT SIDEBAR ══════════════ -->
     <ScrollView
         android:id="@+id/left_sidebar"
         android:layout_width="0dp"
@@ -31,43 +31,12 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- WIKI | DISCORD -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
-
-                <com.kdt.mcgui.LauncherMenuButton
-                    android:id="@+id/news_button"
-                    style="@style/LauncherMenuButton.Universal"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:drawableStart="@drawable/ic_menu_news"
-                    android:text="@string/mcl_tab_wiki" />
-
-                <View
-                    android:id="@+id/social_divider"
-                    android:layout_width="@dimen/padding_tiny"
-                    android:layout_height="match_parent"
-                    android:layout_marginVertical="@dimen/padding_large"
-                    android:background="@color/divider" />
-
-                <com.kdt.mcgui.LauncherMenuButton
-                    android:id="@+id/discord_button"
-                    style="@style/LauncherMenuButton.Universal"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:drawableStart="@drawable/ic_discord"
-                    android:text="@string/mcl_button_discord" />
-
-            </LinearLayout>
-
             <View
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/_1sdp"
                 android:background="@color/divider" />
 
-            <!-- QUICK ACTIONS section -->
+            <!-- QUICK ACTIONS -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -100,7 +69,7 @@
                 android:background="@color/divider"
                 android:layout_marginTop="@dimen/padding_medium" />
 
-            <!-- INSTANCE TOOLS section -->
+            <!-- INSTANCE TOOLS -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -150,10 +119,27 @@
                 android:text="@string/mcl_button_settings"
                 android:visibility="gone" />
 
+            <!-- Stubs so portrait code still finds these IDs without crashing -->
+            <com.kdt.mcgui.LauncherMenuButton
+                android:id="@+id/news_button"
+                style="@style/LauncherMenuButton.Universal"
+                android:layout_width="match_parent"
+                android:drawableStart="@drawable/ic_menu_news"
+                android:text="@string/mcl_tab_wiki"
+                android:visibility="gone" />
+
+            <com.kdt.mcgui.LauncherMenuButton
+                android:id="@+id/discord_button"
+                style="@style/LauncherMenuButton.Universal"
+                android:layout_width="match_parent"
+                android:drawableStart="@drawable/ic_discord"
+                android:text="@string/mcl_button_discord"
+                android:visibility="gone" />
+
         </LinearLayout>
     </ScrollView>
 
-    <!-- Thin vertical divider between panels -->
+    <!-- Thin vertical divider -->
     <View
         android:id="@+id/pane_divider"
         android:layout_width="@dimen/padding_tiny"
@@ -164,17 +150,21 @@
         app:layout_constraintStart_toStartOf="@id/pane_guideline"
         app:layout_constraintEnd_toStartOf="@id/pane_guideline" />
 
-    <!-- RIGHT CONTENT PANE - empty on home, fragments load in here in landscape -->
+    <!-- ══════════════ RIGHT CONTENT PANE ══════════════ -->
+    <!-- Rounded corners via background shape + clipToOutline -->
     <FrameLayout
         android:id="@+id/right_pane_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_margin="6dp"
+        android:background="@drawable/bg_right_pane"
+        android:clipToOutline="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@id/_background_display_view"
         app:layout_constraintStart_toEndOf="@id/pane_divider"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- BOTTOM BAR -->
+    <!-- ══════════════ BOTTOM BAR ══════════════ -->
     <View
         android:id="@+id/_background_display_view"
         android:layout_width="match_parent"

@@ -38,30 +38,55 @@ public class MainMenuFragment extends Fragment {
     private mcVersionSpinner mVersionSpinner;
     // Non-null only in landscape — the right content pane
     private FrameLayout mRightPane;
-    // Intercepts back press when right pane has a back stack
+    // Intercepts Back when the right pane has something above home
     private OnBackPressedCallback mRightPaneBackCallback;
 
-    /** Returns true when the two-pane landscape layout is active. */
+    // ─── Two-pane helpers ────────────────────────────────────────────────────
+
+    /** True when the two-pane landscape layout is active. */
     private boolean isTwoPane() {
         return mRightPane != null;
     }
 
     /**
-     * Called from LauncherActivity: opens a fragment in the right pane when in landscape,
-     * otherwise does nothing and returns false so the caller can fall back.
+     * True when the right pane has a non-home fragment on the back stack.
+     * Used by LauncherActivity to decide gear = home vs gear = settings.
      */
-    public boolean tryOpenInRightPane(Class<? extends Fragment> fragmentClass, String tag, @Nullable Bundle args) {
+    public boolean isRightPaneActive() {
+        return isTwoPane() && getChildFragmentManager().getBackStackEntryCount() > 0;
+    }
+
+    /**
+     * Pops everything off the right pane back stack so the home fragment shows again.
+     * Safe to call even if back stack is empty.
+     */
+    public void clearRightPane() {
+        if (!isTwoPane()) return;
+        int count = getChildFragmentManager().getBackStackEntryCount();
+        if (count > 0) {
+            getChildFragmentManager().popBackStack(
+                    getChildFragmentManager().getBackStackEntryAt(0).getName(),
+                    androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
+    }
+
+    /**
+     * Opens a fragment in the right pane (landscape) or full-screen (portrait).
+     * Called from LauncherActivity for Settings / Add Account.
+     * Returns true if the pane was used.
+     */
+    public boolean tryOpenInRightPane(Class<? extends Fragment> fragmentClass, String tag,
+                                      @Nullable Bundle args) {
         if (!isTwoPane()) return false;
         openPane(fragmentClass, tag, args);
         return true;
     }
 
     /**
-     * In landscape: loads a fragment into the right pane via child fragment manager
-     * so the left sidebar stays visible.
-     * In portrait: falls back to the standard full-screen activity swap.
+     * Internal navigation: right pane in landscape, full-screen swap in portrait.
      */
-    private void openPane(Class<? extends Fragment> fragmentClass, String tag, @Nullable Bundle args) {
+    private void openPane(Class<? extends Fragment> fragmentClass, String tag,
+                          @Nullable Bundle args) {
         if (isTwoPane()) {
             getChildFragmentManager()
                     .beginTransaction()
@@ -74,37 +99,41 @@ public class MainMenuFragment extends Fragment {
         }
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        // Register a back-press interceptor that only activates when the right pane
-        // has something on its back stack, so Back clears the pane before exiting.
-        mRightPaneBackCallback = new OnBackPressedCallback(false) {
-            @Override
-            public void handleOnBackPressed() {
-                getChildFragmentManager().popBackStack();
-            }
-        };
-        requireActivity().getOnBackPressedDispatcher().addCallback(this, mRightPaneBackCallback);
-        getChildFragmentManager().addOnBackStackChangedListener(() ->
-                mRightPaneBackCallback.setEnabled(
-                        getChildFragmentManager().getBackStackEntryCount() > 0));
-    }
+    // ─── Lifecycle ───────────────────────────────────────────────────────────
 
     public MainMenuFragment() {
         super(R.layout.fragment_launcher);
     }
 
     @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        // Back-press callback — only enabled while right pane has content above home
+        mRightPaneBackCallback = new OnBackPressedCallback(false) {
+            @Override
+            public void handleOnBackPressed() {
+                // Safety check: only pop if we're still attached
+                if (isAdded() && getChildFragmentManager().getBackStackEntryCount() > 0) {
+                    getChildFragmentManager().popBackStack();
+                }
+            }
+        };
+        requireActivity().getOnBackPressedDispatcher()
+                .addCallback(this, mRightPaneBackCallback);
+        getChildFragmentManager().addOnBackStackChangedListener(() ->
+                mRightPaneBackCallback.setEnabled(isRightPaneActive()));
+    }
+
+    @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        Button mNewsButton           = view.findViewById(R.id.news_button);
-        Button mDiscordButton        = view.findViewById(R.id.discord_button);
-        Button mCustomControlButton  = view.findViewById(R.id.custom_control_button);
-        Button mInstallJarButton     = view.findViewById(R.id.install_jar_button);
-        Button mShareLogsButton      = view.findViewById(R.id.share_logs_button);
-        Button mManageModsButton     = view.findViewById(R.id.open_files_button);
-        Button mOpenDirectoryButton  = view.findViewById(R.id.open_directory_button);
-        Button mModStoreButton       = view.findViewById(R.id.mod_store_button);
+        Button mNewsButton          = view.findViewById(R.id.news_button);
+        Button mDiscordButton       = view.findViewById(R.id.discord_button);
+        Button mCustomControlButton = view.findViewById(R.id.custom_control_button);
+        Button mInstallJarButton    = view.findViewById(R.id.install_jar_button);
+        Button mShareLogsButton     = view.findViewById(R.id.share_logs_button);
+        Button mManageModsButton    = view.findViewById(R.id.open_files_button);
+        Button mOpenDirectoryButton = view.findViewById(R.id.open_directory_button);
+        Button mModStoreButton      = view.findViewById(R.id.mod_store_button);
 
         ImageButton mEditProfileButton = view.findViewById(R.id.edit_profile_button);
         Button mPlayButton = view.findViewById(R.id.play_button);
@@ -113,17 +142,33 @@ public class MainMenuFragment extends Fragment {
         // Detect two-pane landscape layout
         mRightPane = view.findViewById(R.id.right_pane_container);
 
-        // Wiki
-        mNewsButton.setOnClickListener(v -> Tools.openURL(requireActivity(), Tools.URL_HOME));
+        // ── Load the home fragment into the right pane (landscape only) ──────
+        // Only inflate it once; savedInstanceState != null means it's already there
+        if (isTwoPane() && savedInstanceState == null) {
+            getChildFragmentManager()
+                    .beginTransaction()
+                    .setReorderingAllowed(true)
+                    .replace(R.id.right_pane_container, RightPaneHomeFragment.class, null,
+                            RightPaneHomeFragment.TAG)
+                    // NOT added to back stack — home is the base, not a destination
+                    .commit();
+        }
 
-        // Discord
-        mDiscordButton.setOnClickListener(v -> Tools.openURL(requireActivity(), getString(R.string.discord_invite)));
+        // ── Sidebar buttons that are hidden in landscape (stubs kept for safety) ──
+        // Wiki / Discord are moved to RightPaneHomeFragment in landscape;
+        // they stay in the sidebar on portrait via fragment_launcher.xml (no-land).
+        if (mNewsButton != null)
+            mNewsButton.setOnClickListener(
+                    v -> Tools.openURL(requireActivity(), Tools.URL_HOME));
+        if (mDiscordButton != null)
+            mDiscordButton.setOnClickListener(
+                    v -> Tools.openURL(requireActivity(), getString(R.string.discord_invite)));
 
-        // Custom controls
+        // Custom controls (always opens as Activity — can't be in the pane)
         mCustomControlButton.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
 
-        // Mod Store → use right pane in landscape, full-swap in portrait
+        // Mod Store
         if (mModStoreButton != null)
             mModStoreButton.setOnClickListener(v ->
                     openPane(ModsSearchFragment.class, ModsSearchFragment.TAG, null));
@@ -136,23 +181,25 @@ public class MainMenuFragment extends Fragment {
                 return true;
             });
         } else {
-            mInstallJarButton.setOnClickListener(v -> hasNoOnlineProfileDialog(requireActivity()));
+            mInstallJarButton.setOnClickListener(
+                    v -> hasNoOnlineProfileDialog(requireActivity()));
         }
 
         // Share logs
         if (mShareLogsButton != null)
             mShareLogsButton.setOnClickListener(v -> shareLog(requireContext()));
 
-        // Manage Mods & Tools → right pane in landscape, full-swap in portrait
+        // Manage Mods
         mManageModsButton.setOnClickListener(v ->
                 openPane(ManageModsFragment.class, ManageModsFragment.TAG, null));
 
-        // Open game directory (original behaviour)
+        // Open game directory
         if (mOpenDirectoryButton != null) {
             mOpenDirectoryButton.setOnClickListener(v -> {
                 if (Tools.isDemoProfile(v.getContext())) {
                     hasNoOnlineProfileDialog(getActivity(),
-                            getString(R.string.demo_unsupported), getString(R.string.change_account));
+                            getString(R.string.demo_unsupported),
+                            getString(R.string.change_account));
                 } else if (!hasOnlineProfile()) {
                     hasNoOnlineProfileDialog(requireActivity());
                 } else {
@@ -162,32 +209,46 @@ public class MainMenuFragment extends Fragment {
         }
 
         // Edit profile
-        mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
+        mEditProfileButton.setOnClickListener(
+                v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
         // Play
-        mPlayButton.setOnClickListener(v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));
+        mPlayButton.setOnClickListener(
+                v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));
 
-        // Long-press wiki → gamepad mapper (hidden)
-        mNewsButton.setOnLongClickListener(v -> {
-            Tools.swapFragment(requireActivity(), GamepadMapperFragment.class, GamepadMapperFragment.TAG, null);
-            return true;
-        });
+        // Long-press wiki → gamepad mapper (hidden feature)
+        if (mNewsButton != null)
+            mNewsButton.setOnLongClickListener(v -> {
+                Tools.swapFragment(requireActivity(), GamepadMapperFragment.class,
+                        GamepadMapperFragment.TAG, null);
+                return true;
+            });
     }
 
-    private File getCurrentProfileDirectory() {
-        String currentProfile = LauncherPreferences.DEFAULT_PREF
-                .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, null);
-        if (!Tools.isValidString(currentProfile)) return new File(Tools.DIR_GAME_NEW);
-        LauncherProfiles.load();
-        MinecraftProfile profileObject = LauncherProfiles.mainProfileJson.profiles.get(currentProfile);
-        if (profileObject == null) return new File(Tools.DIR_GAME_NEW);
-        return Tools.getGameDirPath(profileObject);
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Null out the view reference so isTwoPane() returns false after view is gone
+        mRightPane = null;
     }
 
     @Override
     public void onResume() {
         super.onResume();
         mVersionSpinner.reloadProfiles();
+    }
+
+    // ─── Private helpers ────────────────────────────────────────────────────
+
+    private File getCurrentProfileDirectory() {
+        String currentProfile = LauncherPreferences.DEFAULT_PREF
+                .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, null);
+        if (!Tools.isValidString(currentProfile)) return new File(Tools.DIR_GAME_NEW);
+        LauncherProfiles.load();
+        MinecraftProfile profileObject =
+                LauncherProfiles.mainProfileJson.profiles.get(currentProfile);
+        if (profileObject == null) return new File(Tools.DIR_GAME_NEW);
+        return Tools.getGameDirPath(profileObject);
     }
 
     private void runInstallerWithConfirmation(boolean isCustomArgs) {
