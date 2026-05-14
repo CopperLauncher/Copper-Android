@@ -37,9 +37,10 @@ public class ManageModsFragment extends Fragment {
         RecyclerView recycler   = view.findViewById(R.id.manage_mods_recycler);
         View        emptyState  = view.findViewById(R.id.manage_mods_empty);
 
-        // Back — use direct navigation to avoid dispatcher timing issues.
-        // popBackStackImmediate() is synchronous so no race condition possible.
-        backButton.setOnClickListener(v -> navigateBack());
+        // Back — post to next frame so the click event fully finishes BEFORE the
+        // fragment is destroyed. Calling popBackStackImmediate() synchronously
+        // inside a click listener destroys the view mid-event → crash.
+        backButton.setOnClickListener(v -> v.post(this::navigateBack));
 
         // Add → open mod store — stay in right pane if we're inside one
         addButton.setOnClickListener(v ->
