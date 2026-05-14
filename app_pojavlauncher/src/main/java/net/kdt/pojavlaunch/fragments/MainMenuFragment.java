@@ -108,21 +108,32 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Back-press callback — only enabled while right pane has content above home
+        // Create the callback once. Lifecycle owner = this fragment, so it is
+        // automatically removed when the fragment is DESTROYED (not just view-destroyed).
         mRightPaneBackCallback = new OnBackPressedCallback(false) {
             @Override
             public void handleOnBackPressed() {
-                // Safety check: only pop if we're still attached
-                if (isAdded() && getChildFragmentManager().getBackStackEntryCount() > 0) {
-                    getChildFragmentManager().popBackStack();
+                // Guard: only act if view is still alive and back stack has entries
+                if (mRightPane == null) return;
+                if (getChildFragmentManager().getBackStackEntryCount() > 0) {
+                    getChildFragmentManager().popBackStackImmediate();
                 }
             }
         };
         requireActivity().getOnBackPressedDispatcher()
                 .addCallback(this, mRightPaneBackCallback);
-        getChildFragmentManager().addOnBackStackChangedListener(() ->
-                mRightPaneBackCallback.setEnabled(isRightPaneActive()));
+
+        // Only register the back-stack listener once per fragment instance.
+        // Using a member reference so we can remove it in onDestroyView if needed.
+        getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
     }
+
+    /** Keeps a stable reference so we never register it twice. */
+    private final androidx.fragment.app.FragmentManager.OnBackStackChangedListener
+            mBackStackListener = () -> {
+        // Safe because mRightPane is nulled in onDestroyView
+        mRightPaneBackCallback.setEnabled(isRightPaneActive());
+    };
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
@@ -228,8 +239,10 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Null out the view reference so isTwoPane() returns false after view is gone
+        // Null the view ref so isTwoPane() → false after view is gone,
+        // and remove the listener so it doesn't fire on a dead view.
         mRightPane = null;
+        getChildFragmentManager().removeOnBackStackChangedListener(mBackStackListener);
     }
 
     @Override

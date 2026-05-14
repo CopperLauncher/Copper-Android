@@ -3,16 +3,15 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_app">
+    android:background="@android:color/black">
 
-    <!-- Rory cat wallpaper centred / cropped -->
+    <!-- Rory xmas cat — nodpi so Android never density-scales it away -->
     <ImageView
         android:id="@+id/right_pane_wallpaper"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
         android:src="@drawable/bg_rory_xmas"
-        android:alpha="0.6"
         android:contentDescription="@null" />
 
     <!-- Wiki + Discord at the top of the pane -->

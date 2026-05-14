@@ -37,8 +37,10 @@ public class ManageModsFragment extends Fragment {
         RecyclerView recycler   = view.findViewById(R.id.manage_mods_recycler);
         View        emptyState  = view.findViewById(R.id.manage_mods_empty);
 
-        // Back — pop child stack when inside right pane, otherwise pop activity stack
-        backButton.setOnClickListener(v -> navigateBack());
+        // Back — delegate to the activity dispatcher so MainMenuFragment's
+        // OnBackPressedCallback handles it in two-pane, and the system handles it in portrait.
+        backButton.setOnClickListener(v ->
+                requireActivity().getOnBackPressedDispatcher().onBackPressed());
 
         // Add → open mod store — stay in right pane if we're inside one
         addButton.setOnClickListener(v ->
