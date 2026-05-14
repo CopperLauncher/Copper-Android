@@ -37,10 +37,9 @@ public class ManageModsFragment extends Fragment {
         RecyclerView recycler   = view.findViewById(R.id.manage_mods_recycler);
         View        emptyState  = view.findViewById(R.id.manage_mods_empty);
 
-        // Back — delegate to the activity dispatcher so MainMenuFragment's
-        // OnBackPressedCallback handles it in two-pane, and the system handles it in portrait.
-        backButton.setOnClickListener(v ->
-                requireActivity().getOnBackPressedDispatcher().onBackPressed());
+        // Back — use direct navigation to avoid dispatcher timing issues.
+        // popBackStackImmediate() is synchronous so no race condition possible.
+        backButton.setOnClickListener(v -> navigateBack());
 
         // Add → open mod store — stay in right pane if we're inside one
         addButton.setOnClickListener(v ->
@@ -95,11 +94,12 @@ public class ManageModsFragment extends Fragment {
         return new File(Tools.DIR_GAME_NEW, "mods");
     }
 
-    /** Go back — pops the parent's child stack when inside a right pane, else pops activity stack. */
+    /** Go back — pops the parent's child stack synchronously when inside right pane. */
     private void navigateBack() {
         Fragment parent = getParentFragment();
         if (parent != null) {
-            parent.getChildFragmentManager().popBackStack();
+            // Synchronous pop — no race condition with the view lifecycle
+            parent.getChildFragmentManager().popBackStackImmediate();
         } else {
             Tools.removeCurrentFragment(requireActivity());
         }
