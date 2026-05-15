@@ -37,10 +37,9 @@ public class ManageModsFragment extends Fragment {
         RecyclerView recycler   = view.findViewById(R.id.manage_mods_recycler);
         View        emptyState  = view.findViewById(R.id.manage_mods_empty);
 
-        // Back — post to next frame so the click event fully finishes BEFORE the
-        // fragment is destroyed. Calling popBackStackImmediate() synchronously
-        // inside a click listener destroys the view mid-event → crash.
-        backButton.setOnClickListener(v -> v.post(this::navigateBack));
+        // Back — delegate to the activity which handles both portrait (pop activity stack)
+        // and landscape two-pane (pop right pane) in one reliable place.
+        backButton.setOnClickListener(v -> requireActivity().onBackPressed());
 
         // Add → open mod store — stay in right pane if we're inside one
         addButton.setOnClickListener(v ->

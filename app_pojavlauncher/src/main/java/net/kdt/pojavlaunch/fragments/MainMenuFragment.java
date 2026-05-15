@@ -57,6 +57,17 @@ public class MainMenuFragment extends Fragment {
     }
 
     /**
+     * Pops one entry off the right pane back stack.
+     * Called from LauncherActivity.onBackPressed().
+     */
+    public void popRightPane() {
+        if (!isTwoPane()) return;
+        if (getChildFragmentManager().getBackStackEntryCount() > 0) {
+            getChildFragmentManager().popBackStack();
+        }
+    }
+
+    /**
      * Pops everything off the right pane back stack so the home fragment shows again.
      * Safe to call even if back stack is empty.
      */

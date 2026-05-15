@@ -326,6 +326,18 @@ public class LauncherActivity extends BaseActivity {
             }
         }
 
+        // In landscape two-pane mode: if the right pane has content, pop it instead of exiting
+        Fragment rootFrag = getVisibleFragment("ROOT");
+        if (rootFrag instanceof MainMenuFragment) {
+            MainMenuFragment mmf = (MainMenuFragment) rootFrag;
+            if (mmf.isRightPaneActive()) {
+                mmf.popRightPane();
+                return;
+            }
+            finish();
+            return;
+        }
+
         // Check if we are at the root then
         if(getVisibleFragment("ROOT") != null){
             finish();
