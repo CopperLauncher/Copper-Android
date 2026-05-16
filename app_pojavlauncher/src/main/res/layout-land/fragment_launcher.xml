@@ -179,7 +179,7 @@
     <com.kdt.mcgui.mcVersionSpinner
         android:id="@+id/mc_version_spinner"
         android:layout_width="0dp"
-        android:layout_height="@dimen/_32sdp"
+        android:layout_height="@dimen/_52sdp"
         android:layout_marginStart="8dp"
         android:layout_marginBottom="8dp"
         android:background="@android:color/transparent"
@@ -187,7 +187,7 @@
         app:drawableEndPadding="@dimen/_1sdp"
         app:drawableEndSize="@dimen/_12sdp"
         app:drawableStartIntegerScaling="true"
-        app:drawableStartSize="@dimen/_36sdp"
+        app:drawableStartSize="@dimen/_44sdp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/pane_divider"
         app:layout_constraintEnd_toStartOf="@+id/edit_profile_button" />

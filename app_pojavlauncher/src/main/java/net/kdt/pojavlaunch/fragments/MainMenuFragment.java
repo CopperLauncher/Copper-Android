@@ -234,6 +234,13 @@ public class MainMenuFragment extends Fragment {
         mEditProfileButton.setOnClickListener(
                 v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
+        // In landscape: tapping the spinner opens the instance picker in the right pane
+        // instead of the default popup window
+        if (isTwoPane()) {
+            mVersionSpinner.setOnClickListener(v ->
+                    openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
+        }
+
         // Play
         mPlayButton.setOnClickListener(
                 v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_app">
+
+    <!-- Header -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mcl_section_instances"
+        android:textAllCaps="true"
+        android:textSize="@dimen/_11ssp"
+        android:textColor="@color/secondary_text"
+        android:letterSpacing="0.08"
+        android:paddingHorizontal="@dimen/padding_heavy"
+        android:paddingTop="@dimen/padding_large"
+        android:paddingBottom="@dimen/padding_medium" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:background="@color/divider" />
+
+    <!-- Instance list — same adapter + item layout as the spinner popup -->
+    <ListView
+        android:id="@+id/instance_picker_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:scrollbars="none" />
+
+</LinearLayout>
