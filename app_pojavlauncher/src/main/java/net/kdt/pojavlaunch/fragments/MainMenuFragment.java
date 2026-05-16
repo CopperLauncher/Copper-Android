@@ -38,6 +38,10 @@ public class MainMenuFragment extends Fragment {
     private mcVersionSpinner mVersionSpinner;
     // Non-null only in landscape — the right content pane
     private FrameLayout mRightPane;
+    // Bottom bar views — toggled by back stack listener
+    private View mBottomBarBg;
+    private View mPlayButton;
+    private View mEditProfileButton;
     // Intercepts Back when the right pane has something above home
     private OnBackPressedCallback mRightPaneBackCallback;
 
@@ -81,8 +85,32 @@ public class MainMenuFragment extends Fragment {
         }
     }
 
+    /** Show/hide the bottom bar views (landscape only). */
+    private void setBottomBarVisible(boolean visible) {
+        int vis = visible ? View.VISIBLE : View.GONE;
+        if (mBottomBarBg != null)       mBottomBarBg.setVisibility(vis);
+        if (mPlayButton != null)        mPlayButton.setVisibility(vis);
+        if (mEditProfileButton != null) mEditProfileButton.setVisibility(vis);
+        if (mVersionSpinner != null)    mVersionSpinner.setVisibility(vis);
+    }
+
     /**
-     * Opens a fragment in the right pane (landscape) or full-screen (portrait).
+     * Called by InstancePickerFragment after the user taps an instance.
+     * Saves the selection, refreshes the spinner display, and pops back to home.
+     */
+    public void selectInstance(String profileKey) {
+        // Save pref
+        LauncherPreferences.DEFAULT_PREF.edit()
+                .putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, profileKey)
+                .apply();
+        // Update spinner display immediately (no resume needed)
+        if (mVersionSpinner != null) {
+            int idx = Math.max(0,
+                    mVersionSpinner.getProfileAdapter().resolveProfileIndex(profileKey));
+            mVersionSpinner.setSelection(idx);
+        }
+        clearRightPane();
+    }
      * Called from LauncherActivity for Settings / Add Account.
      * Returns true if the pane was used.
      */
@@ -142,8 +170,19 @@ public class MainMenuFragment extends Fragment {
     /** Keeps a stable reference so we never register it twice. */
     private final androidx.fragment.app.FragmentManager.OnBackStackChangedListener
             mBackStackListener = () -> {
-        // Safe because mRightPane is nulled in onDestroyView
         mRightPaneBackCallback.setEnabled(isRightPaneActive());
+        if (!isTwoPane()) return;
+        // Show bottom bar only on home (no back stack) or instance picker
+        int count = getChildFragmentManager().getBackStackEntryCount();
+        boolean showBar;
+        if (count == 0) {
+            showBar = true; // home
+        } else {
+            String topTag = getChildFragmentManager()
+                    .getBackStackEntryAt(count - 1).getName();
+            showBar = InstancePickerFragment.TAG.equals(topTag);
+        }
+        setBottomBarVisible(showBar);
     };
 
     @Override
@@ -157,12 +196,17 @@ public class MainMenuFragment extends Fragment {
         Button mOpenDirectoryButton = view.findViewById(R.id.open_directory_button);
         Button mModStoreButton      = view.findViewById(R.id.mod_store_button);
 
-        ImageButton mEditProfileButton = view.findViewById(R.id.edit_profile_button);
-        Button mPlayButton = view.findViewById(R.id.play_button);
+        ImageButton mEditProfileBtn = view.findViewById(R.id.edit_profile_button);
+        Button mPlayBtn = view.findViewById(R.id.play_button);
         mVersionSpinner = view.findViewById(R.id.mc_version_spinner);
 
         // Detect two-pane landscape layout
         mRightPane = view.findViewById(R.id.right_pane_container);
+
+        // Bottom bar refs — toggled by back stack listener
+        mBottomBarBg       = view.findViewById(R.id._background_display_view);
+        mPlayButton        = mPlayBtn;
+        mEditProfileButton = mEditProfileBtn;
 
         // ── Load the home fragment into the right pane (landscape only) ──────
         // Only inflate it once; savedInstanceState != null means it's already there
@@ -231,18 +275,17 @@ public class MainMenuFragment extends Fragment {
         }
 
         // Edit profile
-        mEditProfileButton.setOnClickListener(
+        mEditProfileBtn.setOnClickListener(
                 v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
         // In landscape: tapping the spinner opens the instance picker in the right pane
-        // instead of the default popup window
         if (isTwoPane()) {
             mVersionSpinner.setOnClickListener(v ->
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
 
         // Play
-        mPlayButton.setOnClickListener(
+        mPlayBtn.setOnClickListener(
                 v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));
 
         // Long-press wiki → gamepad mapper (hidden feature)
@@ -257,9 +300,10 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Null the view ref so isTwoPane() → false after view is gone,
-        // and remove the listener so it doesn't fire on a dead view.
         mRightPane = null;
+        mBottomBarBg = null;
+        mPlayButton = null;
+        mEditProfileButton = null;
         getChildFragmentManager().removeOnBackStackChangedListener(mBackStackListener);
     }
 
