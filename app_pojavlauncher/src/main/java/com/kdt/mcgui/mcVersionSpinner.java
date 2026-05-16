@@ -94,11 +94,6 @@ public class mcVersionSpinner extends ExtendedTextView {
         mProfileAdapter.reloadProfiles();
     }
 
-    /** Exposes the adapter so callers can resolve profile indices. */
-    public ProfileAdapter getProfileAdapter() {
-        return mProfileAdapter;
-    }
-
     /** Initialize various behaviors */
     private void init(){
         // Setup various attributes
