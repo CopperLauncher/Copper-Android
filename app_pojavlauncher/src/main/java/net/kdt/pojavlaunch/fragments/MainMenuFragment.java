@@ -111,6 +111,8 @@ public class MainMenuFragment extends Fragment {
         }
         clearRightPane();
     }
+
+    /**
      * Called from LauncherActivity for Settings / Add Account.
      * Returns true if the pane was used.
      */
