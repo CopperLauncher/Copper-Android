@@ -49,9 +49,9 @@ public class InstancePickerFragment extends Fragment {
             ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, profileKey);
 
             // Pop back to home pane — parent is MainMenuFragment
-            Fragment parent = getParentFragment();
-            if (parent instanceof MainMenuFragment) {
-                ((MainMenuFragment) parent).clearRightPane();
+            Fragment parentFrag = getParentFragment();
+            if (parentFrag instanceof MainMenuFragment) {
+                ((MainMenuFragment) parentFrag).clearRightPane();
             }
         });
     }
