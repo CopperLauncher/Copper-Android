@@ -210,16 +210,20 @@ public class MainMenuFragment extends Fragment {
         mPlayButton        = mPlayBtn;
         mEditProfileButton = mEditProfileBtn;
 
-        // ── Load the home fragment into the right pane (landscape only) ──────
-        // Only inflate it once; savedInstanceState != null means it's already there
-        if (isTwoPane() && savedInstanceState == null) {
-            getChildFragmentManager()
-                    .beginTransaction()
-                    .setReorderingAllowed(true)
-                    .replace(R.id.right_pane_container, RightPaneHomeFragment.class, null,
-                            RightPaneHomeFragment.TAG)
-                    // NOT added to back stack — home is the base, not a destination
-                    .commit();
+        // Load home fragment into right pane.
+        // Check by fragment presence, not savedInstanceState, so rotation works correctly.
+        if (isTwoPane()) {
+            Fragment existing = getChildFragmentManager()
+                    .findFragmentById(R.id.right_pane_container);
+            if (existing == null) {
+                getChildFragmentManager()
+                        .beginTransaction()
+                        .setReorderingAllowed(true)
+                        .replace(R.id.right_pane_container, RightPaneHomeFragment.class, null,
+                                RightPaneHomeFragment.TAG)
+                        // NOT added to back stack — home is the base, not a destination
+                        .commit();
+            }
         }
 
         // ── Sidebar buttons that are hidden in landscape (stubs kept for safety) ──
