@@ -288,12 +288,15 @@ public class MainMenuFragment extends Fragment {
         mEditProfileBtn.setOnClickListener(
                 v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
-        // Track ongoing tasks to hide play button during downloads
-        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
-                .addTaskCountListener(mTaskCountListener);
+        // In landscape: tapping the spinner opens the instance picker in the right pane
+        if (isTwoPane()) {
             mVersionSpinner.setOnClickListener(v ->
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
+
+        // Track ongoing tasks to hide play button during downloads
+        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
+                .addTaskCountListener(mTaskCountListener);
 
         // Play
         mPlayBtn.setOnClickListener(
