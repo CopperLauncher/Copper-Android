@@ -38,6 +38,10 @@ public class InstancePickerFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        // Back button — delegates to activity so the right pane pops correctly
+        view.findViewById(R.id.instance_picker_back)
+                .setOnClickListener(v -> requireActivity().onBackPressed());
+
         RecyclerView recycler = view.findViewById(R.id.instance_picker_recycler);
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
 

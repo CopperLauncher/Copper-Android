@@ -85,7 +85,7 @@ public class MainMenuFragment extends Fragment {
         }
     }
 
-    /** Show/hide the bottom bar views (landscape only). */
+    /** Shows/hides the bottom bar views (landscape only). */
     private void setBottomBarVisible(boolean visible) {
         int vis = visible ? View.VISIBLE : View.GONE;
         if (mBottomBarBg != null)       mBottomBarBg.setVisibility(vis);
@@ -93,6 +93,17 @@ public class MainMenuFragment extends Fragment {
         if (mEditProfileButton != null) mEditProfileButton.setVisibility(vis);
         if (mVersionSpinner != null)    mVersionSpinner.setVisibility(vis);
     }
+
+    /** Hides/shows only the play button based on ongoing task count. */
+    private final net.kdt.pojavlaunch.progresskeeper.TaskCountListener mTaskCountListener =
+            taskCount -> {
+                if (mPlayButton == null) return;
+                // Hide play button while tasks are running (downloads, installs, etc.)
+                // but only when the bar is currently visible
+                if (mPlayButton.getVisibility() != View.GONE) {
+                    mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
+                }
+            };
 
     /**
      * Called by InstancePickerFragment after the user taps an instance.
@@ -174,16 +185,9 @@ public class MainMenuFragment extends Fragment {
             mBackStackListener = () -> {
         mRightPaneBackCallback.setEnabled(isRightPaneActive());
         if (!isTwoPane()) return;
-        // Show bottom bar only on home (no back stack) or instance picker
-        int count = getChildFragmentManager().getBackStackEntryCount();
-        boolean showBar;
-        if (count == 0) {
-            showBar = true; // home
-        } else {
-            String topTag = getChildFragmentManager()
-                    .getBackStackEntryAt(count - 1).getName();
-            showBar = InstancePickerFragment.TAG.equals(topTag);
-        }
+        // Show bottom bar ONLY on home (back stack empty). Hide on all other panes
+        // including instance picker (it has its own back button in the header).
+        boolean showBar = getChildFragmentManager().getBackStackEntryCount() == 0;
         setBottomBarVisible(showBar);
     };
 
@@ -284,8 +288,9 @@ public class MainMenuFragment extends Fragment {
         mEditProfileBtn.setOnClickListener(
                 v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
-        // In landscape: tapping the spinner opens the instance picker in the right pane
-        if (isTwoPane()) {
+        // Track ongoing tasks to hide play button during downloads
+        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
+                .addTaskCountListener(mTaskCountListener);
             mVersionSpinner.setOnClickListener(v ->
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
@@ -310,6 +315,8 @@ public class MainMenuFragment extends Fragment {
         mBottomBarBg = null;
         mPlayButton = null;
         mEditProfileButton = null;
+        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
+                .removeTaskCountListener(mTaskCountListener);
         getChildFragmentManager().removeOnBackStackChangedListener(mBackStackListener);
     }
 

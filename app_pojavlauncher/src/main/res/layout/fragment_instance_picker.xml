@@ -7,7 +7,7 @@
     android:background="@color/background_app"
     android:paddingHorizontal="@dimen/fragment_padding_medium">
 
-    <!-- Header bar — same style as mod search overlay -->
+    <!-- Header — back button left, title centre, matches other fragment headers -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/instance_picker_header"
         android:layout_width="match_parent"
@@ -22,21 +22,36 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Back button — same style as ManageModsFragment / ModVersionListFragment -->
+        <ImageButton
+            android:id="@+id/instance_picker_back"
+            android:layout_width="@dimen/_32sdp"
+            android:layout_height="@dimen/_32sdp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back_white"
+            android:contentDescription="Back"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Title -->
         <TextView
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="@string/mcl_section_instances"
             android:textAllCaps="true"
             android:textSize="@dimen/_13ssp"
             android:textColor="@color/primary_text"
             android:textStyle="bold"
+            android:gravity="center"
+            app:layout_constraintStart_toEndOf="@id/instance_picker_back"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintBottom_toBottomOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Instance list styled like mod cards -->
+    <!-- Instance list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/instance_picker_recycler"
         android:layout_width="match_parent"
