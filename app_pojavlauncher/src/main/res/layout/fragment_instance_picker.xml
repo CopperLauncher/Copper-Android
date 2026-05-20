@@ -1,66 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_app"
-    android:paddingHorizontal="@dimen/fragment_padding_medium">
+    android:orientation="vertical"
+    android:background="@color/background_app">
 
-    <!-- Header — back button left, title centre, matches other fragment headers -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/instance_picker_header"
+    <!-- Header bar — matches ManageModsFragment style -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/background_overlay"
-        android:paddingHorizontal="@dimen/padding_medium"
-        android:paddingVertical="@dimen/padding_medium"
-        android:layout_marginTop="@dimen/fragment_padding_medium"
-        android:layout_marginHorizontal="@dimen/fragment_padding_medium"
-        android:translationZ="10dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:layout_height="@dimen/_52sdp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="@dimen/padding_medium">
 
-        <!-- Back button — same style as ManageModsFragment / ModVersionListFragment -->
         <ImageButton
             android:id="@+id/instance_picker_back"
-            android:layout_width="@dimen/_32sdp"
-            android:layout_height="@dimen/_32sdp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_arrow_back_white"
-            android:contentDescription="Back"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            android:contentDescription="@string/global_back" />
 
-        <!-- Title -->
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/mcl_section_instances"
-            android:textAllCaps="true"
-            android:textSize="@dimen/_13ssp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="@dimen/padding_moderate"
             android:textColor="@color/primary_text"
             android:textStyle="bold"
-            android:gravity="center"
-            app:layout_constraintStart_toEndOf="@id/instance_picker_back"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent" />
+            android:textSize="@dimen/_14ssp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="@string/mcl_section_instances" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:background="@color/divider" />
 
     <!-- Instance list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/instance_picker_recycler"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:paddingTop="@dimen/fragment_padding_medium"
-        android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/instance_picker_header"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:layout_weight="1"
+        android:paddingHorizontal="@dimen/fragment_padding_medium"
+        android:paddingTop="@dimen/padding_medium"
+        android:clipToPadding="false" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>
