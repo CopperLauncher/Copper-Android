@@ -8,8 +8,8 @@
             <item>
                 <shape android:shape="rectangle">
                     <gradient
-                        android:startColor="#FFB74D"
-                        android:endColor="#BF360C"
+                        android:startColor="#ff5900"
+                        android:endColor="#ff5900"
                         android:angle="270"/>
                     <corners android:radius="12dp"/>
                 </shape>
@@ -23,8 +23,8 @@
                 android:bottom="1dp">
                 <shape android:shape="rectangle">
                     <gradient
-                        android:startColor="#E65100"
-                        android:endColor="#4E2600"
+                        android:startColor="#ff5900"
+                        android:endColor="#ff5900"
                         android:angle="270"/>
                     <corners android:radius="11dp"/>
                 </shape>
@@ -48,8 +48,8 @@
             <item>
                 <shape android:shape="rectangle">
                     <gradient
-                        android:startColor="#FF8A00"
-                        android:endColor="#BF360C"
+                        android:startColor="#ff5900"
+                        android:endColor="#ff5900"
                         android:angle="270"/>
                     <corners android:radius="12dp"/>
                 </shape>
@@ -63,8 +63,8 @@
                 android:bottom="1dp">
                 <shape android:shape="rectangle">
                     <gradient
-                        android:startColor="#D35400"
-                        android:endColor="#1A0E08"
+                        android:startColor="#ff5900"
+                        android:endColor="#ff5900"
                         android:angle="270"/>
                     <corners android:radius="11dp"/>
                 </shape>
