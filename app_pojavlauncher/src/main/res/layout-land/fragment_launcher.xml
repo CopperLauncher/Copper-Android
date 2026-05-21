@@ -152,17 +152,9 @@
 
     <!-- ══════════════ RIGHT CONTENT PANE ══════════════ -->
     <!-- Rounded corners via background shape + clipToOutline -->
-    <!-- Silent anchor — always invisible, keeps right pane from expanding when bar is hidden -->
-    <View
-        android:id="@+id/bar_anchor"
-        android:layout_width="0dp"
-        android:layout_height="@dimen/_44sdp"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/pane_divider"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- RIGHT PANE constrains to anchor, not spinner, so hiding bar doesn't resize pane -->
+    <!-- RIGHT PANE — bottom constrained to top of bottom_bar.
+         When bottom_bar is GONE it collapses to 0 height at parent bottom,
+         so right pane automatically fills the full height. No anchor needed. -->
     <FrameLayout
         android:id="@+id/right_pane_container"
         android:layout_width="0dp"
@@ -173,59 +165,58 @@
         android:background="@drawable/bg_right_pane"
         android:clipToOutline="true"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/bar_anchor"
+        app:layout_constraintBottom_toTopOf="@id/bottom_bar"
         app:layout_constraintStart_toEndOf="@id/pane_divider"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- ══════════════ BOTTOM BAR — only under the right pane ══════════════ -->
-    <!-- Background anchored to spinner top, extends to screen bottom incl. margin -->
-    <View
-        android:id="@+id/_background_display_view"
+    <!-- ══════════════ BOTTOM BAR — single container, GONE hides all + collapses space ══════════════ -->
+    <LinearLayout
+        android:id="@+id/bottom_bar"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="@dimen/_48sdp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:background="@color/background_bottom_bar"
-        android:translationZ="-1dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="@id/mc_version_spinner"
-        app:layout_constraintStart_toEndOf="@id/pane_divider"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <com.kdt.mcgui.mcVersionSpinner
-        android:id="@+id/mc_version_spinner"
-        android:layout_width="0dp"
-        android:layout_height="@dimen/_44sdp"
-        android:paddingStart="8dp"
-        android:layout_marginBottom="4dp"
-        android:background="@android:color/transparent"
-        android:drawableEnd="@drawable/spinner_arrow"
-        app:drawableEndPadding="@dimen/_1sdp"
-        app:drawableEndSize="@dimen/_12sdp"
-        app:drawableStartIntegerScaling="true"
-        app:drawableStartSize="@dimen/_36sdp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/pane_divider"
-        app:layout_constraintEnd_toStartOf="@+id/edit_profile_button" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <ImageButton
-        android:id="@+id/edit_profile_button"
-        android:layout_width="@dimen/_32sdp"
-        android:layout_height="0dp"
-        android:layout_marginEnd="@dimen/_8sdp"
-        android:background="?android:attr/selectableItemBackground"
-        android:src="@drawable/ic_edit_profile"
-        app:layout_constraintBottom_toBottomOf="@+id/mc_version_spinner"
-        app:layout_constraintEnd_toStartOf="@+id/play_button"
-        app:layout_constraintTop_toTopOf="@+id/mc_version_spinner" />
+        <!-- Invisible background stub so MainMenuFragment.mBottomBarBg still resolves -->
+        <View
+            android:id="@+id/_background_display_view"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
-    <com.kdt.mcgui.MineButton
-        android:id="@+id/play_button"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/_8sdp"
-        android:text="@string/main_play"
-        android:textAllCaps="true"
-        app:layout_constraintBottom_toBottomOf="@+id/mc_version_spinner"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/mc_version_spinner" />
+        <com.kdt.mcgui.mcVersionSpinner
+            android:id="@+id/mc_version_spinner"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:background="@android:color/transparent"
+            android:drawableEnd="@drawable/spinner_arrow"
+            app:drawableEndPadding="@dimen/_1sdp"
+            app:drawableEndSize="@dimen/_12sdp"
+            app:drawableStartIntegerScaling="true"
+            app:drawableStartSize="@dimen/_36sdp" />
+
+        <ImageButton
+            android:id="@+id/edit_profile_button"
+            android:layout_width="@dimen/_40sdp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="@dimen/_8sdp"
+            android:background="?android:attr/selectableItemBackground"
+            android:src="@drawable/ic_edit_profile" />
+
+        <com.kdt.mcgui.MineButton
+            android:id="@+id/play_button"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="8dp"
+            android:text="@string/main_play"
+            android:textAllCaps="true" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

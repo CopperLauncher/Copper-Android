@@ -36,12 +36,11 @@ public class MainMenuFragment extends Fragment {
     public static final String TAG = "MainMenuFragment";
 
     private mcVersionSpinner mVersionSpinner;
-    // Non-null only in landscape — the right content pane
     private FrameLayout mRightPane;
-    // Bottom bar views — toggled by back stack listener
-    private View mBottomBarBg;
+    private View mBottomBarBg;   // stub — kept so mTaskCountListener check compiles
     private View mPlayButton;
     private View mEditProfileButton;
+    private View mBottomBar;     // the single LinearLayout container for the whole bar
     // Intercepts Back when the right pane has something above home
     private OnBackPressedCallback mRightPaneBackCallback;
 
@@ -85,22 +84,18 @@ public class MainMenuFragment extends Fragment {
         }
     }
 
-    /** Shows/hides the bottom bar views (landscape only).
-     *  Uses GONE so no empty space is left — the bar_anchor view keeps
-     *  the right pane constraint stable regardless of bar visibility. */
+    /** Shows/hides the entire bottom bar. GONE collapses it so right pane fills full height. */
     private void setBottomBarVisible(boolean visible) {
-        int vis = visible ? View.VISIBLE : View.GONE;
-        if (mBottomBarBg != null)       mBottomBarBg.setVisibility(vis);
-        if (mPlayButton != null)        mPlayButton.setVisibility(vis);
-        if (mEditProfileButton != null) mEditProfileButton.setVisibility(vis);
-        if (mVersionSpinner != null)    mVersionSpinner.setVisibility(vis);
+        if (mBottomBar != null)
+            mBottomBar.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     /** Hides/shows only the play button based on ongoing task count. */
     private final net.kdt.pojavlaunch.progresskeeper.TaskCountListener mTaskCountListener =
             taskCount -> {
                 if (mPlayButton == null) return;
-                if (mBottomBarBg != null && mBottomBarBg.getVisibility() != View.VISIBLE) return;
+                // Only hide/show play button when the bar is currently visible
+                if (mBottomBar == null || mBottomBar.getVisibility() != View.VISIBLE) return;
                 mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
             };
     /**
@@ -207,10 +202,11 @@ public class MainMenuFragment extends Fragment {
         // Detect two-pane landscape layout
         mRightPane = view.findViewById(R.id.right_pane_container);
 
-        // Bottom bar refs — toggled by back stack listener
+        // Bottom bar refs
         mBottomBarBg       = view.findViewById(R.id._background_display_view);
         mPlayButton        = mPlayBtn;
         mEditProfileButton = mEditProfileBtn;
+        mBottomBar         = view.findViewById(R.id.bottom_bar);
 
         // Load home fragment into right pane.
         // Check by fragment presence, not savedInstanceState, so rotation works correctly.
@@ -328,6 +324,7 @@ public class MainMenuFragment extends Fragment {
         mBottomBarBg = null;
         mPlayButton = null;
         mEditProfileButton = null;
+        mBottomBar = null;
         net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
                 .removeTaskCountListener(mTaskCountListener);
         getChildFragmentManager().removeOnBackStackChangedListener(mBackStackListener);
