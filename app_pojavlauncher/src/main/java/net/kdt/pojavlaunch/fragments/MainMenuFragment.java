@@ -332,6 +332,12 @@ public class MainMenuFragment extends Fragment {
     public void onResume() {
         super.onResume();
         mVersionSpinner.reloadProfiles();
+        // Re-apply bar visibility — returning from a full-screen Activity (e.g. CustomControls)
+        // can leave views in the wrong state since onStop/onStart doesn't re-trigger the
+        // backstack listener.
+        if (isTwoPane()) {
+            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
+        }
     }
 
     // ─── Private helpers ────────────────────────────────────────────────────
