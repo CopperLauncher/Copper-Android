@@ -152,6 +152,17 @@
 
     <!-- ══════════════ RIGHT CONTENT PANE ══════════════ -->
     <!-- Rounded corners via background shape + clipToOutline -->
+    <!-- Silent anchor — always invisible, keeps right pane from expanding when bar is hidden -->
+    <View
+        android:id="@+id/bar_anchor"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/_44sdp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/pane_divider"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- RIGHT PANE constrains to anchor, not spinner, so hiding bar doesn't resize pane -->
     <FrameLayout
         android:id="@+id/right_pane_container"
         android:layout_width="0dp"
@@ -162,7 +173,7 @@
         android:background="@drawable/bg_right_pane"
         android:clipToOutline="true"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/mc_version_spinner"
+        app:layout_constraintBottom_toTopOf="@id/bar_anchor"
         app:layout_constraintStart_toEndOf="@id/pane_divider"
         app:layout_constraintEnd_toEndOf="parent" />
 

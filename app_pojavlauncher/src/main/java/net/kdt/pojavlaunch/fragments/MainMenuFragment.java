@@ -86,17 +86,14 @@ public class MainMenuFragment extends Fragment {
     }
 
     /** Shows/hides the bottom bar views (landscape only).
-     *  Uses INVISIBLE (not GONE) for the spinner so it stays as a constraint anchor,
-     *  preventing the right pane from expanding to full height when the bar is hidden. */
+     *  Uses GONE so no empty space is left — the bar_anchor view keeps
+     *  the right pane constraint stable regardless of bar visibility. */
     private void setBottomBarVisible(boolean visible) {
-        if (mBottomBarBg != null)
-            mBottomBarBg.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
-        if (mPlayButton != null)
-            mPlayButton.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
-        if (mEditProfileButton != null)
-            mEditProfileButton.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
-        if (mVersionSpinner != null)
-            mVersionSpinner.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        int vis = visible ? View.VISIBLE : View.GONE;
+        if (mBottomBarBg != null)       mBottomBarBg.setVisibility(vis);
+        if (mPlayButton != null)        mPlayButton.setVisibility(vis);
+        if (mEditProfileButton != null) mEditProfileButton.setVisibility(vis);
+        if (mVersionSpinner != null)    mVersionSpinner.setVisibility(vis);
     }
 
     /** Hides/shows only the play button based on ongoing task count. */
@@ -106,7 +103,6 @@ public class MainMenuFragment extends Fragment {
                 if (mBottomBarBg != null && mBottomBarBg.getVisibility() != View.VISIBLE) return;
                 mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
             };
-
     /**
      * Called by InstancePickerFragment after the user taps an instance.
      * Saves the selection, refreshes the spinner display, and pops back to home.
@@ -286,9 +282,15 @@ public class MainMenuFragment extends Fragment {
             });
         }
 
-        // Edit profile
-        mEditProfileBtn.setOnClickListener(
-                v -> mVersionSpinner.openProfileEditor(requireActivity()));
+        // Edit profile — open in right pane in landscape, full-screen in portrait
+        mEditProfileBtn.setOnClickListener(v -> {
+            if (isTwoPane()) {
+                openPane(net.kdt.pojavlaunch.fragments.ProfileEditorFragment.class,
+                        net.kdt.pojavlaunch.fragments.ProfileEditorFragment.TAG, null);
+            } else {
+                mVersionSpinner.openProfileEditor(requireActivity());
+            }
+        });
 
         // In landscape: tapping the spinner opens the instance picker in the right pane
         if (isTwoPane()) {
@@ -335,12 +337,6 @@ public class MainMenuFragment extends Fragment {
     public void onResume() {
         super.onResume();
         mVersionSpinner.reloadProfiles();
-        // Re-apply bar visibility — returning from a full-screen Activity (e.g. CustomControls)
-        // can leave views in the wrong state since onStop/onStart doesn't re-trigger the
-        // backstack listener.
-        if (isTwoPane()) {
-            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
-        }
     }
 
     // ─── Private helpers ────────────────────────────────────────────────────
