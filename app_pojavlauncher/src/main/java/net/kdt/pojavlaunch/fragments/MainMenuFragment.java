@@ -98,11 +98,10 @@ public class MainMenuFragment extends Fragment {
     private final net.kdt.pojavlaunch.progresskeeper.TaskCountListener mTaskCountListener =
             taskCount -> {
                 if (mPlayButton == null) return;
-                // Hide play button while tasks are running (downloads, installs, etc.)
-                // but only when the bar is currently visible
-                if (mPlayButton.getVisibility() != View.GONE) {
-                    mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
-                }
+                // Only touch play button visibility when the bar is currently showing (home pane).
+                // If bar is GONE we're on a non-home pane — don't let task completion re-show it.
+                if (mBottomBarBg != null && mBottomBarBg.getVisibility() == View.GONE) return;
+                mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
             };
 
     /**
@@ -297,6 +296,12 @@ public class MainMenuFragment extends Fragment {
         // Track ongoing tasks to hide play button during downloads
         net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
                 .addTaskCountListener(mTaskCountListener);
+
+        // Force correct initial bar state — the backstack listener fires in onCreate before
+        // views exist, so it never set visibility. Set it explicitly here.
+        if (isTwoPane()) {
+            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
+        }
 
         // Play
         mPlayBtn.setOnClickListener(

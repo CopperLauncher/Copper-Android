@@ -165,6 +165,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- ══════════════ BOTTOM BAR — only under the right pane ══════════════ -->
+    <!-- Background spans full height from bottom of right pane to screen bottom -->
     <View
         android:id="@+id/_background_display_view"
         android:layout_width="0dp"
@@ -172,7 +173,7 @@
         android:background="@color/background_bottom_bar"
         android:translationZ="-1dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="@id/mc_version_spinner"
+        app:layout_constraintTop_toBottomOf="@id/right_pane_container"
         app:layout_constraintStart_toEndOf="@id/pane_divider"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -180,8 +181,7 @@
         android:id="@+id/mc_version_spinner"
         android:layout_width="0dp"
         android:layout_height="@dimen/_40sdp"
-        android:layout_marginStart="8dp"
-        android:layout_marginBottom="8dp"
+        android:paddingStart="8dp"
         android:background="@android:color/transparent"
         android:drawableEnd="@drawable/spinner_arrow"
         app:drawableEndPadding="@dimen/_1sdp"
