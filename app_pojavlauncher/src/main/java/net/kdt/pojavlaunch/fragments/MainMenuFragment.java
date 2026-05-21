@@ -85,22 +85,25 @@ public class MainMenuFragment extends Fragment {
         }
     }
 
-    /** Shows/hides the bottom bar views (landscape only). */
+    /** Shows/hides the bottom bar views (landscape only).
+     *  Uses INVISIBLE (not GONE) for the spinner so it stays as a constraint anchor,
+     *  preventing the right pane from expanding to full height when the bar is hidden. */
     private void setBottomBarVisible(boolean visible) {
-        int vis = visible ? View.VISIBLE : View.GONE;
-        if (mBottomBarBg != null)       mBottomBarBg.setVisibility(vis);
-        if (mPlayButton != null)        mPlayButton.setVisibility(vis);
-        if (mEditProfileButton != null) mEditProfileButton.setVisibility(vis);
-        if (mVersionSpinner != null)    mVersionSpinner.setVisibility(vis);
+        if (mBottomBarBg != null)
+            mBottomBarBg.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        if (mPlayButton != null)
+            mPlayButton.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        if (mEditProfileButton != null)
+            mEditProfileButton.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        if (mVersionSpinner != null)
+            mVersionSpinner.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
     }
 
     /** Hides/shows only the play button based on ongoing task count. */
     private final net.kdt.pojavlaunch.progresskeeper.TaskCountListener mTaskCountListener =
             taskCount -> {
                 if (mPlayButton == null) return;
-                // Only touch play button visibility when the bar is currently showing (home pane).
-                // If bar is GONE we're on a non-home pane — don't let task completion re-show it.
-                if (mBottomBarBg != null && mBottomBarBg.getVisibility() == View.GONE) return;
+                if (mBottomBarBg != null && mBottomBarBg.getVisibility() != View.VISIBLE) return;
                 mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
             };
 

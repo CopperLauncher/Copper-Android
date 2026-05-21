@@ -167,7 +167,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- ══════════════ BOTTOM BAR — only under the right pane ══════════════ -->
-    <!-- Background anchored to spinner top — no circular constraint -->
+    <!-- Background anchored to spinner top, extends to screen bottom incl. margin -->
     <View
         android:id="@+id/_background_display_view"
         android:layout_width="0dp"
@@ -182,14 +182,15 @@
     <com.kdt.mcgui.mcVersionSpinner
         android:id="@+id/mc_version_spinner"
         android:layout_width="0dp"
-        android:layout_height="@dimen/_40sdp"
+        android:layout_height="@dimen/_44sdp"
         android:paddingStart="8dp"
+        android:layout_marginBottom="4dp"
         android:background="@android:color/transparent"
         android:drawableEnd="@drawable/spinner_arrow"
         app:drawableEndPadding="@dimen/_1sdp"
         app:drawableEndSize="@dimen/_12sdp"
         app:drawableStartIntegerScaling="true"
-        app:drawableStartSize="@dimen/_32sdp"
+        app:drawableStartSize="@dimen/_36sdp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@id/pane_divider"
         app:layout_constraintEnd_toStartOf="@+id/edit_profile_button" />
