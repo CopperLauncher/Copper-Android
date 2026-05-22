@@ -43,6 +43,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import androidx.fragment.app.Fragment;
+
 public class ProfileEditorFragment extends Fragment implements CropperUtils.CropperListener{
     public static final String TAG = "ProfileEditorFragment";
     public static final String DELETED_PROFILE = "deleted_profile";
@@ -93,7 +95,13 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
         mSaveButton.setOnClickListener(v -> {
             ProfileIconCache.dropIcon(mProfileKey);
             save();
-            Tools.backToMainMenu(requireActivity());
+            // In two-pane landscape: pop right pane back to home. Portrait: back to main menu.
+            Fragment parentFrag = getParentFragment();
+            if (parentFrag instanceof MainMenuFragment) {
+                ((MainMenuFragment) parentFrag).clearRightPane();
+            } else {
+                Tools.backToMainMenu(requireActivity());
+            }
         });
 
         mDeleteButton.setOnClickListener(v -> {
@@ -101,10 +109,15 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
                 ProfileIconCache.dropIcon(mProfileKey);
                 LauncherProfiles.mainProfileJson.profiles.remove(mProfileKey);
                 LauncherProfiles.write();
-                ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, DELETED_PROFILE);
+                ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, ProfileEditorFragment.DELETED_PROFILE);
             }
-
-            Tools.removeCurrentFragment(requireActivity());
+            // Same pattern: pop right pane or fall back to activity pop
+            Fragment parentFrag = getParentFragment();
+            if (parentFrag instanceof MainMenuFragment) {
+                ((MainMenuFragment) parentFrag).clearRightPane();
+            } else {
+                Tools.removeCurrentFragment(requireActivity());
+            }
         });
 
 

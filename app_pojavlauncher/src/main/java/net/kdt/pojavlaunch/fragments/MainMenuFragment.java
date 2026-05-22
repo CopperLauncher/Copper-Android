@@ -334,6 +334,12 @@ public class MainMenuFragment extends Fragment {
     public void onResume() {
         super.onResume();
         mVersionSpinner.reloadProfiles();
+        // Re-apply bar state after returning from any full-screen UI (modpack install,
+        // account login, etc.) — these don't touch the child back stack so the listener
+        // never fires, but the bar container can be left in wrong state.
+        if (isTwoPane()) {
+            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
+        }
     }
 
     // ─── Private helpers ────────────────────────────────────────────────────
