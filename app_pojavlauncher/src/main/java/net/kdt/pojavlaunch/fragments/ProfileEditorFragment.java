@@ -111,10 +111,12 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
                 LauncherProfiles.write();
                 ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, ProfileEditorFragment.DELETED_PROFILE);
             }
-            // Same pattern: pop right pane or fall back to activity pop
             Fragment parentFrag = getParentFragment();
             if (parentFrag instanceof MainMenuFragment) {
-                ((MainMenuFragment) parentFrag).clearRightPane();
+                MainMenuFragment mmf = (MainMenuFragment) parentFrag;
+                mmf.clearRightPane();
+                // Reload spinner now so deleted profile is gone immediately
+                mmf.reloadSpinner();
             } else {
                 Tools.removeCurrentFragment(requireActivity());
             }

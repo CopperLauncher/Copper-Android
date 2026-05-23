@@ -103,17 +103,17 @@ public class MainMenuFragment extends Fragment {
      * Saves the selection, refreshes the spinner display, and pops back to home.
      */
     public void selectInstance(String profileKey) {
-        // Save pref
         LauncherPreferences.DEFAULT_PREF.edit()
                 .putString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, profileKey)
                 .apply();
-        // Update spinner display immediately (no resume needed)
-        if (mVersionSpinner != null) {
-            int idx = Math.max(0,
-                    mVersionSpinner.getProfileAdapter().resolveProfileIndex(profileKey));
-            mVersionSpinner.setSelection(idx);
-        }
+        ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, profileKey);
         clearRightPane();
+        if (mVersionSpinner != null) mVersionSpinner.reloadProfiles();
+    }
+
+    /** Called externally (e.g. ProfileEditorFragment) to refresh the spinner display. */
+    public void reloadSpinner() {
+        if (mVersionSpinner != null) mVersionSpinner.reloadProfiles();
     }
 
     /**
@@ -294,15 +294,15 @@ public class MainMenuFragment extends Fragment {
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
 
-        // Track ongoing tasks to hide play button during downloads
-        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
-                .addTaskCountListener(mTaskCountListener);
-
-        // Force correct initial bar state — the backstack listener fires in onCreate before
-        // views exist, so it never set visibility. Set it explicitly here.
+        // Force correct initial bar state BEFORE registering task listener,
+        // so the listener's immediate callback doesn't fight an unset visibility.
         if (isTwoPane()) {
             setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
         }
+
+        // Track ongoing tasks to hide play button during downloads
+        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
+                .addTaskCountListener(mTaskCountListener);
 
         // Play
         mPlayBtn.setOnClickListener(
@@ -333,10 +333,7 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        mVersionSpinner.reloadProfiles();
-        // Re-apply bar state after returning from any full-screen UI (modpack install,
-        // account login, etc.) — these don't touch the child back stack so the listener
-        // never fires, but the bar container can be left in wrong state.
+        if (mVersionSpinner != null) mVersionSpinner.reloadProfiles();
         if (isTwoPane()) {
             setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
         }
