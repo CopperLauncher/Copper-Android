@@ -92,12 +92,11 @@ public class MainMenuFragment extends Fragment {
 
     /** Hides/shows only the play button based on ongoing task count. */
     private final net.kdt.pojavlaunch.progresskeeper.TaskCountListener mTaskCountListener =
-            taskCount -> {
+            taskCount -> Tools.runOnUiThread(() -> {
                 if (mPlayButton == null) return;
-                // Only hide/show play button when the bar is currently visible
                 if (mBottomBar == null || mBottomBar.getVisibility() != View.VISIBLE) return;
                 mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
-            };
+            });
     /**
      * Called by InstancePickerFragment after the user taps an instance.
      * Saves the selection, refreshes the spinner display, and pops back to home.
@@ -294,10 +293,11 @@ public class MainMenuFragment extends Fragment {
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
 
-        // Force correct initial bar state BEFORE registering task listener,
-        // so the listener's immediate callback doesn't fight an unset visibility.
+        // Force correct initial bar state — posted to next frame so bottom_bar is measured
         if (isTwoPane()) {
-            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
+            final View bar = mBottomBar;
+            if (bar != null) bar.post(() ->
+                    setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0));
         }
 
         // Track ongoing tasks to hide play button during downloads
@@ -333,7 +333,12 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (mVersionSpinner != null) mVersionSpinner.reloadProfiles();
+        // Post to next frame so the spinner is fully laid out before reload
+        if (mVersionSpinner != null) {
+            mVersionSpinner.post(() -> {
+                if (mVersionSpinner != null) mVersionSpinner.reloadProfiles();
+            });
+        }
         if (isTwoPane()) {
             setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
         }
