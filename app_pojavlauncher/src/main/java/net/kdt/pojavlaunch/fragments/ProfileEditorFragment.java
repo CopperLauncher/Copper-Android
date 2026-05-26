@@ -95,10 +95,11 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
         mSaveButton.setOnClickListener(v -> {
             ProfileIconCache.dropIcon(mProfileKey);
             save();
-            // In two-pane landscape: pop right pane back to home. Portrait: back to main menu.
             Fragment parentFrag = getParentFragment();
             if (parentFrag instanceof MainMenuFragment) {
-                ((MainMenuFragment) parentFrag).clearRightPane();
+                MainMenuFragment mmf = (MainMenuFragment) parentFrag;
+                mmf.clearRightPane();
+                mmf.reloadSpinner();
             } else {
                 Tools.backToMainMenu(requireActivity());
             }

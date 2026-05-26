@@ -293,11 +293,10 @@ public class MainMenuFragment extends Fragment {
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
 
-        // Force correct initial bar state — posted to next frame so bottom_bar is measured
+        // Force correct initial bar state BEFORE registering task listener,
+        // so the listener's immediate callback doesn't fight an unset visibility.
         if (isTwoPane()) {
-            final View bar = mBottomBar;
-            if (bar != null) bar.post(() ->
-                    setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0));
+            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
         }
 
         // Track ongoing tasks to hide play button during downloads
@@ -333,14 +332,16 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // Post to next frame so the spinner is fully laid out before reload
         if (mVersionSpinner != null) {
             mVersionSpinner.post(() -> {
                 if (mVersionSpinner != null) mVersionSpinner.reloadProfiles();
             });
         }
-        if (isTwoPane()) {
-            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
+        if (isTwoPane() && mBottomBar != null) {
+            // Post so this runs after any pending task-listener callbacks
+            // that might incorrectly hide the bar
+            final boolean showBar = getChildFragmentManager().getBackStackEntryCount() == 0;
+            mBottomBar.post(() -> setBottomBarVisible(showBar));
         }
     }
 
