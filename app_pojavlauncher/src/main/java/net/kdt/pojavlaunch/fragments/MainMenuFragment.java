@@ -90,13 +90,8 @@ public class MainMenuFragment extends Fragment {
             mBottomBar.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
-    /** Hides/shows only the play button based on ongoing task count. */
-    private final net.kdt.pojavlaunch.progresskeeper.TaskCountListener mTaskCountListener =
-            taskCount -> Tools.runOnUiThread(() -> {
-                if (mPlayButton == null) return;
-                if (mBottomBar == null || mBottomBar.getVisibility() != View.VISIBLE) return;
-                mPlayButton.setVisibility(taskCount > 0 ? View.INVISIBLE : View.VISIBLE);
-            });
+    // Note: play button visibility during downloads is handled by the activity's
+    // ProgressLayout — we do not need a separate TaskCountListener here.
     /**
      * Called by InstancePickerFragment after the user taps an instance.
      * Saves the selection, refreshes the spinner display, and pops back to home.
@@ -116,7 +111,14 @@ public class MainMenuFragment extends Fragment {
     }
 
     /**
-     * Called from LauncherActivity for Settings / Add Account.
+     * Called by child fragments inside the right pane to navigate to another fragment
+     * within the pane (landscape) or full-screen (portrait).
+     * Use this instead of Tools.swapFragment(requireActivity(), ...) from child fragments.
+     */
+    public void openChildPane(Class<? extends Fragment> fragmentClass, String tag,
+                              @android.annotation.Nullable android.os.Bundle args) {
+        openPane(fragmentClass, tag, args);
+    }
      * Returns true if the pane was used.
      */
     public boolean tryOpenInRightPane(Class<? extends Fragment> fragmentClass, String tag,
@@ -299,9 +301,7 @@ public class MainMenuFragment extends Fragment {
             setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
         }
 
-        // Track ongoing tasks to hide play button during downloads
-        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
-                .addTaskCountListener(mTaskCountListener);
+        // Play button visibility during downloads handled by activity's ProgressLayout
 
         // Play
         mPlayBtn.setOnClickListener(
@@ -324,8 +324,6 @@ public class MainMenuFragment extends Fragment {
         mPlayButton = null;
         mEditProfileButton = null;
         mBottomBar = null;
-        net.kdt.pojavlaunch.progresskeeper.ProgressKeeper
-                .removeTaskCountListener(mTaskCountListener);
         getChildFragmentManager().removeOnBackStackChangedListener(mBackStackListener);
     }
 
