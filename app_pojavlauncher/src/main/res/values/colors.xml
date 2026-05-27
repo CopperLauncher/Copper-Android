@@ -6,7 +6,7 @@
     <color name="control_button_pressed_color">#99A85C1A</color>
 
     <!-- Main Button (hot copper highlight - toned down for consistency) -->
-    <color name="minebutton_color">#D98A2B</color>
+    <color name="minebutton_color">#ff5900</color>
 
     <!-- BACKGROUND SYSTEM (COPPER METAL THEME) -->
     <!-- Dark copper layered surfaces -->
