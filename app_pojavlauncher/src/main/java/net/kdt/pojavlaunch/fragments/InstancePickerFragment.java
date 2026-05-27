@@ -61,10 +61,17 @@ public class InstancePickerFragment extends Fragment {
                     }
                 },
                 () -> {
-                    // "New instance" tapped — open profile type selector
-                    Tools.swapFragment(requireActivity(),
-                            ProfileTypeSelectFragment.class,
-                            ProfileTypeSelectFragment.TAG, null);
+                    // "New instance" tapped — open profile type selector in right pane
+                    Fragment parentFrag = getParentFragment();
+                    if (parentFrag instanceof MainMenuFragment) {
+                        ((MainMenuFragment) parentFrag).openChildPane(
+                                ProfileTypeSelectFragment.class,
+                                ProfileTypeSelectFragment.TAG, null);
+                    } else {
+                        Tools.swapFragment(requireActivity(),
+                                ProfileTypeSelectFragment.class,
+                                ProfileTypeSelectFragment.TAG, null);
+                    }
                 }));
     }
 
