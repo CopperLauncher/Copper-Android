@@ -119,6 +119,8 @@ public class MainMenuFragment extends Fragment {
                               @android.annotation.Nullable android.os.Bundle args) {
         openPane(fragmentClass, tag, args);
     }
+
+    /**
      * Returns true if the pane was used.
      */
     public boolean tryOpenInRightPane(Class<? extends Fragment> fragmentClass, String tag,
