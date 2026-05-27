@@ -116,7 +116,7 @@ public class MainMenuFragment extends Fragment {
      * Use this instead of Tools.swapFragment(requireActivity(), ...) from child fragments.
      */
     public void openChildPane(Class<? extends Fragment> fragmentClass, String tag,
-                              @android.annotation.Nullable android.os.Bundle args) {
+                              @Nullable Bundle args) {
         openPane(fragmentClass, tag, args);
     }
 
