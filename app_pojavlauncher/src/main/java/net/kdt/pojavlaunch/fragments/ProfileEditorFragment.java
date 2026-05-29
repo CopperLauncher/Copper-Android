@@ -284,6 +284,14 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
     }
 
     @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        // Always drop the icon cache when leaving, even without saving.
+        // This ensures the next reloadProfiles() re-fetches with correct bounds.
+        if (mProfileKey != null) ProfileIconCache.dropIcon(mProfileKey);
+    }
+
+    @Override
     public void onCropped(Bitmap contentBitmap) {
         mProfileIcon.setImageBitmap(contentBitmap);
         Log.i("bitmap", "w="+contentBitmap.getWidth() +" h="+contentBitmap.getHeight());
