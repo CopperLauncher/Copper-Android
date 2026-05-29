@@ -286,9 +286,17 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        // Always drop the icon cache when leaving, even without saving.
-        // This ensures the next reloadProfiles() re-fetches with correct bounds.
-        if (mProfileKey != null) ProfileIconCache.dropIcon(mProfileKey);
+        // Always drop the icon cache when leaving, even without saving,
+        // so the next reloadProfiles() re-fetches with correct bounds.
+        if (mProfileKey != null) {
+            ProfileIconCache.dropIcon(mProfileKey);
+            // Reload the spinner so the icon redraws at correct size immediately
+            // (covers Android back button path where reloadSpinner() isn't called explicitly)
+            Fragment parent = getParentFragment();
+            if (parent instanceof MainMenuFragment) {
+                ((MainMenuFragment) parent).reloadSpinner();
+            }
+        }
     }
 
     @Override
