@@ -4,7 +4,6 @@
     <!-- PRESSED STATE -->
     <item android:state_pressed="true">
         <layer-list>
-            <!-- Outer glow -->
             <item>
                 <shape android:shape="rectangle">
                     <gradient
@@ -14,8 +13,6 @@
                     <corners android:radius="12dp"/>
                 </shape>
             </item>
-
-            <!-- Inner pressed surface -->
             <item
                 android:left="1dp"
                 android:top="1dp"
@@ -43,33 +40,22 @@
     <!-- DEFAULT STATE -->
     <item>
         <layer-list>
-
-            <!-- Outer glow -->
             <item>
                 <shape android:shape="rectangle">
-                    <gradient
-                        android:startColor="#ff5900"
-                        android:endColor="#ff5900"
-                        android:angle="270"/>
+                    <solid android:color="?attr/colorAccent"/>
                     <corners android:radius="12dp"/>
                 </shape>
             </item>
-
-            <!-- Inner body -->
             <item
                 android:left="1dp"
                 android:top="1dp"
                 android:right="1dp"
                 android:bottom="1dp">
                 <shape android:shape="rectangle">
-                    <gradient
-                        android:startColor="#ff5900"
-                        android:endColor="#ff5900"
-                        android:angle="270"/>
+                    <solid android:color="?attr/colorAccent"/>
                     <corners android:radius="11dp"/>
                 </shape>
             </item>
-
         </layer-list>
     </item>
 

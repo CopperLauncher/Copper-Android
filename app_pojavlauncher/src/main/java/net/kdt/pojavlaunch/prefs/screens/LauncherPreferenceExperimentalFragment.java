@@ -101,17 +101,17 @@ public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFr
                 return true;
             }
             boolean ok = ThemeManager.applyFromCustomBackground();
-            toast(ok ? R.string.preference_colour_from_bg_success
-                     : R.string.preference_colour_from_bg_error);
-            if (ok) toast(R.string.preference_colour_theme_applied);
+            if (ok) {
+                requireActivity().recreate();
+            } else {
+                toast(R.string.preference_colour_from_bg_error);
+            }
             return true;
         });
     }
 
     private void showPresetDialog() {
         ThemeManager.Preset[] presets = ThemeManager.PRESETS;
-
-        // Build label list: preset names + "Reset to default" at the bottom
         String[] labels = new String[presets.length + 1];
         for (int i = 0; i < presets.length; i++) labels[i] = presets[i].name;
         labels[presets.length] = getString(R.string.preference_colour_reset);
@@ -124,7 +124,7 @@ public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFr
                 } else {
                     ThemeManager.resetToDefault();
                 }
-                toast(R.string.preference_colour_theme_applied);
+                requireActivity().recreate();
             })
             .setNegativeButton(android.R.string.cancel, null)
             .show();
