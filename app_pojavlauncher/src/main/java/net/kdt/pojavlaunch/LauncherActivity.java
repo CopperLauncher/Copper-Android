@@ -229,7 +229,6 @@ public class LauncherActivity extends BaseActivity {
             setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         }
         setContentView(R.layout.activity_pojav_launcher);
-        net.kdt.pojavlaunch.theme.ThemeManager.applyToWindow(this);
         FragmentManager fragmentManager = getSupportFragmentManager();
         // If we don't have a back stack root yet...
         if(fragmentManager.getBackStackEntryCount() < 1) {
