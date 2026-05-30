@@ -1,9 +1,6 @@
 package net.kdt.pojavlaunch.prefs.screens;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.graphics.drawable.Drawable;
+import android.app.AlertDialog;
 import android.net.Uri;
 import android.os.Bundle;
 import android.widget.Toast;
@@ -15,9 +12,9 @@ import androidx.preference.Preference;
 import androidx.preference.SwitchPreferenceCompat;
 
 import net.kdt.pojavlaunch.R;
-import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.fragments.MainMenuFragment;
 import net.kdt.pojavlaunch.fragments.RightPaneHomeFragment;
+import net.kdt.pojavlaunch.theme.ThemeManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,7 +26,6 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
 public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFragment {
 
-    /** Picks an image from the gallery; result handled in mImagePickerLauncher. */
     private final ActivityResultLauncher<String> mImagePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri != null) copyImageToBgFile(uri);
@@ -40,52 +36,39 @@ public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFr
         addPreferencesFromResource(R.xml.pref_experimental);
         setupForceLandscape();
         setupCustomBackground();
+        setupColourTheme();
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // Force landscape
-    // ────────────────────────────────────────────────────────────────────────────
+    // ── Force landscape ───────────────────────────────────────────────────────
 
     private void setupForceLandscape() {
         SwitchPreferenceCompat pref = requirePreference("force_landscape", SwitchPreferenceCompat.class);
         pref.setOnPreferenceChangeListener((preference, newValue) -> {
             boolean force = Boolean.TRUE.equals(newValue);
-            Activity activity = requireActivity();
-            activity.setRequestedOrientation(
+            requireActivity().setRequestedOrientation(
                     force ? SCREEN_ORIENTATION_SENSOR_LANDSCAPE : SCREEN_ORIENTATION_UNSPECIFIED);
-            return true; // allow the switch to actually flip
+            return true;
         });
     }
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // Custom background
-    // ────────────────────────────────────────────────────────────────────────────
+    // ── Custom background ─────────────────────────────────────────────────────
 
     private void setupCustomBackground() {
-        Preference setPref    = requirePreference("set_custom_launcher_bg");
-        Preference removePref = requirePreference("remove_custom_launcher_bg");
-
-        setPref.setOnPreferenceClickListener(preference -> {
+        requirePreference("set_custom_launcher_bg").setOnPreferenceClickListener(p -> {
             mImagePickerLauncher.launch("image/*");
             return true;
         });
 
-        removePref.setOnPreferenceClickListener(preference -> {
+        requirePreference("remove_custom_launcher_bg").setOnPreferenceClickListener(p -> {
             File bgFile = new File(RightPaneHomeFragment.CUSTOM_BG_PATH);
             if (bgFile.exists()) bgFile.delete();
             notifyHomeFragmentBgChanged();
-            Toast.makeText(requireContext(),
-                    R.string.preference_custom_bg_removed, Toast.LENGTH_SHORT).show();
+            toast(R.string.preference_custom_bg_removed);
             return true;
         });
     }
 
-    /** Copies the user-picked URI into the custom background file slot. */
     private void copyImageToBgFile(@NonNull Uri uri) {
-        // Quick sanity check: make sure the drawable can be decoded before committing.
-        Drawable test = Drawable.createFromPath(uri.getPath());
-        // createFromPath may return null for content:// URIs — that's fine, we
-        // just validate after writing by trying to open an InputStream.
         File bgFile = new File(RightPaneHomeFragment.CUSTOM_BG_PATH);
         try (InputStream in  = requireContext().getContentResolver().openInputStream(uri);
              OutputStream out = new FileOutputStream(bgFile)) {
@@ -94,21 +77,65 @@ public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFr
             int len;
             while ((len = in.read(buf)) != -1) out.write(buf, 0, len);
             notifyHomeFragmentBgChanged();
-            Toast.makeText(requireContext(),
-                    R.string.preference_custom_bg_set_success, Toast.LENGTH_SHORT).show();
+            toast(R.string.preference_custom_bg_set_success);
         } catch (Exception e) {
-            // Delete partial file if write failed
             if (bgFile.exists()) bgFile.delete();
-            Toast.makeText(requireContext(),
-                    R.string.preference_custom_bg_error, Toast.LENGTH_SHORT).show();
+            toast(R.string.preference_custom_bg_error);
         }
     }
 
-    /**
-     * If MainMenuFragment (and thus RightPaneHomeFragment) is currently in the
-     * back stack, tell it to reload the background immediately so the user sees
-     * the change without restarting the app.
-     */
+    // ── Colour theme ──────────────────────────────────────────────────────────
+
+    private void setupColourTheme() {
+        // Button 1: preset picker + reset
+        requirePreference("colour_theme_presets").setOnPreferenceClickListener(p -> {
+            showPresetDialog();
+            return true;
+        });
+
+        // Button 2: generate from custom background via Palette API
+        requirePreference("colour_theme_from_bg").setOnPreferenceClickListener(p -> {
+            File bgFile = new File(RightPaneHomeFragment.CUSTOM_BG_PATH);
+            if (!bgFile.exists()) {
+                toast(R.string.preference_colour_from_bg_no_image);
+                return true;
+            }
+            boolean ok = ThemeManager.applyFromCustomBackground();
+            toast(ok ? R.string.preference_colour_from_bg_success
+                     : R.string.preference_colour_from_bg_error);
+            if (ok) toast(R.string.preference_colour_theme_applied);
+            return true;
+        });
+    }
+
+    private void showPresetDialog() {
+        ThemeManager.Preset[] presets = ThemeManager.PRESETS;
+
+        // Build label list: preset names + "Reset to default" at the bottom
+        String[] labels = new String[presets.length + 1];
+        for (int i = 0; i < presets.length; i++) labels[i] = presets[i].name;
+        labels[presets.length] = getString(R.string.preference_colour_reset);
+
+        new AlertDialog.Builder(requireContext())
+            .setTitle(R.string.preference_colour_presets_title)
+            .setItems(labels, (dialog, which) -> {
+                if (which < presets.length) {
+                    ThemeManager.applyPreset(presets[which]);
+                } else {
+                    ThemeManager.resetToDefault();
+                }
+                toast(R.string.preference_colour_theme_applied);
+            })
+            .setNegativeButton(android.R.string.cancel, null)
+            .show();
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void toast(int resId) {
+        Toast.makeText(requireContext(), resId, Toast.LENGTH_SHORT).show();
+    }
+
     private void notifyHomeFragmentBgChanged() {
         MainMenuFragment mmf = (MainMenuFragment) requireActivity()
                 .getSupportFragmentManager()
