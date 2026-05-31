@@ -16,8 +16,8 @@
         <item name="colorAccent">@color/minebutton_color</item>
         <item name="colorTextPrimary">@color/primary_text</item>
         <item name="colorTextSecondary">@color/secondary_text</item>
-        <item name="bgMainDrawable">@color/background_app</item>
-        <item name="android:windowBackground">@color/background_app</item>
+        <item name="bgMainDrawable">#0D0D0D</item>
+        <item name="android:windowBackground">#0D0D0D</item>
     </style>
     <style name="AppTheme.Gradient">
         <item name="bgMainDrawable">@drawable/bg_gradient_copper</item>
@@ -34,8 +34,8 @@
         <item name="colorAccent">@color/mb_accent</item>
         <item name="colorTextPrimary">@color/mb_text_primary</item>
         <item name="colorTextSecondary">@color/mb_text_secondary</item>
-        <item name="bgMainDrawable">@color/mb_bg_app</item>
-        <item name="android:windowBackground">@color/mb_bg_app</item>
+        <item name="bgMainDrawable">#0D0D0D</item>
+        <item name="android:windowBackground">#0D0D0D</item>
     </style>
     <style name="AppTheme.MidnightBlue.Gradient">
         <item name="bgMainDrawable">@drawable/bg_gradient_midnight_blue</item>
@@ -52,8 +52,8 @@
         <item name="colorAccent">@color/fg_accent</item>
         <item name="colorTextPrimary">@color/fg_text_primary</item>
         <item name="colorTextSecondary">@color/fg_text_secondary</item>
-        <item name="bgMainDrawable">@color/fg_bg_app</item>
-        <item name="android:windowBackground">@color/fg_bg_app</item>
+        <item name="bgMainDrawable">#0D0D0D</item>
+        <item name="android:windowBackground">#0D0D0D</item>
     </style>
     <style name="AppTheme.ForestGreen.Gradient">
         <item name="bgMainDrawable">@drawable/bg_gradient_forest_green</item>
@@ -70,8 +70,8 @@
         <item name="colorAccent">@color/cr_accent</item>
         <item name="colorTextPrimary">@color/cr_text_primary</item>
         <item name="colorTextSecondary">@color/cr_text_secondary</item>
-        <item name="bgMainDrawable">@color/cr_bg_app</item>
-        <item name="android:windowBackground">@color/cr_bg_app</item>
+        <item name="bgMainDrawable">#0D0D0D</item>
+        <item name="android:windowBackground">#0D0D0D</item>
     </style>
     <style name="AppTheme.Crimson.Gradient">
         <item name="bgMainDrawable">@drawable/bg_gradient_crimson</item>
@@ -88,8 +88,8 @@
         <item name="colorAccent">@color/am_accent</item>
         <item name="colorTextPrimary">@color/am_text_primary</item>
         <item name="colorTextSecondary">@color/am_text_secondary</item>
-        <item name="bgMainDrawable">@color/am_bg_app</item>
-        <item name="android:windowBackground">@color/am_bg_app</item>
+        <item name="bgMainDrawable">#0D0D0D</item>
+        <item name="android:windowBackground">#0D0D0D</item>
     </style>
     <style name="AppTheme.Amethyst.Gradient">
         <item name="bgMainDrawable">@drawable/bg_gradient_amethyst</item>
@@ -106,8 +106,8 @@
         <item name="colorAccent">@color/ar_accent</item>
         <item name="colorTextPrimary">@color/ar_text_primary</item>
         <item name="colorTextSecondary">@color/ar_text_secondary</item>
-        <item name="bgMainDrawable">@color/ar_bg_app</item>
-        <item name="android:windowBackground">@color/ar_bg_app</item>
+        <item name="bgMainDrawable">#0D0D0D</item>
+        <item name="android:windowBackground">#0D0D0D</item>
     </style>
     <style name="AppTheme.Arctic.Gradient">
         <item name="bgMainDrawable">@drawable/bg_gradient_arctic</item>
