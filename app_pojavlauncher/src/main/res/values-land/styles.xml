@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Landscape AppTheme — fullscreen + notch, flat bg -->
     <style name="AppTheme" parent="@style/Theme.AppCompat.NoActionBar">
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
         <item name="android:windowContentOverlay">@null</item>
-        <item name="android:statusBarColor">@color/background_status_bar</item>
-        <item name="android:navigationBarColor">@color/background_app</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
         <item name="android:textSize">@dimen/_14ssp</item>
         <item name="colorBgApp">@color/background_app</item>
@@ -15,9 +19,92 @@
         <item name="colorAccent">@color/minebutton_color</item>
         <item name="colorTextPrimary">@color/primary_text</item>
         <item name="colorTextSecondary">@color/secondary_text</item>
+        <item name="bgMainDrawable">@color/background_app</item>
+    </style>
+    <style name="AppTheme.Gradient">
+        <item name="bgMainDrawable">@drawable/bg_gradient_copper</item>
     </style>
 
-    <!-- Compact sidebar buttons in landscape — tighter height + no extra margins -->
+    <style name="AppTheme.MidnightBlue">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="colorBgApp">@color/mb_bg_app</item>
+        <item name="colorBgBottomBar">@color/mb_bg_bottom_bar</item>
+        <item name="colorBgStatusBar">@color/mb_bg_status_bar</item>
+        <item name="colorDivider">@color/mb_divider</item>
+        <item name="colorAccent">@color/mb_accent</item>
+        <item name="colorTextPrimary">@color/mb_text_primary</item>
+        <item name="colorTextSecondary">@color/mb_text_secondary</item>
+        <item name="bgMainDrawable">@color/mb_bg_app</item>
+    </style>
+    <style name="AppTheme.MidnightBlue.Gradient">
+        <item name="bgMainDrawable">@drawable/bg_gradient_midnight_blue</item>
+    </style>
+
+    <style name="AppTheme.ForestGreen">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="colorBgApp">@color/fg_bg_app</item>
+        <item name="colorBgBottomBar">@color/fg_bg_bottom_bar</item>
+        <item name="colorBgStatusBar">@color/fg_bg_status_bar</item>
+        <item name="colorDivider">@color/fg_divider</item>
+        <item name="colorAccent">@color/fg_accent</item>
+        <item name="colorTextPrimary">@color/fg_text_primary</item>
+        <item name="colorTextSecondary">@color/fg_text_secondary</item>
+        <item name="bgMainDrawable">@color/fg_bg_app</item>
+    </style>
+    <style name="AppTheme.ForestGreen.Gradient">
+        <item name="bgMainDrawable">@drawable/bg_gradient_forest_green</item>
+    </style>
+
+    <style name="AppTheme.Crimson">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="colorBgApp">@color/cr_bg_app</item>
+        <item name="colorBgBottomBar">@color/cr_bg_bottom_bar</item>
+        <item name="colorBgStatusBar">@color/cr_bg_status_bar</item>
+        <item name="colorDivider">@color/cr_divider</item>
+        <item name="colorAccent">@color/cr_accent</item>
+        <item name="colorTextPrimary">@color/cr_text_primary</item>
+        <item name="colorTextSecondary">@color/cr_text_secondary</item>
+        <item name="bgMainDrawable">@color/cr_bg_app</item>
+    </style>
+    <style name="AppTheme.Crimson.Gradient">
+        <item name="bgMainDrawable">@drawable/bg_gradient_crimson</item>
+    </style>
+
+    <style name="AppTheme.Amethyst">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="colorBgApp">@color/am_bg_app</item>
+        <item name="colorBgBottomBar">@color/am_bg_bottom_bar</item>
+        <item name="colorBgStatusBar">@color/am_bg_status_bar</item>
+        <item name="colorDivider">@color/am_divider</item>
+        <item name="colorAccent">@color/am_accent</item>
+        <item name="colorTextPrimary">@color/am_text_primary</item>
+        <item name="colorTextSecondary">@color/am_text_secondary</item>
+        <item name="bgMainDrawable">@color/am_bg_app</item>
+    </style>
+    <style name="AppTheme.Amethyst.Gradient">
+        <item name="bgMainDrawable">@drawable/bg_gradient_amethyst</item>
+    </style>
+
+    <style name="AppTheme.Arctic">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="colorBgApp">@color/ar_bg_app</item>
+        <item name="colorBgBottomBar">@color/ar_bg_bottom_bar</item>
+        <item name="colorBgStatusBar">@color/ar_bg_status_bar</item>
+        <item name="colorDivider">@color/ar_divider</item>
+        <item name="colorAccent">@color/ar_accent</item>
+        <item name="colorTextPrimary">@color/ar_text_primary</item>
+        <item name="colorTextSecondary">@color/ar_text_secondary</item>
+        <item name="bgMainDrawable">@color/ar_bg_app</item>
+    </style>
+    <style name="AppTheme.Arctic.Gradient">
+        <item name="bgMainDrawable">@drawable/bg_gradient_arctic</item>
+    </style>
+
     <style name="LauncherMenuButton.Universal" parent="LauncherMenuButton">
         <item name="android:layout_height">@dimen/navigation_item_height</item>
         <item name="android:paddingTop">4dp</item>
