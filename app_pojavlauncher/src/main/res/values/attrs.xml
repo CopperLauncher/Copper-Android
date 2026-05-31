@@ -8,6 +8,4 @@
     <attr name="colorTextPrimary"   format="color"/>
     <attr name="colorTextSecondary" format="color"/>
     <attr name="bgMainDrawable"     format="reference|color"/>
-    <attr name="bgMainDrawable"     format="reference"/>
-    <attr name="hasTopGradient"     format="boolean"/>
 </resources>
