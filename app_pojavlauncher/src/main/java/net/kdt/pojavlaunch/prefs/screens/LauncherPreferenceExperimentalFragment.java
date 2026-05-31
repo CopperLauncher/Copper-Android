@@ -52,6 +52,10 @@ public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFr
 
         SwitchPreferenceCompat gradientPref = requirePreference("enable_bg_gradient", SwitchPreferenceCompat.class);
         gradientPref.setOnPreferenceChangeListener((preference, newValue) -> {
+            // Save explicitly before recreate — the framework saves after listener returns
+            net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF.edit()
+                .putBoolean(ThemeManager.KEY_GRADIENT, Boolean.TRUE.equals(newValue))
+                .commit(); // commit() not apply() — must be synchronous before recreate
             requireActivity().recreate();
             return true;
         });

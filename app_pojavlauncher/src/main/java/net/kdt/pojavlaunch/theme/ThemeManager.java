@@ -39,6 +39,22 @@ public class ThemeManager {
     }
 
     /**
+     * Apply the current theme's bgMainDrawable to a preference fragment's root view.
+     * Called from LauncherPreferenceFragment.onViewCreated().
+     */
+    public static void applyToPrefView(@NonNull android.view.View view) {
+        android.util.TypedValue tv = new android.util.TypedValue();
+        view.getContext().getTheme().resolveAttribute(
+                net.kdt.pojavlaunch.R.attr.bgMainDrawable, tv, true);
+        if (tv.type >= android.util.TypedValue.TYPE_FIRST_COLOR_INT
+                && tv.type <= android.util.TypedValue.TYPE_LAST_COLOR_INT) {
+            view.setBackgroundColor(tv.data);
+        } else if (tv.resourceId != 0) {
+            view.setBackgroundResource(tv.resourceId);
+        }
+    }
+
+    /**
      * Call in Activity.onCreate() BEFORE setContentView().
      * Returns the flat or gradient style depending on the gradient toggle.
      */

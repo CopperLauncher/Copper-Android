@@ -2,6 +2,7 @@ package net.kdt.pojavlaunch.fragments;
 
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -57,11 +58,22 @@ public class RightPaneHomeFragment extends Fragment {
             if (d != null) {
                 wallpaper.setImageDrawable(d);
                 wallpaper.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                wallpaper.setBackground(null);
                 wallpaper.setVisibility(View.VISIBLE);
                 return;
             }
         }
-        // No custom bg — hide the ImageView; pane shows its plain background colour.
-        wallpaper.setVisibility(View.GONE);
+        // No custom bg — show the gradient drawable as the pane background if gradient is on,
+        // otherwise stay transparent (root fragment_launcher bg shows through).
+        wallpaper.setImageDrawable(null);
+        TypedValue tv = new TypedValue();
+        view.getContext().getTheme().resolveAttribute(R.attr.bgMainDrawable, tv, true);
+        if (tv.resourceId != 0) {
+            wallpaper.setBackgroundResource(tv.resourceId);
+            wallpaper.setVisibility(View.VISIBLE);
+        } else {
+            wallpaper.setBackground(null);
+            wallpaper.setVisibility(View.GONE);
+        }
     }
 }
