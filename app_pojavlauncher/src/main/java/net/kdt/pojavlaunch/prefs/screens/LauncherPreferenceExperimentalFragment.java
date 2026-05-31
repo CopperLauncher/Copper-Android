@@ -49,6 +49,12 @@ public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFr
                     force ? SCREEN_ORIENTATION_SENSOR_LANDSCAPE : SCREEN_ORIENTATION_UNSPECIFIED);
             return true;
         });
+
+        SwitchPreferenceCompat gradientPref = requirePreference("enable_bg_gradient", SwitchPreferenceCompat.class);
+        gradientPref.setOnPreferenceChangeListener((preference, newValue) -> {
+            requireActivity().recreate();
+            return true;
+        });
     }
 
     // ── Custom background ─────────────────────────────────────────────────────
