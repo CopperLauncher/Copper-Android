@@ -8,8 +8,8 @@
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
-        <item name="android:statusBarColor">@color/cu_bg_status_bar</item>
-        <item name="android:navigationBarColor">@color/cu_bg_app</item>
+        <item name="android:statusBarColor">#181818</item>
+        <item name="android:navigationBarColor">#181818</item>
         <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
         <item name="android:textSize">@dimen/_14ssp</item>
         <item name="colorBgApp">@color/cu_bg_app</item>
@@ -31,8 +31,8 @@
 
     <!-- ── Midnight Blue ────────────────────────────────────── -->
     <style name="AppTheme.MidnightBlue">
-        <item name="android:statusBarColor">@color/mb_bg_status_bar</item>
-        <item name="android:navigationBarColor">@color/mb_bg_app</item>
+        <item name="android:statusBarColor">#181818</item>
+        <item name="android:navigationBarColor">#181818</item>
         <item name="colorBgApp">@color/mb_bg_app</item>
         <item name="colorBgBottomBar">#181818</item>
         <item name="colorBgStatusBar">#181818</item>
@@ -54,8 +54,8 @@
 
     <!-- ── Forest Green ─────────────────────────────────────── -->
     <style name="AppTheme.ForestGreen">
-        <item name="android:statusBarColor">@color/fg_bg_status_bar</item>
-        <item name="android:navigationBarColor">@color/fg_bg_app</item>
+        <item name="android:statusBarColor">#181818</item>
+        <item name="android:navigationBarColor">#181818</item>
         <item name="colorBgApp">@color/fg_bg_app</item>
         <item name="colorBgBottomBar">#181818</item>
         <item name="colorBgStatusBar">#181818</item>
@@ -77,8 +77,8 @@
 
     <!-- ── Crimson ───────────────────────────────────────────── -->
     <style name="AppTheme.Crimson">
-        <item name="android:statusBarColor">@color/cr_bg_status_bar</item>
-        <item name="android:navigationBarColor">@color/cr_bg_app</item>
+        <item name="android:statusBarColor">#181818</item>
+        <item name="android:navigationBarColor">#181818</item>
         <item name="colorBgApp">@color/cr_bg_app</item>
         <item name="colorBgBottomBar">#181818</item>
         <item name="colorBgStatusBar">#181818</item>
@@ -100,8 +100,8 @@
 
     <!-- ── Amethyst ──────────────────────────────────────────── -->
     <style name="AppTheme.Amethyst">
-        <item name="android:statusBarColor">@color/am_bg_status_bar</item>
-        <item name="android:navigationBarColor">@color/am_bg_app</item>
+        <item name="android:statusBarColor">#181818</item>
+        <item name="android:navigationBarColor">#181818</item>
         <item name="colorBgApp">@color/am_bg_app</item>
         <item name="colorBgBottomBar">#181818</item>
         <item name="colorBgStatusBar">#181818</item>
@@ -123,8 +123,8 @@
 
     <!-- ── Arctic ───────────────────────────────────────────── -->
     <style name="AppTheme.Arctic">
-        <item name="android:statusBarColor">@color/ar_bg_status_bar</item>
-        <item name="android:navigationBarColor">@color/ar_bg_app</item>
+        <item name="android:statusBarColor">#181818</item>
+        <item name="android:navigationBarColor">#181818</item>
         <item name="colorBgApp">@color/ar_bg_app</item>
         <item name="colorBgBottomBar">#181818</item>
         <item name="colorBgStatusBar">#181818</item>
