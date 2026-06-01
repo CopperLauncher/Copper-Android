@@ -21,14 +21,14 @@
         <item name="colorTextSecondary">@color/secondary_text</item>
         <item name="bgMainDrawable">#181818</item>
         <item name="android:windowBackground">#181818</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#ff5900</item>
     </style>
     <style name="AppTheme.Gradient">
         <item name="bgMainDrawable">@drawable/bg_gradient_copper</item>
         <item name="android:windowBackground">@drawable/bg_gradient_copper</item>
         <item name="colorBgBottomBar">@color/cu_bg_bottom_bar</item>
         <item name="colorBgStatusBar">@color/cu_bg_status_bar</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#ff5900</item>
     </style>
 
     <!-- ── Midnight Blue ────────────────────────────────────── -->
@@ -44,7 +44,7 @@
         <item name="colorTextSecondary">@color/mb_text_secondary</item>
         <item name="bgMainDrawable">#181818</item>
         <item name="android:windowBackground">#181818</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#1E90FF</item>
     </style>
     <style name="AppTheme.MidnightBlue.Gradient">
         <item name="android:statusBarColor">@color/mb_bg_status_bar</item>
@@ -53,7 +53,7 @@
         <item name="android:windowBackground">@drawable/bg_gradient_midnight_blue</item>
         <item name="colorBgBottomBar">@color/mb_bg_bottom_bar</item>
         <item name="colorBgStatusBar">@color/mb_bg_status_bar</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#1E90FF</item>
     </style>
 
     <!-- ── Forest Green ─────────────────────────────────────── -->
@@ -69,7 +69,7 @@
         <item name="colorTextSecondary">@color/fg_text_secondary</item>
         <item name="bgMainDrawable">#181818</item>
         <item name="android:windowBackground">#181818</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#4CAF50</item>
     </style>
     <style name="AppTheme.ForestGreen.Gradient">
         <item name="android:statusBarColor">@color/fg_bg_status_bar</item>
@@ -78,7 +78,7 @@
         <item name="android:windowBackground">@drawable/bg_gradient_forest_green</item>
         <item name="colorBgBottomBar">@color/fg_bg_bottom_bar</item>
         <item name="colorBgStatusBar">@color/fg_bg_status_bar</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#4CAF50</item>
     </style>
 
     <!-- ── Crimson ───────────────────────────────────────────── -->
@@ -94,7 +94,7 @@
         <item name="colorTextSecondary">@color/cr_text_secondary</item>
         <item name="bgMainDrawable">#181818</item>
         <item name="android:windowBackground">#181818</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#E53935</item>
     </style>
     <style name="AppTheme.Crimson.Gradient">
         <item name="android:statusBarColor">@color/cr_bg_status_bar</item>
@@ -103,7 +103,7 @@
         <item name="android:windowBackground">@drawable/bg_gradient_crimson</item>
         <item name="colorBgBottomBar">@color/cr_bg_bottom_bar</item>
         <item name="colorBgStatusBar">@color/cr_bg_status_bar</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#E53935</item>
     </style>
 
     <!-- ── Amethyst ──────────────────────────────────────────── -->
@@ -119,7 +119,7 @@
         <item name="colorTextSecondary">@color/am_text_secondary</item>
         <item name="bgMainDrawable">#181818</item>
         <item name="android:windowBackground">#181818</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#9C27B0</item>
     </style>
     <style name="AppTheme.Amethyst.Gradient">
         <item name="android:statusBarColor">@color/am_bg_status_bar</item>
@@ -128,7 +128,7 @@
         <item name="android:windowBackground">@drawable/bg_gradient_amethyst</item>
         <item name="colorBgBottomBar">@color/am_bg_bottom_bar</item>
         <item name="colorBgStatusBar">@color/am_bg_status_bar</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#9C27B0</item>
     </style>
 
     <!-- ── Arctic ───────────────────────────────────────────── -->
@@ -144,7 +144,7 @@
         <item name="colorTextSecondary">@color/ar_text_secondary</item>
         <item name="bgMainDrawable">#181818</item>
         <item name="android:windowBackground">#181818</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#00BCD4</item>
     </style>
     <style name="AppTheme.Arctic.Gradient">
         <item name="android:statusBarColor">@color/ar_bg_status_bar</item>
@@ -153,7 +153,7 @@
         <item name="android:windowBackground">@drawable/bg_gradient_arctic</item>
         <item name="colorBgBottomBar">@color/ar_bg_bottom_bar</item>
         <item name="colorBgStatusBar">@color/ar_bg_status_bar</item>
-        <item name="colorAccent">#64B5F6</item>
+        <item name="colorAccent">#00BCD4</item>
     </style>
 
     <style name="LauncherMenuButton.Universal" parent="LauncherMenuButton">
