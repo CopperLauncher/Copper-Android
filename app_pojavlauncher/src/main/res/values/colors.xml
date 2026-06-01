@@ -7,16 +7,20 @@
 
     <!-- Main Button (hot copper highlight - toned down for consistency) -->
     <color name="minebutton_color">#ff5900</color>
+    <color name="cu_bg_app">#1A0E00</color>
+    <color name="cu_bg_status_bar">#2A1800</color>
+    <color name="cu_bg_bottom_bar">#231200</color>
+    <color name="cu_divider">#3D2200</color>
 
     <!-- BACKGROUND SYSTEM (COPPER METAL THEME) -->
     <!-- Dark copper layered surfaces -->
 
-    <color name="background_app">#1A0E00</color>
+    <color name="background_app">#181818</color>
     <color name="background_overlay">#464646</color>      
     <color name="background_surface">#464646</color>      
     <color name="divider">#464646</color>                
-    <color name="background_status_bar">#2A1800</color>
-    <color name="background_bottom_bar">#231200</color>
+    <color name="background_status_bar">#232323</color>
+    <color name="background_bottom_bar">#272727</color>
 
     <!-- TEXT (FIXED: removed orange tint, improved readability) -->
     <color name="primary_text">#F5F5F5</color>
