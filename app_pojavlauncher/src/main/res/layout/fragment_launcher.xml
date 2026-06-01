@@ -159,6 +159,7 @@
         android:layout_width="0dp"
         android:layout_height="@dimen/_52sdp"
         android:background="@android:color/transparent"
+        android:scrollbarThumbVertical="?attr/copperAccent"
         android:drawableEnd="@drawable/spinner_arrow"
         app:drawableEndSize="@dimen/padding_heavy"
         app:drawableStartIntegerScaling="true"
