@@ -320,7 +320,7 @@
     <string name="preference_colour_reset">Reset to default</string>
     <string name="preference_colour_theme_applied">Theme applied. Restart the launcher for full effect.</string>
     <string name="preference_bg_gradient_title">Background Color</string>
-    <string name="preference_bg_gradient_summary">Enable theme background colours.</string>
+    <string name="preference_bg_gradient_summary">Enable theme background colors.</string>
     <string name="version_select_hint">Select a version</string>
     <string name="forge_dl_progress">Downloading installer for %s</string>
     <string name="forge_dl_searching">Searching for Forge version number</string>
