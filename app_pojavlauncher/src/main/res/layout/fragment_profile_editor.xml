@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_app"
+    android:background="?attr/bgMainDrawable"
     android:orientation="vertical"
     >
     <ScrollView
@@ -13,7 +13,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fadeScrollbars="true"
-        android:scrollbarThumbVertical="@color/minebutton_color">
+        android:scrollbarThumbVertical="?attr/colorAccent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -21,7 +21,7 @@
             android:paddingHorizontal="@dimen/fragment_padding_medium">
 
             <ImageView
-                android:id="@+id/vprof_editor_profile_icon"
+                android:id="@+id/vprof_editor_profile_icon"S
                 android:layout_width="@dimen/_50sdp"
                 android:layout_height="@dimen/_50sdp"
                 android:layout_marginTop="@dimen/padding_heavy"
