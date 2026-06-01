@@ -21,12 +21,11 @@
             android:paddingHorizontal="@dimen/fragment_padding_medium">
 
             <ImageView
-                android:id="@+id/vprof_editor_profile_icon"S
+                android:id="@+id/vprof_editor_profile_icon"
                 android:layout_width="@dimen/_50sdp"
                 android:layout_height="@dimen/_50sdp"
                 android:layout_marginTop="@dimen/padding_heavy"
                 android:paddingHorizontal="@dimen/profile_editor_image_padding"
-
                 android:paddingVertical="@dimen/profile_editor_image_padding"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
