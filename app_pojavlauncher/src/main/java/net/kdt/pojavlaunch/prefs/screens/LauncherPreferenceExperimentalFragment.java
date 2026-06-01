@@ -102,22 +102,6 @@ public class LauncherPreferenceExperimentalFragment extends LauncherPreferenceFr
             showPresetDialog();
             return true;
         });
-
-        // Button 2: generate from custom background via Palette API
-        requirePreference("colour_theme_from_bg").setOnPreferenceClickListener(p -> {
-            File bgFile = new File(RightPaneHomeFragment.CUSTOM_BG_PATH);
-            if (!bgFile.exists()) {
-                toast(R.string.preference_colour_from_bg_no_image);
-                return true;
-            }
-            boolean ok = ThemeManager.applyFromCustomBackground();
-            if (ok) {
-                requireActivity().recreate();
-            } else {
-                toast(R.string.preference_colour_from_bg_error);
-            }
-            return true;
-        });
     }
 
     private void showPresetDialog() {

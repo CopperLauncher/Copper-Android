@@ -317,15 +317,10 @@
     <string name="preference_custom_bg_error">Failed to load the selected image.</string>
     <string name="preference_colour_presets_title">Colour theme presets</string>
     <string name="preference_colour_presets_summary">Choose a built-in colour scheme or reset to default.</string>
-    <string name="preference_colour_from_bg_title">Generate theme from background</string>
-    <string name="preference_colour_from_bg_summary">Use the Palette API to extract colours from your custom background image.</string>
-    <string name="preference_colour_from_bg_no_image">No custom background set. Set one first.</string>
-    <string name="preference_colour_from_bg_success">Theme colours extracted from background.</string>
-    <string name="preference_colour_from_bg_error">Could not extract colours from the image.</string>
     <string name="preference_colour_reset">Reset to default</string>
     <string name="preference_colour_theme_applied">Theme applied. Restart the launcher for full effect.</string>
-    <string name="preference_bg_gradient_title">Background gradient</string>
-    <string name="preference_bg_gradient_summary">Fade the background from top to bottom using the theme colours.</string>
+    <string name="preference_bg_gradient_title">Background Color</string>
+    <string name="preference_bg_gradient_summary">Enable theme background colours.</string>
     <string name="version_select_hint">Select a version</string>
     <string name="forge_dl_progress">Downloading installer for %s</string>
     <string name="forge_dl_searching">Searching for Forge version number</string>
