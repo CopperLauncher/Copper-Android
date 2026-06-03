@@ -225,7 +225,7 @@
     <string name="preference_force_english_description">Allows you to see original strings, as intended by developers. Requires a restart.</string>
     <string name="preference_edit_controls_title">Edit custom controls</string>
     <string name="preference_edit_controls_summary">Tweak the control scheme to fit your needs.</string>
-
+    
     <string name="preference_category_gyro_controls">Gyroscope controls</string>
     <string name="preference_category_virtual_mouse">Virtual mouse</string>
 
