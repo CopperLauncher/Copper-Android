@@ -462,6 +462,12 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         } catch (NumberFormatException e) { folder.mkdir(); }
 
         MinecraftAccount minecraftAccount = PojavProfile.getCurrentProfileContent(this, null);
+        if (hasMods("sodium"))
+            Logger.appendToLog("WARNING: Sodium is being used, Copper-Android does support this mod, but it may cause some visual glitches and/or crashes. If you encounter any issues, report it in our Discord server!");
+        Tools.printLauncherInfo(versionId, Tools.isValidString(minecraftProfile.javaArgs) ? minecraftProfile.javaArgs : LauncherPreferences.PREF_CUSTOM_JAVA_ARGS, Tools.getTotalDeviceMemory(this));
+        if(Tools.LOCAL_RENDERER.equals("opengles_mobileglues")) {
+            LauncherPreferences.writeMGRendererSettings();
+        }
         JREUtils.redirectAndPrintJRELog();
         LauncherProfiles.load();
         int requiredJavaVersion = 8;
