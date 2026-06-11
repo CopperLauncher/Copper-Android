@@ -227,7 +227,10 @@ class SDLJoystickHandler {
      */
     synchronized void pollInputDevices() {
         if (!firstPollDone) {
+            // FIXME: Should be moved to detecting SDL_Init directly
             MinecraftGLSurface.sdlEnabled = true;
+            // No need to call SDLSurface to refresh since this is only
+            // for controller, not touch.
             if (sDirectGamepadEnableHandler != null){
                 sDirectGamepadEnableHandler.onDirectGamepadEnabled();
             }

@@ -30,6 +30,8 @@ import android.view.WindowManager;
 
 import android.view.ScaleGestureDetector;
 
+import net.kdt.pojavlaunch.Tools;
+
 /**
     SDLSurface. This is what we draw on, so we need to know when it's created
     in order to do anything useful.
@@ -120,6 +122,11 @@ public class SDLSurface extends SurfaceView implements SurfaceHolder.Callback,
 
         mIsSurfaceReady = false;
         SDLActivity.onNativeSurfaceDestroyed();
+    }
+
+    public void surfaceChanged(){
+        // The first two args are ignored
+        surfaceChanged(null, 0, Tools.currentDisplayMetrics.widthPixels, Tools.currentDisplayMetrics.heightPixels);
     }
 
     // Called when the surface is resized

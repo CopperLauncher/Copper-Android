@@ -15,7 +15,6 @@ import android.graphics.SurfaceTexture;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Display;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -44,7 +43,6 @@ import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.utils.TouchControllerUtils;
 
-import org.libsdl.app.SDL;
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLControllerManager;
 import org.libsdl.app.SDLSurface;
@@ -114,26 +112,12 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
         mPointerCapture = new AndroidPointerCapture(touchpad, this);
     }
     protected static View.OnGenericMotionListener motionListener = (v, event) -> false;
-    private void setupSDLIfNeeded(){
-        if (LauncherPreferences.PREF_GAMEPAD_SDL_PASSTHRU) {
-//            tryEnableSDLSupport(, mNativeSurface);
-            // TODO: Use lower level HID capture that needs a dialogue box from the user for the
-            // app to fully take focus of the input devices. Might cause issues with older android
-            // versions so we don't use that right now. Needs testing.
-            // Currently tried but only identification works OOTB, inputs aren't being sent.
-
-            // TODO: Use a hook to load SDL logic depending on whether libSDL3.so is loaded.
-            try {
-                Activity activity = (MainActivity) getContext();
-                SDLSurface surface = new SDLSurface(activity);
-                motionListener = SDLActivity.getMotionListener();
-                if (mNativeSurface == null) throw new IllegalStateException("Surface not yet loaded, can't set native surface for SDLSurface");
-                SDLActivity.externalInitialize(activity, surface, ((ViewGroup)getParent()), mNativeSurface);
-                if (LauncherPreferences.PREF_GAMEPAD_FORCEDSDL_PASSTHRU) Tools.SDL.initializeControllerSubsystems();
-            } catch (UnsatisfiedLinkError ignored) {
-                // Ignore because if SDL.setupJNI(); fails, SDL wasn't loaded.
-            }
-        }
+    private static void setupSDL(Context ctx, Surface nativeSurface, ViewGroup layout){
+        SDLSurface surface = new SDLSurface(ctx);
+        motionListener = SDLActivity.getMotionListener();
+        // Sets up the Java side, must be done here or else it might run on a non-looper thread
+        org.libsdl.app.SDL.initialize();
+        SDLActivity.externalInitialize((MainActivity) ctx, surface, layout, nativeSurface);
     }
 
     /** Initialize the view and all its settings
@@ -153,7 +137,7 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
             SurfaceView surfaceView = new SurfaceView(getContext());
             mSurface = surfaceView;
             mNativeSurface = surfaceView.getHolder().getSurface();
-            setupSDLIfNeeded();
+            setupSDL(getContext(), mNativeSurface, (ViewGroup) getParent());
             surfaceView.getHolder().addCallback(new SurfaceHolder.Callback() {
                 private boolean isCalled = isAlreadyRunning;
                 @Override
@@ -196,7 +180,7 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                 @Override
                 public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
                     mNativeSurface = new Surface(surface);
-                    setupSDLIfNeeded();
+                    setupSDL(getContext(), mNativeSurface, (ViewGroup) getParent());
                     if(isCalled) {
                         JREUtils.setupBridgeWindow(mNativeSurface);
                         return;

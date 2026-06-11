@@ -350,10 +350,6 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         // Just in case that gets deleted off the internet:
         // "On Android only the main executable and LD_PRELOADs are considered to be
         // RTLD_GLOBAL, all the dependencies of the main executable remain RTLD_LOCAL." - dimitry
-        System.loadLibrary("SDL3");
-        System.loadLibrary("SDL2");
-        SDL.initialize(); // Implicitly loads SDLActivity
-        SDL.setupJNI(); // Implicitly loads SDLActivity
 
         mSingleton = singleton;
         mSurface = surface; // Must set here before set native surface
@@ -370,6 +366,10 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
         mHasFocus = true;
         mNextNativeState = NativeState.INIT;
         mCurrentNativeState = NativeState.INIT;
+    }
+
+    public static SDLSurface getSDLSurface() {
+        return mSurface;
     }
 
     protected SDLSurface createSDLSurface(Context context) {
