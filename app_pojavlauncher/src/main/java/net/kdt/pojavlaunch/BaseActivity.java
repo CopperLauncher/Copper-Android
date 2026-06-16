@@ -19,6 +19,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         LocaleUtils.setLocale(this);
         Tools.setFullscreen(this, setFullscreen());
+        Tools.ignoreNotch(shouldIgnoreNotch(), this);
         Tools.updateWindowSize(this);
     }
 
