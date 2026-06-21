@@ -96,6 +96,19 @@
     <string name="global_add">Add</string>
     <string name="manage_mods_empty">No mods installed for this profile.</string>
     <string name="manage_mods_delete_confirm">Delete %s?</string>
+    <string name="search_mod_filter">Filter mods</string>
+    <string name="mod_update">Update mod</string>
+    <string name="mod_check_updates">Check for updates</string>
+    <string name="mod_update_checking">Checking for updates…</string>
+    <string name="mod_update_available">Update available</string>
+    <string name="mod_update_none">All mods up to date</string>
+    <string name="mod_update_no_filter">Set a version filter first to check for updates</string>
+    <string name="mod_updating">Updating %s…</string>
+    <string name="mod_update_done">%s updated</string>
+    <string name="mod_update_failed">Update failed for %s</string>
+    <string name="search_mod_any_loader">Any loader</string>
+    <string name="manage_mods_filter_active">Filter active: %s / %s</string>
+    <string name="manage_mods_filter_cleared">Filter cleared</string>
     <string name="mod_install_success">%s installed to mods folder.</string>
     <string name="hint_search_mod">Search for mods</string>
     <string name="global_default">Default</string>
@@ -216,6 +229,7 @@
     <string name="preference_java_description">Java Runtimes, JVM Arguments, RAM amount and sandbox</string>
     <string name="preference_misc_title">Miscellaneous settings</string>
     <string name="preference_misc_description">Version list and libraries check</string>
+    <string name="preference_appearance_description">Custom background, colour theme and landscape mode</string>
     <string name="preference_experimental_description">Use things there with consideration, no support</string>
     <string name="preference_sustained_performance_title">Enable sustained performance mode</string>
     <string name="preference_sustained_performance_description">Limit thermal throttling by limiting peak performance.</string>
