@@ -9,8 +9,8 @@
             android:defaultValue="false"
             android:key="force_landscape"
             android:title="@string/preference_force_landscape_title"
-            android:summary="@string/preference_force_landscape_summary" />
-
+            android:summary="@string/preference_force_landscape_summary"
+            android:icon="@drawable/ic_force_landscape" />
         <!-- Set custom launcher background from gallery -->
         <Preference
             android:key="set_custom_launcher_bg"
