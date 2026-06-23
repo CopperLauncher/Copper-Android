@@ -39,6 +39,7 @@ import android.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.InputDevice;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -73,6 +74,7 @@ import net.kdt.pojavlaunch.utils.GLInfoUtils;
 import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.JSONUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
+import net.kdt.pojavlaunch.utils.McLogsApi;
 import net.kdt.pojavlaunch.utils.OldVersionsUtils;
 import net.kdt.pojavlaunch.value.DependentLibrary;
 import net.kdt.pojavlaunch.value.MinecraftAccount;
@@ -1578,9 +1580,64 @@ public final class Tools {
         return runtime;
     }
 
-    /** Triggers the share intent chooser, with the latestlog file attached to it */
+    /** Shows a dialog letting the user pick between uploading the log to mclo.gs or sharing
+     *  the raw log file directly, like before this dialog existed. */
     public static void shareLog(Context context){
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_share_log, null);
+
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setTitle(R.string.share_log_dialog_title)
+                .setView(dialogView)
+                .setNegativeButton(android.R.string.cancel, null)
+                .create();
+
+        dialogView.findViewById(R.id.share_log_mclogs_button).setOnClickListener(v -> {
+            dialog.dismiss();
+            shareLogToMcLogs(context);
+        });
+        dialogView.findViewById(R.id.share_log_file_button).setOnClickListener(v -> {
+            dialog.dismiss();
+            shareLogFile(context);
+        });
+
+        dialog.show();
+    }
+
+    /** Triggers the share intent chooser, with the latestlog file attached to it */
+    private static void shareLogFile(Context context){
         openPath(context, new File(Tools.DIR_GAME_HOME, "latestlog.txt"), true);
+    }
+
+    /** Uploads the latest log file to mclo.gs and shares the resulting link, copying it to the
+     *  clipboard as well so it isn't lost if the share sheet gets dismissed. */
+    private static void shareLogToMcLogs(Context context){
+        final File logFile = new File(Tools.DIR_GAME_HOME, "latestlog.txt");
+        final ProgressDialog progressDialog = getWaitingDialog(context, R.string.share_log_mclogs_uploading);
+
+        sExecutorService.execute(() -> {
+            try {
+                String url = McLogsApi.upload(logFile);
+                Tools.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+
+                    ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if(clipboardManager != null) clipboardManager.setPrimaryClip(ClipData.newPlainText("mclo.gs", url));
+                    Toast.makeText(context, R.string.share_log_mclogs_copied, Toast.LENGTH_SHORT).show();
+
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, url);
+                    Intent chooserIntent = Intent.createChooser(shareIntent, url);
+                    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(chooserIntent);
+                });
+            } catch (IOException e) {
+                Tools.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    Tools.showError(context, R.string.share_log_mclogs_error, e);
+                });
+            }
+        });
     }
 
     /**
