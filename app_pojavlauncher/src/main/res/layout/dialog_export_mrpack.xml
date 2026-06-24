@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_large">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/export_mrpack_name_label"
+            android:textColor="?attr/colorTextSecondary"
+            android:textSize="@dimen/_11ssp" />
+
+        <EditText
+            android:id="@+id/export_mrpack_name_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="@drawable/background_line"
+            android:ems="10"
+            android:hint="@string/export_mrpack_name_hint"
+            android:inputType="text"
+            android:paddingHorizontal="@dimen/padding_heavy"
+            android:textSize="@dimen/_13ssp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_extra_large"
+            android:text="@string/export_mrpack_version_label"
+            android:textColor="?attr/colorTextSecondary"
+            android:textSize="@dimen/_11ssp" />
+
+        <EditText
+            android:id="@+id/export_mrpack_version_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="@drawable/background_line"
+            android:ems="10"
+            android:inputType="text"
+            android:paddingHorizontal="@dimen/padding_heavy"
+            android:textSize="@dimen/_13ssp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_extra_large"
+            android:text="@string/export_mrpack_description_label"
+            android:textColor="?attr/colorTextSecondary"
+            android:textSize="@dimen/_11ssp" />
+
+        <EditText
+            android:id="@+id/export_mrpack_description_input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="@drawable/background_line"
+            android:gravity="top|start"
+            android:hint="@string/export_mrpack_description_hint"
+            android:inputType="textMultiLine"
+            android:minLines="3"
+            android:paddingHorizontal="@dimen/padding_heavy"
+            android:paddingVertical="@dimen/padding_medium"
+            android:textSize="@dimen/_13ssp" />
+
+        <View
+            style="@style/ThickDivider"
+            android:layout_marginTop="@dimen/padding_extra_large" />
+
+        <LinearLayout
+            android:id="@+id/export_mrpack_files_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/_36sdp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="@dimen/_14sdp"
+                android:layout_height="@dimen/_14sdp"
+                android:layout_marginEnd="@dimen/padding_heavy"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_sharp_settings_24" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/export_mrpack_files_header"
+                android:textColor="?attr/colorTextPrimary"
+                android:textSize="@dimen/_12ssp" />
+
+            <ImageView
+                android:id="@+id/export_mrpack_files_chevron"
+                android:layout_width="@dimen/_10sdp"
+                android:layout_height="@dimen/_10sdp"
+                android:layout_marginStart="@dimen/padding_heavy"
+                android:contentDescription="@null"
+                android:src="@drawable/spinner_arrow" />
+
+        </LinearLayout>
+
+        <View style="@style/ThickDivider" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/export_mrpack_file_tree"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_medium" />
+
+        <View
+            style="@style/ThickDivider"
+            android:layout_marginBottom="@dimen/padding_extra_large" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.kdt.mcgui.MineButton
+                android:id="@+id/export_mrpack_cancel_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/padding_medium"
+                android:layout_weight="1"
+                android:text="@android:string/cancel" />
+
+            <com.kdt.mcgui.MineButton
+                android:id="@+id/export_mrpack_confirm_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_medium"
+                android:layout_weight="1"
+                android:text="@string/export_mrpack_export_button" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

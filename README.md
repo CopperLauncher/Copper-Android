@@ -36,8 +36,8 @@ Copper is a fork of [Amethyst](https://github.com/AngelAuraMC/Amethyst-Android) 
 
 ## Introduction
 
-* Copper is a Minecraft: Java Edition launcher for Android based on [Boardwalk](https://github.com/zhuowei/Boardwalk) and [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)
-* This launcher can launch almost all available Minecraft versions ranging from rd-132211 to 1.21 snapshots (including Combat Test versions)
+* Copper is a Minecraft: Java Edition launcher for Android based on [Boardwalk](https://github.com/zhuowei/Boardwalk), [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher) and [Amethyst Launcher](https://github.com/AngelAuraMC/Amethyst-Android).
+* This launcher can launch almost all available Minecraft versions ranging from rd-132211 to 26.x snapshots (including Combat Test versions)
 * Modding via Forge and Fabric are also supported.
 * This repository contains source code for Android.
 
@@ -87,7 +87,9 @@ If you need more control over the build process, follow these steps:
 
 * [x] New UI
 * [x] Bug Fixes
-* [ ] Fix GL4ES and KW in older versions
+* [x] Fix GL4ES and KW in older versions
+* [x] Add Modpack export
+* [x] Add mclo.gs 
 * [ ] Add More Renders
 
 
@@ -127,6 +129,7 @@ Copper is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-A
 * [SDL3](https://github.com/libsdl-org/SDL): [zlib License](https://github.com/libsdl-org/SDL/blob/main/LICENSE.txt)
 * [sdl2-compat](https://github.com/libsdl-org/sdl2-compat): [zlib License](https://github.com/libsdl-org/sdl2-compat/blob/main/LICENSE.txt)
 * Thanks to [MCHeads](https://mc-heads.net) for providing Minecraft avatars.
+* Thanks to [Modrinth](https://api.modrinth.com/), [CurseForge](https://docs.curseforge.com/rest-api/) and [McLo.gs](https://api.mclo.gs) for providing us the free API's.
 
 ## Roadmap
 

@@ -3,6 +3,7 @@ package net.kdt.pojavlaunch.utils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,6 +11,7 @@ import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 public class ZipUtils {
     /**
@@ -51,5 +53,35 @@ public class ZipUtils {
                 IOUtils.copy(inputStream, outputStream);
             }
         }
+    }
+
+    /**
+     * Writes a raw byte array as a new entry in an open ZipOutputStream.
+     * Used to write modrinth.index.json into a .mrpack being built.
+     * @param zipOutputStream the open ZipOutputStream to write into
+     * @param entryName the full path of the entry inside the zip
+     * @param data the raw bytes to write as the entry's content
+     * @throws IOException if writing the entry failed
+     */
+    public static void putBytes(ZipOutputStream zipOutputStream, String entryName, byte[] data) throws IOException {
+        zipOutputStream.putNextEntry(new ZipEntry(entryName));
+        zipOutputStream.write(data);
+        zipOutputStream.closeEntry();
+    }
+
+    /**
+     * Copies a file on disk into an open ZipOutputStream as a new entry.
+     * Used to write override files into a .mrpack being built.
+     * @param zipOutputStream the open ZipOutputStream to write into
+     * @param entryName the full path of the entry inside the zip
+     * @param file the source file to copy the content of
+     * @throws IOException if reading the source file or writing the entry failed
+     */
+    public static void putFile(ZipOutputStream zipOutputStream, String entryName, File file) throws IOException {
+        zipOutputStream.putNextEntry(new ZipEntry(entryName));
+        try (InputStream inputStream = new FileInputStream(file)) {
+            IOUtils.copy(inputStream, zipOutputStream);
+        }
+        zipOutputStream.closeEntry();
     }
 }

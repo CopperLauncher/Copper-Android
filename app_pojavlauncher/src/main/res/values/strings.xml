@@ -388,6 +388,24 @@
     <string name="modpack_install_notification_success">Click here to finish modpack installation</string>
     <string name="modpack_install_notification_data_not_available">Failed to download mod loader information</string>
     <string name="modpack_install_modloader_download_failed">Failed to download the mod loader files</string>
+
+    <string name="export_mrpack_button">Export as .mrpack</string>
+    <string name="export_mrpack_dialog_title">Export modpack</string>
+    <string name="export_mrpack_name_label">Modpack Name</string>
+    <string name="export_mrpack_name_hint">Modpack name</string>
+    <string name="export_mrpack_version_label">Version number</string>
+    <string name="export_mrpack_description_label">Description</string>
+    <string name="export_mrpack_description_hint">Enter modpack description…</string>
+    <string name="export_mrpack_files_header">Configure which files are included in this export</string>
+    <string name="export_mrpack_export_button">Export</string>
+    <string name="export_mrpack_progress_preparing">Preparing export…</string>
+    <string name="export_mrpack_progress_hashing">Hashing mods (%1$d/%2$d)</string>
+    <string name="export_mrpack_progress_checking">Checking mods on Modrinth…</string>
+    <string name="export_mrpack_progress_packaging">Packaging files (%1$d/%2$d)</string>
+    <string name="export_mrpack_success">Modpack exported — tap to share %1$s</string>
+    <string name="export_mrpack_error">Failed to export modpack</string>
+    <string name="export_mrpack_name_required">Please enter a modpack name</string>
+    <string name="export_mrpack_mc_version_unknown">Couldn\'t automatically detect this instance\'s Minecraft version. The exported pack may not specify one.</string>
     <string name="modpack_install_download_failed">Failed to download modpack files</string>
     <string name="modpack_install_button">Create modpack profile</string>
 
