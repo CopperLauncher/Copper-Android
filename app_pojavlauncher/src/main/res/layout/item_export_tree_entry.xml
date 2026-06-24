@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:minHeight="@dimen/_32sdp"
+    android:paddingStart="@dimen/padding_medium"
+    android:paddingEnd="@dimen/padding_medium"
+    android:background="?attr/selectableItemBackground">
+
+    <View
+        android:id="@+id/export_entry_indent"
+        android:layout_width="0dp"
+        android:layout_height="1dp" />
+
+    <CheckBox
+        android:id="@+id/export_entry_checkbox"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/padding_heavy"
+        android:buttonTint="?attr/copperAccent" />
+
+    <TextView
+        android:id="@+id/export_entry_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textSize="@dimen/_12ssp"
+        android:textColor="?attr/colorTextPrimary"
+        android:ellipsize="end"
+        android:singleLine="true" />
+
+    <ImageView
+        android:id="@+id/export_entry_chevron"
+        android:layout_width="@dimen/_10sdp"
+        android:layout_height="@dimen/_10sdp"
+        android:layout_marginStart="@dimen/padding_heavy"
+        android:rotation="180"
+        android:src="@drawable/spinner_arrow"
+        android:contentDescription="@null" />
+
+</LinearLayout>
