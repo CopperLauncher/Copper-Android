@@ -218,6 +218,19 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 ? fileVersion.get("project_id").getAsString() : null;
         if (projectId == null) return;
 
+        // The version this exact jar belongs to, per Modrinth. This is the
+        // canonical identity we compare against below — NOT the file name.
+        // Mods installed from a modpack are saved under whatever file name the
+        // pack's modrinth.index.json recorded, which can legitimately differ
+        // from Modrinth's current "primary file" name for that same version
+        // (the content/hash is identical, only the on-disk name differs). A
+        // name-only comparison flags those as having an update every time,
+        // and clicking "update" just re-downloads the identical version under
+        // Modrinth's canonical name — after which the name matches and the
+        // false positive disappears, i.e. it only happens once per mod.
+        String currentVersionId = fileVersion.has("id")
+                ? fileVersion.get("id").getAsString() : null;
+
         // 3. Get all versions of the project filtered by our mc version + loader
         java.util.HashMap<String, Object> params = new java.util.HashMap<>();
         if (!mFilterMcVersion.isEmpty()) params.put("game_versions", "[\"" + mFilterMcVersion + "\"]");
@@ -228,6 +241,11 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
         // Modrinth returns newest first — index 0 is the latest
         JsonObject latest = versions.get(0).getAsJsonObject();
+
+        // If the installed file is already the latest version, there's
+        // nothing to do — regardless of what its file name happens to be.
+        String latestVersionId = latest.has("id") ? latest.get("id").getAsString() : null;
+        if (currentVersionId != null && currentVersionId.equals(latestVersionId)) return;
 
         // 4. Get the latest version's primary file name
         JsonArray files = latest.getAsJsonArray("files");
@@ -248,14 +266,11 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         String latestFileName = latestUrl.substring(latestUrl.lastIndexOf('/') + 1);
         if (latestFileName.contains("?")) latestFileName = latestFileName.substring(0, latestFileName.indexOf('?'));
 
-        // 5. Compare — if the file name differs, an update is available
-        String currentName = entry.file.getName();
-        if (currentName.endsWith(".disabled")) currentName = currentName.replace(".disabled", "");
-
-        if (!currentName.equalsIgnoreCase(latestFileName)) {
-            entry.updateUrl      = latestUrl;
-            entry.updateFileName = latestFileName;
-        }
+        // 5. Reaching here means the early-return above didn't fire, i.e. the
+        // installed file's version id is missing or genuinely differs from
+        // the latest version id — a real update, independent of file naming.
+        entry.updateUrl      = latestUrl;
+        entry.updateFileName = latestFileName;
     }
 
     /** Downloads the update, replaces the existing jar, refreshes the entry. */
