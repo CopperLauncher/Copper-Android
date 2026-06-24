@@ -126,7 +126,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal">
 
-            <Button
+            <com.kdt.mcgui.MineButton
                 android:id="@+id/export_mrpack_cancel_button"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
