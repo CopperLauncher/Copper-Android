@@ -67,7 +67,6 @@ public class ExportMrpackDialog {
 
         RecyclerView treeRecyclerView = dialogView.findViewById(R.id.export_mrpack_file_tree);
         treeRecyclerView.setLayoutManager(new LinearLayoutManager(activity));
-        treeRecyclerView.setNestedScrollingEnabled(false);
         int indentPx = activity.getResources().getDimensionPixelSize(R.dimen._14sdp);
         treeRecyclerView.setAdapter(new ExportFileTreeAdapter(instanceDir, overrides, indentPx));
 

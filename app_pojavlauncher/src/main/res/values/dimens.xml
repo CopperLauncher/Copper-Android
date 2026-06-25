@@ -31,4 +31,8 @@
     <dimen name="fragment_padding_medium">@dimen/_10sdp</dimen>
     <!-- Misc paddings -->
     <dimen name="profile_editor_image_padding">@dimen/padding_small</dimen>
+
+    <!-- Bounds the .mrpack export file tree so it scrolls on its own instead of growing the
+         whole dialog when a folder with lots of files (e.g. mods/) is expanded. -->
+    <dimen name="export_mrpack_file_list_height">240dp</dimen>
 </resources>

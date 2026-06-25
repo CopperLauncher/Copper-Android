@@ -4,12 +4,15 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.preference.PreferenceViewHolder;
 import androidx.preference.SeekBarPreference;
 
@@ -23,8 +26,12 @@ public class CustomSeekBarPreference extends SeekBarPreference {
     private int mMin;
     /** The textview associated by default to the preference */
     private TextView mTextView;
+    /** The seekbar widget associated to the preference, kept so a typed value can move it */
+    private SeekBar mSeekBar;
     /** Seekbar increment in case the max gets set */
     private final int mIncrement;
+    /** When true, tapping the value TextView opens a dialog to type an exact value */
+    private boolean mTapToSetValueEnabled = false;
 
 
     @SuppressLint("PrivateResource")
@@ -65,7 +72,14 @@ public class CustomSeekBarPreference extends SeekBarPreference {
 
         mTextView = (TextView) view.findViewById(R.id.seekbar_value);
         mTextView.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
-        SeekBar seekBar = (SeekBar) view.findViewById(R.id.seekbar);
+        mSeekBar = (SeekBar) view.findViewById(R.id.seekbar);
+        final SeekBar seekBar = mSeekBar;
+
+        if (mTapToSetValueEnabled) {
+            mTextView.setClickable(true);
+            mTextView.setFocusable(true);
+            mTextView.setOnClickListener(v -> showSetValueDialog());
+        }
 
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 
@@ -97,6 +111,49 @@ public class CustomSeekBarPreference extends SeekBarPreference {
         });
 
         updateTextViewWithSuffix();
+    }
+
+    /**
+     * Opt-in: makes the value TextView (e.g. "4096 MB") tappable, opening a
+     * dialog where an exact value can be typed instead of dragged.
+     */
+    public void enableTapToSetValue() {
+        mTapToSetValueEnabled = true;
+    }
+
+    private void showSetValueDialog() {
+        Context context = mTextView.getContext();
+
+        final EditText editText = new EditText(context);
+        editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+        editText.setText(String.valueOf(getValue()));
+        editText.setSelection(editText.getText().length());
+
+        new AlertDialog.Builder(context)
+                .setTitle(getTitle())
+                .setView(editText)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    String input = editText.getText().toString().trim();
+                    if (input.isEmpty()) return;
+
+                    int newValue;
+                    try {
+                        newValue = Integer.parseInt(input);
+                    } catch (NumberFormatException e) {
+                        return;
+                    }
+
+                    int max = getMax();
+                    if (newValue < mMin) newValue = mMin;
+                    if (newValue > max) newValue = max;
+
+                    mSeekBar.setProgress(newValue - mMin);
+                    setValue(newValue);
+                    mTextView.setText(String.valueOf(newValue));
+                    updateTextViewWithSuffix();
+                })
+                .show();
     }
 
     /**
