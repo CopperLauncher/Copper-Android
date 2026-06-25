@@ -114,8 +114,9 @@
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/export_mrpack_file_tree"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="@dimen/padding_medium" />
+            android:layout_height="@dimen/export_mrpack_file_list_height"
+            android:layout_marginBottom="@dimen/padding_medium"
+            android:scrollbars="vertical" />
 
         <View
             style="@style/ThickDivider"
