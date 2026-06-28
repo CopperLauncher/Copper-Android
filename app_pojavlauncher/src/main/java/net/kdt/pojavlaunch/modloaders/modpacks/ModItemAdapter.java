@@ -401,9 +401,15 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     break;
             }
         }
-
-        private enum InstallButtonState { INSTALL, INSTALLED, UPDATE, DOWNGRADE }
     }
+
+    /**
+     * Install button states for the search/install screen — moved out of the
+     * (non-static) ViewHolder inner class since Java forbids static
+     * declarations, which an enum implicitly is, inside non-static inner
+     * classes.
+     */
+    private enum InstallButtonState { INSTALL, INSTALLED, UPDATE, DOWNGRADE }
 
     /**
      * The view holder used to hold the progress bar at the end of the list
