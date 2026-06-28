@@ -85,6 +85,19 @@
         android:paddingHorizontal="@dimen/padding_moderate"
         android:paddingVertical="@dimen/padding_small"
         android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@+id/installed_mod_switch_version"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Switch version button — opens a kinda like Modrinth version picker for this mod :freaky_hd: -->
+    <ImageButton
+        android:id="@+id/installed_mod_switch_version"
+        android:layout_width="@dimen/_38sdp"
+        android:layout_height="@dimen/_38sdp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_swap_horiz"
+        android:padding="@dimen/padding_moderate"
+        android:contentDescription="@string/switch_mod_version_button_desc"
         app:layout_constraintEnd_toStartOf="@+id/installed_mod_toggle"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingHorizontal="@dimen/padding_heavy"
+    android:paddingTop="@dimen/padding_heavy"
+    android:paddingBottom="@dimen/padding_large">
+
+    <!-- Header -->
+    <TextView
+        android:id="@+id/switch_version_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/switch_mod_version_title"
+        android:textColor="@color/primary_text"
+        android:textStyle="bold"
+        android:textSize="@dimen/_16ssp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/switch_version_close"
+        android:singleLine="true"
+        android:ellipsize="end"
+        tools:text="Switch version — Sodium" />
+
+    <ImageButton
+        android:id="@+id/switch_version_close"
+        android:layout_width="@dimen/_32sdp"
+        android:layout_height="@dimen/_32sdp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_close"
+        android:padding="@dimen/padding_small"
+        android:contentDescription="@android:string/cancel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Search box -->
+    <EditText
+        android:id="@+id/switch_version_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_heavy"
+        android:background="@drawable/background_line"
+        android:hint="@string/switch_mod_version_search_hint"
+        android:inputType="text"
+        android:imeOptions="actionSearch"
+        android:maxLines="1"
+        android:paddingHorizontal="@dimen/padding_heavy"
+        android:paddingVertical="@dimen/padding_moderate"
+        android:textSize="@dimen/_13ssp"
+        app:layout_constraintTop_toBottomOf="@id/switch_version_title" />
+
+    <!-- Loading state -->
+    <ProgressBar
+        android:id="@+id/switch_version_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_large"
+        app:layout_constraintTop_toBottomOf="@id/switch_version_search"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Error / empty state -->
+    <LinearLayout
+        android:id="@+id/switch_version_error_layout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_marginTop="@dimen/padding_large"
+        app:layout_constraintTop_toBottomOf="@id/switch_version_search"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/switch_version_error_textview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/secondary_text"
+            android:textAlignment="center"
+            android:text="@string/switch_mod_version_no_versions" />
+
+        <Button
+            android:id="@+id/switch_version_retry_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_moderate"
+            android:text="@string/switch_mod_version_retry" />
+
+    </LinearLayout>
+
+    <!-- Version list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/switch_version_list"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/padding_moderate"
+        android:clipToPadding="false"
+        app:layout_constraintTop_toBottomOf="@id/switch_version_search"
+        app:layout_constraintBottom_toTopOf="@id/switch_version_toggle_incompatible"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Show/hide incompatible toggle -->
+    <TextView
+        android:id="@+id/switch_version_toggle_incompatible"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_moderate"
+        android:background="?android:attr/selectableItemBackground"
+        android:padding="@dimen/padding_moderate"
+        android:textColor="@color/secondary_text"
+        android:textSize="@dimen/_12ssp"
+        android:text="@string/switch_mod_version_show_incompatible"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/switch_version_warning" />
+
+    <!-- Warning footer -->
+    <TextView
+        android:id="@+id/switch_version_warning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_moderate"
+        android:text="@string/switch_mod_version_warning"
+        android:textColor="@color/mod_version_incompatible"
+        android:textSize="@dimen/_10ssp"
+        app:layout_constraintBottom_toTopOf="@id/switch_version_cancel" />
+
+    <!-- Cancel button -->
+    <Button
+        android:id="@+id/switch_version_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/padding_moderate"
+        android:text="@android:string/cancel"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

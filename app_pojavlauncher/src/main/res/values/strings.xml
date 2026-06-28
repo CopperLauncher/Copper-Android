@@ -111,6 +111,33 @@
     <string name="manage_mods_filter_cleared">Filter cleared</string>
     <string name="mod_install_success">%s installed to mods folder.</string>
     <string name="hint_search_mod">Search for mods</string>
+
+    <!-- Install button states (search/install screen) -->
+    <string name="mod_install_installed">Installed</string>
+    <string name="mod_install_update">Update</string>
+    <string name="mod_install_downgrade">Downgrade</string>
+    <string name="mod_reinstall_confirm_title">Re-install mod?</string>
+    <string name="mod_reinstall_confirm_message">%s is already installed at this version. Re-install it anyway?</string>
+
+    <!-- Switch mod version dialog (Manage Mods) -->
+    <string name="switch_mod_version_button_desc">Switch version</string>
+    <string name="switch_mod_version_title">Switch version</string>
+    <string name="switch_mod_version_search_hint">Search version…</string>
+    <string name="switch_mod_version_current">Current</string>
+    <string name="switch_mod_version_show_incompatible">Show incompatible</string>
+    <string name="switch_mod_version_hide_incompatible">Hide incompatible</string>
+    <string name="switch_mod_version_warning">Switching versions can break your instance. Review version changelogs and back up first.</string>
+    <string name="switch_mod_version_switch_to">Switch to %s</string>
+    <string name="switch_mod_version_loading">Loading versions…</string>
+    <string name="switch_mod_version_no_versions">No versions found for this mod.</string>
+    <string name="switch_mod_version_not_found">Couldn\'t find this mod on Modrinth — it may have been installed from another source.</string>
+    <string name="switch_mod_version_retry">Retry</string>
+    <string name="switch_mod_version_confirm_title">Switch version?</string>
+    <string name="switch_mod_version_confirm_message">Switch %1$s to version %2$s? This will replace the currently installed jar.</string>
+    <string name="switch_mod_version_confirm_reinstall_message">This is the currently installed version of %1$s. Re-install it anyway?</string>
+    <string name="switch_mod_version_switching">Switching %s…</string>
+    <string name="switch_mod_version_done">%1$s switched to %2$s</string>
+    <string name="switch_mod_version_failed">Failed to switch version for %s</string>
     <string name="global_default">Default</string>
     <string name="global_off">Off</string>
 

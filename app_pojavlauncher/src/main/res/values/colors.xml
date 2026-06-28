@@ -71,4 +71,11 @@
     <color name="ar_text_primary">#E0F7FA</color>
     <color name="ar_text_secondary">#80C8D4</color>
 
+    <!-- ── Mod version switch dialog ────────────────────────────────── -->
+    <color name="mod_version_release">#1BD96A</color>
+    <color name="mod_version_beta">#F5C722</color>
+    <color name="mod_version_alpha">#F3565D</color>
+    <color name="mod_version_incompatible">#F7A325</color>
+    <color name="mod_version_current_bg">#1BD96A</color>
+
 </resources>

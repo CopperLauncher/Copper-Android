@@ -279,22 +279,79 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         /**
          * Override getModDetails to filter versions by the selected MC version.
          * Only versions matching the filter are shown in the version dropdown.
+         * Also resolves which (if any) of the returned versions is already
+         * installed in the current instance's mods folder, so the install
+         * button can show Install / Installed / Update / Downgrade.
          */
         @Override
         public ModDetail getModDetails(ModItem item) {
+            ModDetail detail;
             if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_MODRINTH) {
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : null;
                 String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
                         ? mFilters.modLoader : null;
-                return mModrinthApi.getModDetails(item, filterVer, filterLoader);
-            }
-            if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_CURSEFORGE) {
+                detail = mModrinthApi.getModDetails(item, filterVer, filterLoader);
+            } else if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_CURSEFORGE) {
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : null;
-                return mCurseforgeApi.getModDetails(item, filterVer);
+                detail = mCurseforgeApi.getModDetails(item, filterVer);
+            } else {
+                detail = super.getModDetails(item);
             }
-            return super.getModDetails(item);
+
+            if (detail != null && !detail.isModpack) {
+                resolveInstalledVersionIndex(detail);
+            }
+            return detail;
+        }
+
+        /**
+         * Hashes every jar currently in the mods folder (enabled or disabled)
+         * and matches against detail.versionHashes to find which version, if
+         * any, is already installed. Sets detail.installedVersionIndex
+         * accordingly (-1 if this mod isn't installed at all).
+         */
+        private void resolveInstalledVersionIndex(ModDetail detail) {
+            detail.installedVersionIndex = -1;
+            if (detail.versionHashes == null || detail.versionHashes.length == 0) return;
+
+            File modsDir = getModsDir();
+            File[] files = modsDir.listFiles(f -> f.isFile() &&
+                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+            if (files == null || files.length == 0) return;
+
+            java.util.Set<String> installedHashes = new java.util.HashSet<>();
+            for (File f : files) {
+                String hash = sha1Hex(f);
+                if (hash != null) installedHashes.add(hash);
+            }
+            if (installedHashes.isEmpty()) return;
+
+            for (int i = 0; i < detail.versionHashes.length; i++) {
+                String hash = detail.versionHashes[i];
+                if (hash != null && installedHashes.contains(hash.toLowerCase(java.util.Locale.ROOT))) {
+                    detail.installedVersionIndex = i;
+                    break;
+                }
+            }
+        }
+
+        private static String sha1Hex(File file) {
+            try {
+                java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-1");
+                byte[] buffer = new byte[8192];
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                    int read;
+                    while ((read = fis.read(buffer)) != -1) digest.update(buffer, 0, read);
+                }
+                byte[] bytes = digest.digest();
+                StringBuilder sb = new StringBuilder(bytes.length * 2);
+                for (byte b : bytes) sb.append(String.format("%02x", b));
+                return sb.toString();
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         @Override

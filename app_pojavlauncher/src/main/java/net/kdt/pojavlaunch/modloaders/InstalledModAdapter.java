@@ -1,23 +1,31 @@
 package net.kdt.pojavlaunch.modloaders;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.gson.JsonArray;
@@ -319,6 +327,402 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         });
     }
 
+    // ── Switch version ───────────────────────────────────────────────────────
+
+    /**
+     * Opens a Modrinth-style "Switch version" dialog for the given mod: resolves
+     * its Modrinth project id from the installed jar's SHA1 hash, fetches every
+     * version of that project (not just ones matching the instance's mc
+     * version/loader, so the user can also see — and optionally show —
+     * incompatible versions), and lets them tap any version to switch to it.
+     */
+    private void showSwitchVersionDialog(Context context, ModEntry entry, int position) {
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_switch_mod_version, null);
+        AlertDialog dialog = new AlertDialog.Builder(context)
+                .setView(dialogView)
+                .create();
+
+        TextView titleView          = dialogView.findViewById(R.id.switch_version_title);
+        ImageButton closeButton     = dialogView.findViewById(R.id.switch_version_close);
+        EditText searchBox          = dialogView.findViewById(R.id.switch_version_search);
+        ProgressBar progressBar     = dialogView.findViewById(R.id.switch_version_progress);
+        View errorLayout            = dialogView.findViewById(R.id.switch_version_error_layout);
+        TextView errorTextView      = dialogView.findViewById(R.id.switch_version_error_textview);
+        Button retryButton          = dialogView.findViewById(R.id.switch_version_retry_button);
+        RecyclerView listView       = dialogView.findViewById(R.id.switch_version_list);
+        TextView toggleIncompatible = dialogView.findViewById(R.id.switch_version_toggle_incompatible);
+        Button cancelButton         = dialogView.findViewById(R.id.switch_version_cancel);
+
+        titleView.setText(context.getString(R.string.switch_mod_version_title) + " — " + entry.displayName());
+        closeButton.setOnClickListener(v -> dialog.dismiss());
+        cancelButton.setOnClickListener(v -> dialog.dismiss());
+
+        listView.setLayoutManager(new LinearLayoutManager(context));
+        VersionRowAdapter adapter = new VersionRowAdapter(chosen -> {
+            String message = chosen.isCurrent
+                    ? context.getString(R.string.switch_mod_version_confirm_reinstall_message, entry.displayName())
+                    : context.getString(R.string.switch_mod_version_confirm_message, entry.displayName(), chosen.versionNumber);
+            new AlertDialog.Builder(context)
+                    .setTitle(R.string.switch_mod_version_confirm_title)
+                    .setMessage(message)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(android.R.string.ok, (d, w) -> {
+                        dialog.dismiss();
+                        applySwitchVersion(context, entry, position, chosen.fileUrl, chosen.fileName, chosen.versionNumber);
+                    })
+                    .show();
+        });
+        listView.setAdapter(adapter);
+
+        final boolean[] showIncompatible = {false};
+        toggleIncompatible.setOnClickListener(v -> {
+            showIncompatible[0] = !showIncompatible[0];
+            toggleIncompatible.setText(showIncompatible[0]
+                    ? R.string.switch_mod_version_hide_incompatible
+                    : R.string.switch_mod_version_show_incompatible);
+            adapter.setShowIncompatible(showIncompatible[0]);
+        });
+
+        searchBox.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+            @Override public void afterTextChanged(Editable s) { adapter.setSearchQuery(s.toString()); }
+        });
+
+        Runnable loadVersions = () -> {
+            progressBar.setVisibility(View.VISIBLE);
+            errorLayout.setVisibility(View.GONE);
+            listView.setVisibility(View.GONE);
+
+            sUpdateCheckExecutor.execute(() -> {
+                List<VersionRow> rows = null;
+                boolean projectNotFound = false;
+                try {
+                    String sha1 = sha1Hex(entry.file);
+                    ApiHandler api = new ApiHandler(MODRINTH_API);
+                    String projectId = null;
+                    String currentVersionId = null;
+
+                    if (sha1 != null) {
+                        java.util.HashMap<String, Object> hashParams = new java.util.HashMap<>();
+                        hashParams.put("algorithm", "sha1");
+                        JsonObject fileVersion = api.get("version_file/" + sha1, hashParams, JsonObject.class);
+                        if (fileVersion != null) {
+                            if (fileVersion.has("project_id")) projectId = fileVersion.get("project_id").getAsString();
+                            if (fileVersion.has("id")) currentVersionId = fileVersion.get("id").getAsString();
+                        }
+                    }
+
+                    if (projectId == null) {
+                        projectNotFound = true;
+                    } else {
+                        JsonArray versions = api.get("project/" + projectId + "/version", JsonArray.class);
+                        if (versions != null && versions.size() > 0) {
+                            rows = new ArrayList<>();
+                            for (int i = 0; i < versions.size(); i++) {
+                                VersionRow row = parseVersionRow(versions.get(i).getAsJsonObject(), currentVersionId);
+                                if (row != null) rows.add(row);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Switch-version fetch failed for " + entry.displayName() + ": " + e.getMessage());
+                }
+
+                final List<VersionRow> finalRows = rows;
+                final boolean finalNotFound = projectNotFound;
+                mMainHandler.post(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    if (finalRows == null || finalRows.isEmpty()) {
+                        errorLayout.setVisibility(View.VISIBLE);
+                        listView.setVisibility(View.GONE);
+                        errorTextView.setText(finalNotFound
+                                ? R.string.switch_mod_version_not_found
+                                : R.string.switch_mod_version_no_versions);
+                    } else {
+                        errorLayout.setVisibility(View.GONE);
+                        listView.setVisibility(View.VISIBLE);
+                        adapter.setVersions(finalRows);
+                    }
+                });
+            });
+        };
+
+        retryButton.setOnClickListener(v -> loadVersions.run());
+        loadVersions.run();
+        dialog.show();
+    }
+
+    /** Parses one entry of Modrinth's GET /project/{id}/version response. */
+    @Nullable
+    private VersionRow parseVersionRow(JsonObject v, @Nullable String currentVersionId) {
+        try {
+            if (!v.has("id") || v.get("id").isJsonNull()) return null;
+            String id = v.get("id").getAsString();
+
+            JsonArray files = v.has("files") ? v.getAsJsonArray("files") : null;
+            JsonObject primaryFile = null;
+            if (files != null) {
+                for (int i = 0; i < files.size(); i++) {
+                    JsonObject f = files.get(i).getAsJsonObject();
+                    if (f.has("primary") && f.get("primary").getAsBoolean()) { primaryFile = f; break; }
+                }
+                if (primaryFile == null && files.size() > 0) primaryFile = files.get(0).getAsJsonObject();
+            }
+            if (primaryFile == null || !primaryFile.has("url")) return null;
+
+            String fileUrl = primaryFile.get("url").getAsString();
+            String fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+            if (fileName.contains("?")) fileName = fileName.substring(0, fileName.indexOf('?'));
+
+            VersionRow row = new VersionRow();
+            row.id = id;
+            row.versionNumber = v.has("version_number") && !v.get("version_number").isJsonNull()
+                    ? v.get("version_number").getAsString() : id;
+            row.releaseType = v.has("version_type") && !v.get("version_type").isJsonNull()
+                    ? v.get("version_type").getAsString() : "release";
+            row.datePublished = v.has("date_published") && !v.get("date_published").isJsonNull()
+                    ? v.get("date_published").getAsString() : null;
+            row.fileUrl = fileUrl;
+            row.fileName = fileName;
+
+            row.gameVersions = new ArrayList<>();
+            if (v.has("game_versions")) {
+                JsonArray arr = v.getAsJsonArray("game_versions");
+                for (int i = 0; i < arr.size(); i++) row.gameVersions.add(arr.get(i).getAsString());
+            }
+            row.loaders = new ArrayList<>();
+            if (v.has("loaders")) {
+                JsonArray arr = v.getAsJsonArray("loaders");
+                for (int i = 0; i < arr.size(); i++) row.loaders.add(arr.get(i).getAsString());
+            }
+
+            row.isCurrent = id.equals(currentVersionId);
+            boolean mcOk = mFilterMcVersion.isEmpty() || row.gameVersions.contains(mFilterMcVersion);
+            boolean loaderOk = mFilterLoader.isEmpty() || containsIgnoreCase(row.loaders, mFilterLoader);
+            row.isCompatible = mcOk && loaderOk;
+            return row;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static boolean containsIgnoreCase(List<String> list, String value) {
+        for (String s : list) if (s.equalsIgnoreCase(value)) return true;
+        return false;
+    }
+
+    /** Downloads the chosen version and swaps it in, mirroring applyUpdate(). */
+    private void applySwitchVersion(Context context, ModEntry entry, int position,
+                                     String url, String fileName, String versionLabel) {
+        boolean wasDisabled = entry.file.getName().endsWith(".disabled");
+        String  targetName  = wasDisabled ? fileName + ".disabled" : fileName;
+        File    targetFile  = new File(entry.file.getParent(), targetName);
+        final File oldFile  = entry.file;
+
+        Toast.makeText(context,
+                context.getString(R.string.switch_mod_version_switching, versionLabel),
+                Toast.LENGTH_SHORT).show();
+
+        sUpdateCheckExecutor.execute(() -> {
+            try {
+                File tmpFile = new File(entry.file.getParent(), targetName + ".tmp");
+                DownloadUtils.downloadFile(url, tmpFile);
+
+                oldFile.delete();
+                tmpFile.renameTo(targetFile);
+
+                mMainHandler.post(() -> {
+                    entry.file        = targetFile;
+                    entry.enabled     = !wasDisabled;
+                    entry.updateUrl   = null;
+                    entry.updateFileName = null;
+
+                    // The file path changed — drop cache entries keyed by the old
+                    // path so the icon/name get freshly re-resolved for the new jar.
+                    String oldPath = oldFile.getAbsolutePath();
+                    mIconCache.remove(oldPath);
+                    mModNameCache.remove(oldPath);
+                    mIconCheckedNoResult.remove(oldPath);
+                    mIconResolving.remove(oldPath);
+                    mModNameResolving.remove(oldPath);
+
+                    if (position < mMods.size()) notifyItemChanged(position);
+                    Toast.makeText(context,
+                            context.getString(R.string.switch_mod_version_done, entry.displayName(), versionLabel),
+                            Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Version switch failed: " + e.getMessage());
+                mMainHandler.post(() ->
+                        Toast.makeText(context,
+                                context.getString(R.string.switch_mod_version_failed, entry.displayName()),
+                                Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    /** Lightweight model for one row in the switch-version list. */
+    private static class VersionRow {
+        String id, versionNumber, releaseType, datePublished, fileUrl, fileName;
+        List<String> gameVersions = new ArrayList<>();
+        List<String> loaders = new ArrayList<>();
+        boolean isCurrent;
+        boolean isCompatible;
+    }
+
+    /** RecyclerView adapter backing the switch-version dialog's list. */
+    private static class VersionRowAdapter extends RecyclerView.Adapter<VersionRowAdapter.RowHolder> {
+
+        interface OnVersionClickListener {
+            void onVersionClick(VersionRow row);
+        }
+
+        private final OnVersionClickListener mListener;
+        private List<VersionRow> mAllRows = new ArrayList<>();
+        private List<VersionRow> mVisibleRows = new ArrayList<>();
+        private boolean mShowIncompatible = false;
+        private String mQuery = "";
+
+        VersionRowAdapter(OnVersionClickListener listener) {
+            mListener = listener;
+        }
+
+        @SuppressLint("NotifyDataSetChanged")
+        void setVersions(List<VersionRow> rows) {
+            mAllRows = rows;
+            applyFilter();
+        }
+
+        @SuppressLint("NotifyDataSetChanged")
+        void setShowIncompatible(boolean show) {
+            mShowIncompatible = show;
+            applyFilter();
+        }
+
+        @SuppressLint("NotifyDataSetChanged")
+        void setSearchQuery(String query) {
+            mQuery = query == null ? "" : query.trim().toLowerCase(java.util.Locale.ROOT);
+            applyFilter();
+        }
+
+        @SuppressLint("NotifyDataSetChanged")
+        private void applyFilter() {
+            List<VersionRow> visible = new ArrayList<>();
+            for (VersionRow row : mAllRows) {
+                // Always keep the currently installed version visible, even if it
+                // no longer matches the instance's filter (e.g. mc version changed).
+                if (!mShowIncompatible && !row.isCompatible && !row.isCurrent) continue;
+                if (!mQuery.isEmpty()
+                        && !row.versionNumber.toLowerCase(java.util.Locale.ROOT).contains(mQuery)
+                        && !row.fileName.toLowerCase(java.util.Locale.ROOT).contains(mQuery)) continue;
+                visible.add(row);
+            }
+            mVisibleRows = visible;
+            notifyDataSetChanged();
+        }
+
+        @NonNull
+        @Override
+        public RowHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_mod_version_row, parent, false);
+            return new RowHolder(v);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull RowHolder holder, int position) {
+            holder.bind(mVisibleRows.get(position), mListener);
+        }
+
+        @Override
+        public int getItemCount() {
+            return mVisibleRows.size();
+        }
+
+        static class RowHolder extends RecyclerView.ViewHolder {
+            final View root;
+            final TextView typeBadge, nameView, subtitleView, currentPill;
+            final ImageView incompatibleIcon;
+
+            RowHolder(@NonNull View itemView) {
+                super(itemView);
+                root             = itemView.findViewById(R.id.version_row_root);
+                typeBadge        = itemView.findViewById(R.id.version_row_type_badge);
+                nameView         = itemView.findViewById(R.id.version_row_name);
+                subtitleView     = itemView.findViewById(R.id.version_row_subtitle);
+                currentPill      = itemView.findViewById(R.id.version_row_current_pill);
+                incompatibleIcon = itemView.findViewById(R.id.version_row_incompatible_icon);
+            }
+
+            void bind(VersionRow row, OnVersionClickListener listener) {
+                nameView.setText(row.versionNumber);
+                subtitleView.setText(buildSubtitle(row));
+
+                String badgeLetter;
+                int badgeColorRes;
+                if ("beta".equalsIgnoreCase(row.releaseType)) {
+                    badgeLetter = "B"; badgeColorRes = R.color.mod_version_beta;
+                } else if ("alpha".equalsIgnoreCase(row.releaseType)) {
+                    badgeLetter = "A"; badgeColorRes = R.color.mod_version_alpha;
+                } else {
+                    badgeLetter = "R"; badgeColorRes = R.color.mod_version_release;
+                }
+                typeBadge.setText(badgeLetter);
+                // mutate() first — this drawable resource is shared across rows,
+                // and without it setTint() would tint every badge at once.
+                typeBadge.getBackground().mutate()
+                        .setTint(ContextCompat.getColor(itemView.getContext(), badgeColorRes));
+
+                if (row.isCurrent) {
+                    currentPill.setVisibility(View.VISIBLE);
+                    incompatibleIcon.setVisibility(View.GONE);
+                    root.setBackgroundResource(R.drawable.bg_version_row_current);
+                } else {
+                    currentPill.setVisibility(View.GONE);
+                    incompatibleIcon.setVisibility(row.isCompatible ? View.GONE : View.VISIBLE);
+                    root.setBackgroundResource(R.drawable.bg_version_row);
+                }
+
+                itemView.setOnClickListener(v -> listener.onVersionClick(row));
+            }
+
+            private static String buildSubtitle(VersionRow row) {
+                StringBuilder sb = new StringBuilder();
+                if (!row.loaders.isEmpty()) sb.append(capitalize(row.loaders.get(0)));
+                if (!row.gameVersions.isEmpty()) {
+                    if (sb.length() > 0) sb.append(' ');
+                    sb.append(row.gameVersions.get(row.gameVersions.size() - 1));
+                }
+                String date = formatDate(row.datePublished);
+                if (date != null) {
+                    if (sb.length() > 0) sb.append(" • ");
+                    sb.append(date);
+                }
+                return sb.toString();
+            }
+
+            private static String capitalize(String s) {
+                if (s == null || s.isEmpty()) return s;
+                return s.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + s.substring(1);
+            }
+
+            @Nullable
+            private static String formatDate(@Nullable String iso) {
+                if (iso == null || iso.length() < 10) return iso;
+                try {
+                    String datePart = iso.substring(0, 10);
+                    java.text.SimpleDateFormat in = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+                    java.util.Date date = in.parse(datePart);
+                    java.text.SimpleDateFormat out = new java.text.SimpleDateFormat("MMM d, yyyy", java.util.Locale.getDefault());
+                    return date != null ? out.format(date) : datePart;
+                } catch (Exception e) {
+                    return iso.substring(0, 10);
+                }
+            }
+        }
+    }
+
     // ── Adapter ───────────────────────────────────────────────────────────
 
     @NonNull
@@ -357,6 +761,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         final SwitchCompat toggle;
         final android.widget.Button update;
         final ImageButton delete;
+        final ImageButton switchVersion;
 
         ModViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -366,6 +771,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
             toggle = itemView.findViewById(R.id.installed_mod_toggle);
             update = itemView.findViewById(R.id.installed_mod_update);
             delete = itemView.findViewById(R.id.installed_mod_delete);
+            switchVersion = itemView.findViewById(R.id.installed_mod_switch_version);
         }
 
         void bind(ModEntry entry) {
@@ -427,6 +833,11 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 update.setVisibility(View.GONE);
                 update.setOnClickListener(null);
             }
+
+            switchVersion.setOnClickListener(v -> {
+                int pos = getBindingAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) showSwitchVersionDialog(v.getContext(), entry, pos);
+            });
 
             delete.setOnClickListener(v -> {
                 Context ctx = v.getContext();

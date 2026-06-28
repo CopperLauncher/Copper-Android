@@ -16,6 +16,14 @@ public class ModDetail extends ModItem {
     public String[][] versionDependencyIds;
     /* Per-version dependency types — "required" or "optional" */
     public String[][] versionDependencyTypes;
+    /* Index into the version arrays that matches a mod already present in the
+     * current instance's mods folder (matched by SHA1 hash), or -1 if this
+     * mod/project isn't currently installed. Resolved by the caller after
+     * fetching the details, since hashing local files needs filesystem access
+     * this model class doesn't have. Versions are ordered newest-first, so a
+     * lower index than installedVersionIndex means "update available", and a
+     * higher index means "downgrade". */
+    public int installedVersionIndex = -1;
 
     public ModDetail(ModItem item, String[] versionNames, String[] mcVersionNames, String[] versionUrls, String[] hashes) {
         this(item, versionNames, mcVersionNames, versionUrls, hashes, null, null);
