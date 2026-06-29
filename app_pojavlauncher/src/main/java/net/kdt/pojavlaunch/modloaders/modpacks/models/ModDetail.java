@@ -24,6 +24,12 @@ public class ModDetail extends ModItem {
      * lower index than installedVersionIndex means "update available", and a
      * higher index means "downgrade". */
     public int installedVersionIndex = -1;
+    /* Absolute path of the on-disk jar that matched installedVersionIndex
+     * (set alongside it by the same resolution pass), or null if nothing is
+     * installed. Used by the install/update/downgrade flow to remove the old
+     * file once the new version has finished downloading, instead of leaving
+     * both versions sitting in the mods folder side-by-side. */
+    public String installedFilePath = null;
 
     public ModDetail(ModItem item, String[] versionNames, String[] mcVersionNames, String[] versionUrls, String[] hashes) {
         this(item, versionNames, mcVersionNames, versionUrls, hashes, null, null);

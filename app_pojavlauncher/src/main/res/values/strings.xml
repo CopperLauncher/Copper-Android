@@ -122,7 +122,6 @@
     <!-- Switch mod version dialog (Manage Mods) -->
     <string name="switch_mod_version_button_desc">Switch version</string>
     <string name="switch_mod_version_title">Switch version</string>
-    <string name="switch_mod_version_search_hint">Search version…</string>
     <string name="switch_mod_version_current">Current</string>
     <string name="switch_mod_version_show_incompatible">Show incompatible</string>
     <string name="switch_mod_version_hide_incompatible">Hide incompatible</string>

@@ -7,14 +7,11 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -344,7 +341,6 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
         TextView titleView          = dialogView.findViewById(R.id.switch_version_title);
         ImageButton closeButton     = dialogView.findViewById(R.id.switch_version_close);
-        EditText searchBox          = dialogView.findViewById(R.id.switch_version_search);
         ProgressBar progressBar     = dialogView.findViewById(R.id.switch_version_progress);
         View errorLayout            = dialogView.findViewById(R.id.switch_version_error_layout);
         TextView errorTextView      = dialogView.findViewById(R.id.switch_version_error_textview);
@@ -381,12 +377,6 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                     ? R.string.switch_mod_version_hide_incompatible
                     : R.string.switch_mod_version_show_incompatible);
             adapter.setShowIncompatible(showIncompatible[0]);
-        });
-
-        searchBox.addTextChangedListener(new TextWatcher() {
-            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
-            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
-            @Override public void afterTextChanged(Editable s) { adapter.setSearchQuery(s.toString()); }
         });
 
         Runnable loadVersions = () -> {
@@ -451,6 +441,20 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         retryButton.setOnClickListener(v -> loadVersions.run());
         loadVersions.run();
         dialog.show();
+
+        // AlertDialog windows default to wrap_content. The dialog's root view
+        // uses match_parent with the version list measured as a 0dp
+        // match-constraint height between the search box and the toggle row —
+        // inside a wrap_content window that 0dp child has nothing definite to
+        // fill, so it collapses to ~0 height and only the search box/header
+        // appear to render. Give the window an explicit, definite size so the
+        // list area actually gets the remaining space.
+        if (dialog.getWindow() != null) {
+            android.util.DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+            dialog.getWindow().setLayout(
+                    (int) (metrics.widthPixels * 0.92),
+                    (int) (metrics.heightPixels * 0.85));
+        }
     }
 
     /** Parses one entry of Modrinth's GET /project/{id}/version response. */
@@ -582,7 +586,6 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         private List<VersionRow> mAllRows = new ArrayList<>();
         private List<VersionRow> mVisibleRows = new ArrayList<>();
         private boolean mShowIncompatible = false;
-        private String mQuery = "";
 
         VersionRowAdapter(OnVersionClickListener listener) {
             mListener = listener;
@@ -601,21 +604,12 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         }
 
         @SuppressLint("NotifyDataSetChanged")
-        void setSearchQuery(String query) {
-            mQuery = query == null ? "" : query.trim().toLowerCase(java.util.Locale.ROOT);
-            applyFilter();
-        }
-
-        @SuppressLint("NotifyDataSetChanged")
         private void applyFilter() {
             List<VersionRow> visible = new ArrayList<>();
             for (VersionRow row : mAllRows) {
                 // Always keep the currently installed version visible, even if it
                 // no longer matches the instance's filter (e.g. mc version changed).
                 if (!mShowIncompatible && !row.isCompatible && !row.isCurrent) continue;
-                if (!mQuery.isEmpty()
-                        && !row.versionNumber.toLowerCase(java.util.Locale.ROOT).contains(mQuery)
-                        && !row.fileName.toLowerCase(java.util.Locale.ROOT).contains(mQuery)) continue;
                 visible.add(row);
             }
             mVisibleRows = visible;
