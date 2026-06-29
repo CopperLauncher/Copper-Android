@@ -95,7 +95,6 @@ public class LauncherPreferences {
         PREF_MOUSESPEED = ((float)DEFAULT_PREF.getInt("mousespeed",100))/100f;
         PREF_IGNORE_NOTCH = DEFAULT_PREF.getBoolean("ignoreNotch", false);
 		PREF_LONGPRESS_TRIGGER = DEFAULT_PREF.getInt("timeLongPressTrigger", 300);
-		PREF_DEFAULTCTRL_PATH = DEFAULT_PREF.getString("defaultCtrl", Tools.CTRLDEF_FILE);
         PREF_FORCE_ENGLISH = DEFAULT_PREF.getBoolean("force_english", false);
         PREF_CHECK_LIBRARY_SHA = DEFAULT_PREF.getBoolean("checkLibraries",true);
         PREF_DISABLE_GESTURES = DEFAULT_PREF.getBoolean("disableGestures",false);
@@ -131,6 +130,10 @@ public class LauncherPreferences {
         PREF_KEYBOARD_PANNING = DEFAULT_PREF.getBoolean("keyboardPanning", true);
         PREF_DISABLE_CURSEFORGE_API = DEFAULT_PREF.getBoolean("disableCurseforgeApi", false);
         PREF_CURSEFORGE_API_KEY_OVERRIDE = DEFAULT_PREF.getString("curseforgeApiKeyOverride", "");
+
+        // User may have deleted their default control
+        String userDefCtrl = DEFAULT_PREF.getString("defaultCtrl", Tools.CTRLDEF_FILE);
+        PREF_DEFAULTCTRL_PATH = FileUtils.exists(userDefCtrl) ? userDefCtrl : Tools.CTRLDEF_FILE;
 
         String argLwjglLibname = "-Dorg.lwjgl.opengl.libname=";
         for (String arg : JREUtils.parseJavaArguments(PREF_CUSTOM_JAVA_ARGS)) {
