@@ -370,7 +370,17 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         });
         listView.setAdapter(adapter);
 
-        final boolean[] showIncompatible = {false};
+        // Default to showing every fetched version. Hiding "incompatible" ones
+        // relies on each version's game_versions/loaders matching the
+        // instance's saved mc-version/loader filter exactly — if that
+        // filter is empty, stale, or just doesn't match Modrinth's string
+        // format for this project, every row (including the one that's
+        // actually installed) gets hidden and the list renders empty even
+        // though the fetch itself succeeded. Showing everything first
+        // guarantees the list is never empty just because of a filter
+        // mismatch; the toggle still lets the user narrow it down.
+        final boolean[] showIncompatible = {true};
+        toggleIncompatible.setText(R.string.switch_mod_version_hide_incompatible);
         toggleIncompatible.setOnClickListener(v -> {
             showIncompatible[0] = !showIncompatible[0];
             toggleIncompatible.setText(showIncompatible[0]
@@ -389,6 +399,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 boolean projectNotFound = false;
                 try {
                     String sha1 = sha1Hex(entry.file);
+                    Log.d(TAG, "Switch-version: hashing " + entry.file.getName() + " -> " + sha1);
                     ApiHandler api = new ApiHandler(MODRINTH_API);
                     String projectId = null;
                     String currentVersionId = null;
@@ -401,22 +412,30 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                             if (fileVersion.has("project_id")) projectId = fileVersion.get("project_id").getAsString();
                             if (fileVersion.has("id")) currentVersionId = fileVersion.get("id").getAsString();
                         }
+                        Log.d(TAG, "Switch-version: version_file lookup -> projectId=" + projectId
+                                + " currentVersionId=" + currentVersionId);
                     }
 
                     if (projectId == null) {
                         projectNotFound = true;
+                        Log.w(TAG, "Switch-version: " + entry.displayName()
+                                + " — no Modrinth project found for this jar's hash");
                     } else {
                         JsonArray versions = api.get("project/" + projectId + "/version", JsonArray.class);
+                        Log.d(TAG, "Switch-version: project/" + projectId + "/version returned "
+                                + (versions == null ? "null" : versions.size() + " entries"));
                         if (versions != null && versions.size() > 0) {
                             rows = new ArrayList<>();
                             for (int i = 0; i < versions.size(); i++) {
                                 VersionRow row = parseVersionRow(versions.get(i).getAsJsonObject(), currentVersionId);
                                 if (row != null) rows.add(row);
                             }
+                            Log.d(TAG, "Switch-version: parsed " + rows.size() + "/" + versions.size()
+                                    + " versions for " + entry.displayName());
                         }
                     }
                 } catch (Exception e) {
-                    Log.w(TAG, "Switch-version fetch failed for " + entry.displayName() + ": " + e.getMessage());
+                    Log.w(TAG, "Switch-version fetch failed for " + entry.displayName(), e);
                 }
 
                 final List<VersionRow> finalRows = rows;
@@ -444,16 +463,15 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
         // AlertDialog windows default to wrap_content. The dialog's root view
         // uses match_parent with the version list measured as a 0dp
-        // match-constraint height between the search box and the toggle row —
+        // match-constraint height between the title and the toggle row —
         // inside a wrap_content window that 0dp child has nothing definite to
-        // fill, so it collapses to ~0 height and only the search box/header
-        // appear to render. Give the window an explicit, definite size so the
-        // list area actually gets the remaining space.
+        // fill, so it collapses to ~0 height and only the header appears to
+        // render. Force the window to fill virtually the whole screen so the
+        // list area actually gets the remaining space to lay out into.
         if (dialog.getWindow() != null) {
-            android.util.DisplayMetrics metrics = context.getResources().getDisplayMetrics();
             dialog.getWindow().setLayout(
-                    (int) (metrics.widthPixels * 0.92),
-                    (int) (metrics.heightPixels * 0.85));
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
         }
     }
 
@@ -585,7 +603,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         private final OnVersionClickListener mListener;
         private List<VersionRow> mAllRows = new ArrayList<>();
         private List<VersionRow> mVisibleRows = new ArrayList<>();
-        private boolean mShowIncompatible = false;
+        private boolean mShowIncompatible = true;
 
         VersionRowAdapter(OnVersionClickListener listener) {
             mListener = listener;
@@ -612,7 +630,13 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 if (!mShowIncompatible && !row.isCompatible && !row.isCurrent) continue;
                 visible.add(row);
             }
-            mVisibleRows = visible;
+            // Defensive fallback: if the compatibility filter would leave nothing
+            // on screen despite having actually fetched versions (e.g. the
+            // instance's mc version/loader didn't match Modrinth's strings for
+            // any of them, and the currently installed version couldn't be
+            // identified either), fall back to showing everything rather than
+            // silently rendering an empty list with no obvious explanation.
+            mVisibleRows = visible.isEmpty() ? mAllRows : visible;
             notifyDataSetChanged();
         }
 
