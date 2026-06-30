@@ -460,19 +460,6 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         retryButton.setOnClickListener(v -> loadVersions.run());
         loadVersions.run();
         dialog.show();
-
-        // AlertDialog windows default to wrap_content. The dialog's root view
-        // uses match_parent with the version list measured as a 0dp
-        // match-constraint height between the title and the toggle row —
-        // inside a wrap_content window that 0dp child has nothing definite to
-        // fill, so it collapses to ~0 height and only the header appears to
-        // render. Force the window to fill virtually the whole screen so the
-        // list area actually gets the remaining space to lay out into.
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setLayout(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT);
-        }
     }
 
     /** Parses one entry of Modrinth's GET /project/{id}/version response. */

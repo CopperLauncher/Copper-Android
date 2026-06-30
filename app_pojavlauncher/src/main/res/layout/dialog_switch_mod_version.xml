@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:paddingHorizontal="@dimen/padding_heavy"
     android:paddingTop="@dimen/padding_heavy"
     android:paddingBottom="@dimen/padding_large">
@@ -36,57 +36,62 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Loading state -->
-    <ProgressBar
-        android:id="@+id/switch_version_progress"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <!-- Content area: progress / error / list are mutually exclusive siblings
+         inside a single FIXED-height container. A fixed dp height (matching
+         this codebase's existing dialog_expendable_list_view.xml pattern) is
+         used deliberately instead of match_parent/0dp match-constraint —
+         AlertDialog windows size themselves to wrap_content, which gives a
+         match_parent/0dp list nothing definite to measure against and it
+         collapses to zero height. A concrete height here sidesteps that
+         entirely and matches how VersionSelectorDialog already solves the
+         exact same problem elsewhere in this app. -->
+    <FrameLayout
+        android:id="@+id/switch_version_content"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_280sdp"
         android:layout_marginTop="@dimen/padding_large"
-        app:layout_constraintTop_toBottomOf="@id/switch_version_title"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/switch_version_title">
 
-    <!-- Error / empty state -->
-    <LinearLayout
-        android:id="@+id/switch_version_error_layout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone"
-        android:layout_marginTop="@dimen/padding_large"
-        app:layout_constraintTop_toBottomOf="@id/switch_version_title"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <TextView
-            android:id="@+id/switch_version_error_textview"
+        <ProgressBar
+            android:id="@+id/switch_version_progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/secondary_text"
-            android:textAlignment="center"
-            android:text="@string/switch_mod_version_no_versions" />
+            android:layout_gravity="center" />
 
-        <Button
-            android:id="@+id/switch_version_retry_button"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/switch_version_error_layout"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_moderate"
-            android:text="@string/switch_mod_version_retry" />
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/switch_version_error_textview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/secondary_text"
+                android:textAlignment="center"
+                android:text="@string/switch_mod_version_no_versions" />
 
-    <!-- Version list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/switch_version_list"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="@dimen/padding_large"
-        android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/switch_version_title"
-        app:layout_constraintBottom_toTopOf="@id/switch_version_toggle_incompatible"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+            <Button
+                android:id="@+id/switch_version_retry_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_moderate"
+                android:text="@string/switch_mod_version_retry" />
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/switch_version_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
     <!-- Show/hide incompatible toggle -->
     <TextView
@@ -100,7 +105,7 @@
         android:textSize="@dimen/_12ssp"
         android:text="@string/switch_mod_version_show_incompatible"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/switch_version_warning" />
+        app:layout_constraintTop_toBottomOf="@id/switch_version_content" />
 
     <!-- Warning footer -->
     <TextView
@@ -111,7 +116,7 @@
         android:text="@string/switch_mod_version_warning"
         android:textColor="@color/mod_version_incompatible"
         android:textSize="@dimen/_10ssp"
-        app:layout_constraintBottom_toTopOf="@id/switch_version_cancel" />
+        app:layout_constraintTop_toBottomOf="@id/switch_version_toggle_incompatible" />
 
     <!-- Cancel button -->
     <Button
@@ -120,6 +125,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/padding_moderate"
         android:text="@android:string/cancel"
+        app:layout_constraintTop_toBottomOf="@id/switch_version_warning"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
