@@ -370,17 +370,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         });
         listView.setAdapter(adapter);
 
-        // Default to showing every fetched version. Hiding "incompatible" ones
-        // relies on each version's game_versions/loaders matching the
-        // instance's saved mc-version/loader filter exactly — if that
-        // filter is empty, stale, or just doesn't match Modrinth's string
-        // format for this project, every row (including the one that's
-        // actually installed) gets hidden and the list renders empty even
-        // though the fetch itself succeeded. Showing everything first
-        // guarantees the list is never empty just because of a filter
-        // mismatch; the toggle still lets the user narrow it down.
-        final boolean[] showIncompatible = {true};
-        toggleIncompatible.setText(R.string.switch_mod_version_hide_incompatible);
+        final boolean[] showIncompatible = {false};
         toggleIncompatible.setOnClickListener(v -> {
             showIncompatible[0] = !showIncompatible[0];
             toggleIncompatible.setText(showIncompatible[0]
@@ -590,7 +580,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         private final OnVersionClickListener mListener;
         private List<VersionRow> mAllRows = new ArrayList<>();
         private List<VersionRow> mVisibleRows = new ArrayList<>();
-        private boolean mShowIncompatible = true;
+        private boolean mShowIncompatible = false;
 
         VersionRowAdapter(OnVersionClickListener listener) {
             mListener = listener;

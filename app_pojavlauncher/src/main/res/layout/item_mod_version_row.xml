@@ -18,13 +18,14 @@
     <!-- Release-type circle badge (R / B / A) -->
     <TextView
         android:id="@+id/version_row_type_badge"
-        android:layout_width="@dimen/_20sdp"
-        android:layout_height="@dimen/_20sdp"
+        android:layout_width="@dimen/_22sdp"
+        android:layout_height="@dimen/_22sdp"
         android:background="@drawable/bg_circle_badge"
         android:gravity="center"
+        android:includeFontPadding="false"
         android:textColor="#000000"
         android:textStyle="bold"
-        android:textSize="@dimen/_9ssp"
+        android:textSize="@dimen/_10ssp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="@+id/version_row_name"
