@@ -5,5 +5,5 @@
     <solid android:color="?attr/colorBgStatusBar" />
     <stroke
         android:width="@dimen/_1sdp"
-        android:color="@color/mod_version_current_bg" />
+        android:color="?attr/copperAccent" />
 </shape>

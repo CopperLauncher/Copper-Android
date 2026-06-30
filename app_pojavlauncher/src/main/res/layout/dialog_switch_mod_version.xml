@@ -15,7 +15,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/switch_mod_version_title"
-        android:textColor="@color/primary_text"
+        android:textColor="?attr/colorTextPrimary"
         android:textStyle="bold"
         android:textSize="@dimen/_16ssp"
         app:layout_constraintStart_toStartOf="parent"
@@ -71,7 +71,7 @@
                 android:id="@+id/switch_version_error_textview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/secondary_text"
+                android:textColor="?attr/colorTextSecondary"
                 android:textAlignment="center"
                 android:text="@string/switch_mod_version_no_versions" />
 
@@ -101,7 +101,7 @@
         android:layout_marginTop="@dimen/padding_moderate"
         android:background="?android:attr/selectableItemBackground"
         android:padding="@dimen/padding_moderate"
-        android:textColor="@color/secondary_text"
+        android:textColor="?attr/colorTextSecondary"
         android:textSize="@dimen/_12ssp"
         android:text="@string/switch_mod_version_show_incompatible"
         app:layout_constraintStart_toStartOf="parent"
