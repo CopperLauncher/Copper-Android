@@ -346,11 +346,8 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         Button retryButton          = dialogView.findViewById(R.id.switch_version_retry_button);
         RecyclerView listView       = dialogView.findViewById(R.id.switch_version_list);
         TextView toggleIncompatible = dialogView.findViewById(R.id.switch_version_toggle_incompatible);
-        Button cancelButton         = dialogView.findViewById(R.id.switch_version_cancel);
-
         titleView.setText(context.getString(R.string.switch_mod_version_title) + " — " + entry.displayName());
         closeButton.setOnClickListener(v -> dialog.dismiss());
-        cancelButton.setOnClickListener(v -> dialog.dismiss());
 
         listView.setLayoutManager(new LinearLayoutManager(context));
         VersionRowAdapter adapter = new VersionRowAdapter(chosen -> {

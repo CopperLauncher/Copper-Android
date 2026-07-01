@@ -3,11 +3,11 @@
     android:height="18dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-  <!-- Pixel-art incompatible-version warning icon: amber circle with white exclamation mark -->
+  <!-- Pixel-art warning triangle: amber outline, white exclamation mark -->
   <path
       android:fillColor="@color/mod_version_incompatible"
-      android:pathData="M7.5,0 h7.5 v1.5 h-7.5 z M4.5,1.5 h13.5 v1.5 h-13.5 z M3,3 h16.5 v1.5 h-16.5 z M1.5,4.5 h19.5 v1.5 h-19.5 z M1.5,6 h19.5 v1.5 h-19.5 z M0,7.5 h22.5 v1.5 h-22.5 z M0,9 h22.5 v1.5 h-22.5 z M0,10.5 h22.5 v1.5 h-22.5 z M0,12 h22.5 v1.5 h-22.5 z M0,13.5 h22.5 v1.5 h-22.5 z M1.5,15 h19.5 v1.5 h-19.5 z M1.5,16.5 h19.5 v1.5 h-19.5 z M3,18 h16.5 v1.5 h-16.5 z M4.5,19.5 h13.5 v1.5 h-13.5 z M7.5,21 h7.5 v1.5 h-7.5 z"/>
+      android:pathData="M9,1.5 h4.5 v1.5 h-4.5 z M9,3 h4.5 v1.5 h-4.5 z M7.5,4.5 h3 v1.5 h-3 z M12,4.5 h3 v1.5 h-3 z M7.5,6 h3 v1.5 h-3 z M12,6 h3 v1.5 h-3 z M6,7.5 h3 v1.5 h-3 z M13.5,7.5 h3 v1.5 h-3 z M6,9 h3 v1.5 h-3 z M13.5,9 h3 v1.5 h-3 z M4.5,10.5 h3 v1.5 h-3 z M15,10.5 h3 v1.5 h-3 z M4.5,12 h3 v1.5 h-3 z M15,12 h3 v1.5 h-3 z M3,13.5 h3 v1.5 h-3 z M16.5,13.5 h3 v1.5 h-3 z M3,15 h3 v1.5 h-3 z M16.5,15 h3 v1.5 h-3 z M1.5,16.5 h3 v1.5 h-3 z M18,16.5 h3 v1.5 h-3 z M1.5,18 h3 v1.5 h-3 z M18,18 h3 v1.5 h-3 z M0,19.5 h3 v1.5 h-3 z M19.5,19.5 h3 v1.5 h-3 z M0,21 h22.5 v1.5 h-22.5 z"/>
   <path
       android:fillColor="#FFF"
-      android:pathData="M10.5,4.5 h3 v1.5 h-3 z M10.5,6 h3 v1.5 h-3 z M10.5,7.5 h3 v1.5 h-3 z M10.5,9 h3 v1.5 h-3 z M10.5,10.5 h3 v1.5 h-3 z M10.5,12 h3 v1.5 h-3 z M10.5,13.5 h1.5 v1.5 h-1.5 z M10.5,16.5 h3 v1.5 h-3 z M10.5,18 h3 v1.5 h-3 z"/>
+      android:pathData="M10.5,6 h3 v1.5 h-3 z M10.5,7.5 h3 v1.5 h-3 z M10.5,9 h3 v1.5 h-3 z M10.5,10.5 h3 v1.5 h-3 z M10.5,12 h3 v1.5 h-3 z M10.5,13.5 h3 v1.5 h-3 z M10.5,16.5 h3 v1.5 h-3 z M10.5,18 h3 v1.5 h-3 z"/>
 </vector>

@@ -1,80 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/version_row_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/background_card"
     android:layout_marginVertical="@dimen/padding_medium"
-    android:foreground="?android:attr/selectableItemBackground"
+    android:foreground="?attr/selectableItemBackground"
     android:clickable="true"
-    android:focusable="true"
-    android:gravity="center_vertical"
-    android:minHeight="@dimen/_44sdp"
-    android:orientation="horizontal"
-    android:paddingHorizontal="@dimen/padding_heavy"
-    android:paddingVertical="@dimen/padding_moderate">
+    android:focusable="true">
 
-    <!-- Checkmark: currently installed version -->
+    <!-- Current version checkmark (top-right, matching instance card style) -->
     <ImageView
         android:id="@+id/version_row_current_badge"
-        android:layout_width="@dimen/_16sdp"
-        android:layout_height="@dimen/_16sdp"
-        android:layout_marginEnd="@dimen/padding_moderate"
+        android:layout_width="@dimen/_18sdp"
+        android:layout_height="@dimen/_18sdp"
+        android:layout_marginTop="@dimen/padding_medium"
+        android:layout_marginEnd="@dimen/padding_medium"
         android:src="@drawable/ic_check_circle"
         android:visibility="gone"
-        android:contentDescription="@null" />
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Incompatible warning icon -->
+    <!-- Incompatible warning icon (same position, mutually exclusive with checkmark) -->
     <ImageView
         android:id="@+id/version_row_incompatible_icon"
-        android:layout_width="@dimen/_16sdp"
-        android:layout_height="@dimen/_16sdp"
-        android:layout_marginEnd="@dimen/padding_moderate"
+        android:layout_width="@dimen/_18sdp"
+        android:layout_height="@dimen/_18sdp"
+        android:layout_marginTop="@dimen/padding_medium"
+        android:layout_marginEnd="@dimen/padding_medium"
         android:src="@drawable/ic_incompatible_warning"
         android:visibility="gone"
-        android:contentDescription="@null" />
+        android:contentDescription="@null"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Text block -->
-    <LinearLayout
+    <!-- Version name — same style as mod_title_textview in view_mod.xml -->
+    <TextView
+        android:id="@+id/version_row_name"
+        style="@style/TextAppearance.AppCompat.Body2"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_marginStart="@dimen/padding_moderate"
+        android:layout_marginTop="@dimen/padding_medium"
+        android:layout_marginEnd="@dimen/padding_medium"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="@color/primary_text"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/version_row_current_badge"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="2.4.1" />
 
-        <TextView
-            android:id="@+id/version_row_name"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="?attr/colorTextPrimary"
-            android:textStyle="bold"
-            android:textSize="@dimen/_13ssp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            tools:text="2.4.1" />
-
-        <TextView
-            android:id="@+id/version_row_subtitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="?attr/colorTextSecondary"
-            android:textSize="@dimen/_11ssp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            tools:text="Release • Fabric 26.2 • Jun 16, 2026" />
-
-    </LinearLayout>
-
-    <!-- "Current" text label on the far right -->
+    <!-- Loader / MC version / date — same style as mod_body_textview in view_mod.xml -->
     <TextView
-        android:id="@+id/version_row_current_pill"
-        android:layout_width="wrap_content"
+        android:id="@+id/version_row_subtitle"
+        style="@style/TextAppearance.AppCompat.Body1"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/padding_moderate"
-        android:textColor="?attr/copperAccent"
-        android:textStyle="bold"
-        android:textSize="@dimen/_11ssp"
-        android:text="@string/switch_mod_version_current"
-        android:visibility="gone" />
+        android:layout_marginEnd="@dimen/padding_medium"
+        android:layout_marginBottom="@dimen/padding_medium"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="@color/secondary_text"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/version_row_current_badge"
+        app:layout_constraintTop_toBottomOf="@+id/version_row_name"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        tools:text="Release • Fabric 26.2 • Jun 16, 2026" />
 
-</LinearLayout>
+    <!-- "Current" label — hidden view kept for Java compat, text shown via checkmark instead -->
+    <TextView
+        android:id="@+id/version_row_current_pill"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

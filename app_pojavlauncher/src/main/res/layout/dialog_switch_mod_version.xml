@@ -10,7 +10,7 @@
         android:orientation="vertical"
         android:padding="@dimen/padding_large">
 
-        <!-- Header row: title + close button -->
+        <!-- Header: title + close button -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -23,7 +23,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/switch_mod_version_title"
-                android:textColor="?attr/colorTextPrimary"
+                android:textColor="@color/primary_text"
                 android:textStyle="bold"
                 android:textSize="@dimen/_16ssp"
                 android:singleLine="true"
@@ -40,7 +40,7 @@
 
         </LinearLayout>
 
-        <!-- Toggle + warning above the list so they're always visible -->
+        <!-- Toggle + warning always visible above the list -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -55,7 +55,7 @@
                 android:background="?android:attr/selectableItemBackground"
                 android:paddingVertical="@dimen/padding_small"
                 android:paddingEnd="@dimen/padding_heavy"
-                android:textColor="?attr/colorTextSecondary"
+                android:textColor="@color/secondary_text"
                 android:textSize="@dimen/_11ssp"
                 android:text="@string/switch_mod_version_show_incompatible" />
 
@@ -73,14 +73,13 @@
             style="@style/ThickDivider"
             android:layout_marginTop="@dimen/padding_medium" />
 
-        <!-- Progress bar shown while fetching versions -->
+        <!-- Progress bar while fetching versions -->
         <ProgressBar
             android:id="@+id/switch_version_progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_marginTop="@dimen/padding_large"
-            android:layout_marginBottom="@dimen/padding_large"
+            android:layout_marginVertical="@dimen/padding_large"
             android:visibility="visible" />
 
         <!-- Error / empty state -->
@@ -97,7 +96,7 @@
                 android:id="@+id/switch_version_error_textview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="?attr/colorTextSecondary"
+                android:textColor="@color/secondary_text"
                 android:textAlignment="center"
                 android:text="@string/switch_mod_version_no_versions" />
 
@@ -110,8 +109,7 @@
 
         </LinearLayout>
 
-        <!-- Version list — fixed height matching the export-mrpack file list
-             established native pattern in this codebase -->
+        <!-- Version list — fixed height matching the export-mrpack pattern -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/switch_version_list"
             android:layout_width="match_parent"
@@ -119,17 +117,6 @@
             android:layout_marginBottom="@dimen/padding_medium"
             android:scrollbars="vertical"
             android:visibility="gone" />
-
-        <View
-            style="@style/ThickDivider"
-            android:layout_marginBottom="@dimen/padding_extra_large" />
-
-        <!-- Cancel button -->
-        <com.kdt.mcgui.MineButton
-            android:id="@+id/switch_version_cancel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@android:string/cancel" />
 
     </LinearLayout>
 
