@@ -21,7 +21,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SwitchCompat;
-import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -636,17 +635,15 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         }
 
         static class RowHolder extends RecyclerView.ViewHolder {
-            final View root;
-            final TextView typeBadge, nameView, subtitleView, currentPill;
-            final ImageView incompatibleIcon;
+            final TextView nameView, subtitleView, currentLabel;
+            final ImageView currentBadge, incompatibleIcon;
 
             RowHolder(@NonNull View itemView) {
                 super(itemView);
-                root             = itemView.findViewById(R.id.version_row_root);
-                typeBadge        = itemView.findViewById(R.id.version_row_type_badge);
                 nameView         = itemView.findViewById(R.id.version_row_name);
                 subtitleView     = itemView.findViewById(R.id.version_row_subtitle);
-                currentPill      = itemView.findViewById(R.id.version_row_current_pill);
+                currentLabel     = itemView.findViewById(R.id.version_row_current_pill);
+                currentBadge     = itemView.findViewById(R.id.version_row_current_badge);
                 incompatibleIcon = itemView.findViewById(R.id.version_row_incompatible_icon);
             }
 
@@ -654,29 +651,14 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 nameView.setText(row.versionNumber);
                 subtitleView.setText(buildSubtitle(row));
 
-                String badgeLetter;
-                int badgeColorRes;
-                if ("beta".equalsIgnoreCase(row.releaseType)) {
-                    badgeLetter = "B"; badgeColorRes = R.color.mod_version_beta;
-                } else if ("alpha".equalsIgnoreCase(row.releaseType)) {
-                    badgeLetter = "A"; badgeColorRes = R.color.mod_version_alpha;
-                } else {
-                    badgeLetter = "R"; badgeColorRes = R.color.mod_version_release;
-                }
-                typeBadge.setText(badgeLetter);
-                // mutate() first — this drawable resource is shared across rows,
-                // and without it setTint() would tint every badge at once.
-                typeBadge.getBackground().mutate()
-                        .setTint(ContextCompat.getColor(itemView.getContext(), badgeColorRes));
-
                 if (row.isCurrent) {
-                    currentPill.setVisibility(View.VISIBLE);
+                    currentLabel.setVisibility(View.VISIBLE);
+                    currentBadge.setVisibility(View.VISIBLE);
                     incompatibleIcon.setVisibility(View.GONE);
-                    root.setBackgroundResource(R.drawable.bg_version_row_current);
                 } else {
-                    currentPill.setVisibility(View.GONE);
+                    currentLabel.setVisibility(View.GONE);
+                    currentBadge.setVisibility(View.GONE);
                     incompatibleIcon.setVisibility(row.isCompatible ? View.GONE : View.VISIBLE);
-                    root.setBackgroundResource(R.drawable.bg_version_row);
                 }
 
                 itemView.setOnClickListener(v -> listener.onVersionClick(row));
@@ -684,7 +666,14 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
             private static String buildSubtitle(VersionRow row) {
                 StringBuilder sb = new StringBuilder();
-                if (!row.loaders.isEmpty()) sb.append(capitalize(row.loaders.get(0)));
+                // Release type as a plain word (Release / Beta / Alpha)
+                if (row.releaseType != null && !row.releaseType.isEmpty()) {
+                    sb.append(capitalize(row.releaseType));
+                }
+                if (!row.loaders.isEmpty()) {
+                    if (sb.length() > 0) sb.append(" • ");
+                    sb.append(capitalize(row.loaders.get(0)));
+                }
                 if (!row.gameVersions.isEmpty()) {
                     if (sb.length() > 0) sb.append(' ');
                     sb.append(row.gameVersions.get(row.gameVersions.size() - 1));
