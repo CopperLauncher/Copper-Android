@@ -279,22 +279,83 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         /**
          * Override getModDetails to filter versions by the selected MC version.
          * Only versions matching the filter are shown in the version dropdown.
+         * Also resolves which (if any) of the returned versions is already
+         * installed in the current instance's mods folder, so the install
+         * button can show Install / Installed / Update / Downgrade.
          */
         @Override
         public ModDetail getModDetails(ModItem item) {
+            ModDetail detail;
             if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_MODRINTH) {
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : null;
                 String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
                         ? mFilters.modLoader : null;
-                return mModrinthApi.getModDetails(item, filterVer, filterLoader);
-            }
-            if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_CURSEFORGE) {
+                detail = mModrinthApi.getModDetails(item, filterVer, filterLoader);
+            } else if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_CURSEFORGE) {
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : null;
-                return mCurseforgeApi.getModDetails(item, filterVer);
+                detail = mCurseforgeApi.getModDetails(item, filterVer);
+            } else {
+                detail = super.getModDetails(item);
             }
-            return super.getModDetails(item);
+
+            if (detail != null && !detail.isModpack) {
+                resolveInstalledVersionIndex(detail);
+            }
+            return detail;
+        }
+
+        /**
+         * Hashes every jar currently in the mods folder (enabled or disabled)
+         * and matches against detail.versionHashes to find which version, if
+         * any, is already installed. Sets detail.installedVersionIndex
+         * accordingly (-1 if this mod isn't installed at all).
+         */
+        private void resolveInstalledVersionIndex(ModDetail detail) {
+            detail.installedVersionIndex = -1;
+            detail.installedFilePath = null;
+            if (detail.versionHashes == null || detail.versionHashes.length == 0) return;
+
+            File modsDir = getModsDir();
+            File[] files = modsDir.listFiles(f -> f.isFile() &&
+                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+            if (files == null || files.length == 0) return;
+
+            java.util.Map<String, File> installedHashToFile = new java.util.HashMap<>();
+            for (File f : files) {
+                String hash = sha1Hex(f);
+                if (hash != null) installedHashToFile.put(hash, f);
+            }
+            if (installedHashToFile.isEmpty()) return;
+
+            for (int i = 0; i < detail.versionHashes.length; i++) {
+                String hash = detail.versionHashes[i];
+                if (hash == null) continue;
+                File match = installedHashToFile.get(hash.toLowerCase(java.util.Locale.ROOT));
+                if (match != null) {
+                    detail.installedVersionIndex = i;
+                    detail.installedFilePath = match.getAbsolutePath();
+                    break;
+                }
+            }
+        }
+
+        private static String sha1Hex(File file) {
+            try {
+                java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-1");
+                byte[] buffer = new byte[8192];
+                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                    int read;
+                    while ((read = fis.read(buffer)) != -1) digest.update(buffer, 0, read);
+                }
+                byte[] bytes = digest.digest();
+                StringBuilder sb = new StringBuilder(bytes.length * 2);
+                for (byte b : bytes) sb.append(String.format("%02x", b));
+                return sb.toString();
+            } catch (Exception e) {
+                return null;
+            }
         }
 
         @Override
@@ -338,13 +399,19 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             if (rawName.contains("?")) rawName = rawName.substring(0, rawName.indexOf('?'));
             final String fileName = rawName.endsWith(".jar") ? rawName : rawName + ".jar";
 
+            // If a different version of this same mod is already installed under
+            // a different file name (the Update/Downgrade case), remember its path
+            // so downloadMod() can remove it once the new file is safely down —
+            // otherwise both versions end up sitting in the mods folder together.
+            final String oldFilePath = modDetail.installedFilePath;
+
             // Check if this version has dependencies
             String[] depIds   = (modDetail.versionDependencyIds   != null) ? modDetail.versionDependencyIds[selectedVersion]   : null;
             String[] depTypes = (modDetail.versionDependencyTypes != null) ? modDetail.versionDependencyTypes[selectedVersion] : null;
 
             if (depIds == null || depIds.length == 0) {
                 // No deps — download directly
-                downloadMod(context, url, fileName, new String[0], new String[0]);
+                downloadMod(context, url, fileName, new String[0], new String[0], oldFilePath);
                 return;
             }
 
@@ -372,7 +439,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                     labels[idx] = prefix + (name != null ? name : projectId);
                     if (remaining.decrementAndGet() == 0) {
                         mMainHandler.post(() -> showDepsDialog(context, url, fileName,
-                                depIds, depTypes, labels, checkedDefaults));
+                                depIds, depTypes, labels, checkedDefaults, oldFilePath));
                     }
                 });
             }
@@ -380,7 +447,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
         private void showDepsDialog(Context context, String url, String fileName,
                                     String[] depIds, String[] depTypes,
-                                    String[] labels, boolean[] checkedDefaults) {
+                                    String[] labels, boolean[] checkedDefaults, String oldFilePath) {
             // context here is getApplicationContext() from ModItemAdapter — no window token.
             // Use the stored Activity reference instead.
             Context dialogCtx = mActivityContext != null ? mActivityContext : context;
@@ -396,24 +463,37 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                             if (selected[i]) selectedIds.add(depIds[i]);
                         }
                         downloadMod(context, url, fileName,
-                                selectedIds.toArray(new String[0]), depTypes);
+                                selectedIds.toArray(new String[0]), depTypes, oldFilePath);
                     })
                     .setNeutralButton(R.string.mod_deps_install_without,
-                            (d, w) -> downloadMod(context, url, fileName, new String[0], new String[0]))
+                            (d, w) -> downloadMod(context, url, fileName, new String[0], new String[0], oldFilePath))
                     .setNegativeButton(android.R.string.cancel, null)
                     .show();
         }
 
         private void downloadMod(Context context, String url, String fileName,
-                                  String[] depIds, String[] depTypes) {
+                                  String[] depIds, String[] depTypes, @Nullable String oldFilePath) {
             File modsDir = getModsDir();
             if (!modsDir.exists()) modsDir.mkdirs();
+
+            final File targetFile = new File(modsDir, fileName);
 
             ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, R.string.global_waiting);
             PojavApplication.sExecutorService.execute(() -> {
                 try {
                     // Download main mod
-                    DownloadUtils.downloadFile(url, new File(modsDir, fileName));
+                    DownloadUtils.downloadFile(url, targetFile);
+
+                    // This is an update/downgrade of an already-installed mod under a
+                    // different file name — remove the old jar now that the new one
+                    // downloaded successfully, so both versions don't end up sitting
+                    // in the mods folder side-by-side.
+                    if (oldFilePath != null) {
+                        File oldFile = new File(oldFilePath);
+                        if (oldFile.exists() && !oldFile.getAbsolutePath().equals(targetFile.getAbsolutePath())) {
+                            oldFile.delete();
+                        }
+                    }
 
                     // Download selected dependencies
                     for (String depId : depIds) {

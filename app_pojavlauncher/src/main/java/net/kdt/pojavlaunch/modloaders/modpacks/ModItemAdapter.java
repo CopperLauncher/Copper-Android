@@ -7,12 +7,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.drawable.RoundedBitmapDrawable;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
@@ -175,10 +177,37 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     mExtendedSpinner = mExtendedLayout.findViewById(R.id.mod_extended_version_spinner);
                     mExtendedErrorTextView = mExtendedLayout.findViewById(R.id.mod_extended_error_textview);
 
-                    mExtendedButton.setOnClickListener(v1 -> mModpackApi.handleInstallation(
-                            mExtendedButton.getContext().getApplicationContext(),
-                            mModDetail,
-                            mExtendedSpinner.getSelectedItemPosition()));
+                    mExtendedButton.setOnClickListener(v1 -> {
+                        final int selectedVersion = mExtendedSpinner.getSelectedItemPosition();
+                        if (computeButtonState(selectedVersion) == InstallButtonState.INSTALLED) {
+                            new AlertDialog.Builder(mExtendedButton.getContext())
+                                    .setTitle(R.string.mod_reinstall_confirm_title)
+                                    .setMessage(mExtendedButton.getContext().getString(
+                                            R.string.mod_reinstall_confirm_message,
+                                            mModDetail != null ? mModDetail.title : ""))
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .setPositiveButton(android.R.string.ok, (d, w) ->
+                                            mModpackApi.handleInstallation(
+                                                    mExtendedButton.getContext().getApplicationContext(),
+                                                    mModDetail,
+                                                    selectedVersion))
+                                    .show();
+                        } else {
+                            mModpackApi.handleInstallation(
+                                    mExtendedButton.getContext().getApplicationContext(),
+                                    mModDetail,
+                                    selectedVersion);
+                        }
+                    });
+                    mExtendedSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View selectedView, int position, long id) {
+                            updateExtendedButtonLabel();
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) { }
+                    });
                     mExtendedSpinner.setAdapter(mLoadingAdapter);
                 } else {
                     if(isExtended()) closeDetailedView();
@@ -268,17 +297,20 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         /** Display extended info/interaction about a modpack */
         private void setStateDetailed(ModDetail detailedItem) {
+            mModDetail = detailedItem;
             if(detailedItem != null) {
                 setInstallEnabled(true);
                 mExtendedErrorTextView.setVisibility(View.GONE);
                 mVersionAdapter.setObjects(Arrays.asList(detailedItem.versionNames));
                 mExtendedSpinner.setAdapter(mVersionAdapter);
+                updateExtendedButtonLabel();
             } else {
                 closeDetailedView();
                 setInstallEnabled(false);
                 mExtendedErrorTextView.setVisibility(View.VISIBLE);
                 mExtendedSpinner.setAdapter(null);
                 mVersionAdapter.setObjects(null);
+                if (mExtendedButton != null) mExtendedButton.setText(R.string.generic_install);
             }
         }
 
@@ -333,7 +365,51 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if(mExtendedButton != null)
                 mExtendedButton.setEnabled(mInstallEnabled && !mTasksRunning);
         }
+
+        /**
+         * Compares a candidate version index against mModDetail.installedVersionIndex
+         * (resolved by ModsInstallApi via local jar hashing) to decide whether the
+         * install button should read Install / Installed / Update / Downgrade.
+         * Versions are ordered newest-first, so a lower index than the installed
+         * one means "this is newer" (Update), and a higher index means "this is
+         * older" (Downgrade).
+         */
+        private InstallButtonState computeButtonState(int selectedIndex) {
+            if (mModDetail == null || mModDetail.isModpack || mModDetail.installedVersionIndex < 0) {
+                return InstallButtonState.INSTALL;
+            }
+            int installedIndex = mModDetail.installedVersionIndex;
+            if (selectedIndex == installedIndex) return InstallButtonState.INSTALLED;
+            return selectedIndex < installedIndex ? InstallButtonState.UPDATE : InstallButtonState.DOWNGRADE;
+        }
+
+        private void updateExtendedButtonLabel() {
+            if (mExtendedButton == null || mExtendedSpinner == null) return;
+            int selectedIndex = mExtendedSpinner.getSelectedItemPosition();
+            switch (computeButtonState(selectedIndex)) {
+                case INSTALLED:
+                    mExtendedButton.setText(R.string.mod_install_installed);
+                    break;
+                case UPDATE:
+                    mExtendedButton.setText(R.string.mod_install_update);
+                    break;
+                case DOWNGRADE:
+                    mExtendedButton.setText(R.string.mod_install_downgrade);
+                    break;
+                default:
+                    mExtendedButton.setText(R.string.generic_install);
+                    break;
+            }
+        }
     }
+
+    /**
+     * Install button states for the search/install screen — moved out of the
+     * (non-static) ViewHolder inner class since Java forbids static
+     * declarations, which an enum implicitly is, inside non-static inner
+     * classes.
+     */
+    private enum InstallButtonState { INSTALL, INSTALLED, UPDATE, DOWNGRADE }
 
     /**
      * The view holder used to hold the progress bar at the end of the list

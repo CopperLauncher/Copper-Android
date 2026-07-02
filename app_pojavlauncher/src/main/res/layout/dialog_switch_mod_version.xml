@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_large">
+
+        <!-- Header: title + close button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/switch_version_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/switch_mod_version_title"
+                android:textColor="@color/primary_text"
+                android:textStyle="bold"
+                android:textSize="@dimen/_16ssp"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <ImageButton
+                android:id="@+id/switch_version_close"
+                android:layout_width="@dimen/_32sdp"
+                android:layout_height="@dimen/_32sdp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_close"
+                android:padding="@dimen/padding_small"
+                android:contentDescription="@android:string/cancel" />
+
+        </LinearLayout>
+
+        <!-- Toggle + warning always visible above the list -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_moderate"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/switch_version_toggle_incompatible"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?android:attr/selectableItemBackground"
+                android:paddingVertical="@dimen/padding_small"
+                android:paddingEnd="@dimen/padding_heavy"
+                android:textColor="@color/secondary_text"
+                android:textSize="@dimen/_11ssp"
+                android:text="@string/switch_mod_version_show_incompatible" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/switch_mod_version_warning"
+                android:textColor="@color/mod_version_incompatible"
+                android:textSize="@dimen/_10ssp" />
+
+        </LinearLayout>
+
+        <View
+            style="@style/ThickDivider"
+            android:layout_marginTop="@dimen/padding_medium" />
+
+        <!-- Progress bar while fetching versions -->
+        <ProgressBar
+            android:id="@+id/switch_version_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginVertical="@dimen/padding_large"
+            android:visibility="visible" />
+
+        <!-- Error / empty state -->
+        <LinearLayout
+            android:id="@+id/switch_version_error_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingVertical="@dimen/padding_large"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/switch_version_error_textview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/secondary_text"
+                android:textAlignment="center"
+                android:text="@string/switch_mod_version_no_versions" />
+
+            <com.kdt.mcgui.MineButton
+                android:id="@+id/switch_version_retry_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/padding_moderate"
+                android:text="@string/switch_mod_version_retry" />
+
+        </LinearLayout>
+
+        <!-- Version list — fixed height matching the export-mrpack pattern -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/switch_version_list"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:layout_marginBottom="@dimen/padding_medium"
+            android:scrollbars="vertical"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</ScrollView>
