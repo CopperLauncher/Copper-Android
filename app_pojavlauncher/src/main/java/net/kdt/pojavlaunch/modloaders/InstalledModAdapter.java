@@ -279,7 +279,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
     /** Downloads the update, replaces the existing jar, refreshes the entry. */
     private void applyUpdate(Context context, ModEntry entry, int position) {
-        if (entry.updateUrl == null) return;
+        if (entry.updateUrl == null || entry.isUpdating) return;
 
         String updateUrl  = entry.updateUrl;
         String updateName = entry.updateFileName;
@@ -292,6 +292,11 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         Toast.makeText(context,
                 context.getString(R.string.mod_updating, entry.displayName()),
                 Toast.LENGTH_SHORT).show();
+
+        // Flip the spinner on immediately so the update button disappears
+        // before the download even starts.
+        entry.isUpdating = true;
+        if (position < mMods.size()) notifyItemChanged(position);
 
         sUpdateCheckExecutor.execute(() -> {
             try {
@@ -308,6 +313,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                     entry.enabled     = !wasDisabled;
                     entry.updateUrl   = null;
                     entry.updateFileName = null;
+                    entry.isUpdating  = false;
                     if (position < mMods.size()) notifyItemChanged(position);
                     Toast.makeText(context,
                             context.getString(R.string.mod_update_done, entry.displayName()),
@@ -315,10 +321,13 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Update download failed: " + e.getMessage());
-                mMainHandler.post(() ->
-                        Toast.makeText(context,
-                                context.getString(R.string.mod_update_failed, entry.displayName()),
-                                Toast.LENGTH_SHORT).show());
+                mMainHandler.post(() -> {
+                    entry.isUpdating = false;
+                    if (position < mMods.size()) notifyItemChanged(position);
+                    Toast.makeText(context,
+                            context.getString(R.string.mod_update_failed, entry.displayName()),
+                            Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }
@@ -741,6 +750,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         final TextView    name, version;
         final SwitchCompat toggle;
         final ImageButton update;
+        final ProgressBar updateProgress;
         final ImageButton delete;
         final ImageButton switchVersion;
 
@@ -751,6 +761,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
             version= itemView.findViewById(R.id.installed_mod_version);
             toggle = itemView.findViewById(R.id.installed_mod_toggle);
             update = itemView.findViewById(R.id.installed_mod_update);
+            updateProgress = itemView.findViewById(R.id.installed_mod_update_progress);
             delete = itemView.findViewById(R.id.installed_mod_delete);
             switchVersion = itemView.findViewById(R.id.installed_mod_switch_version);
         }
@@ -803,14 +814,22 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
             toggle.setChecked(entry.enabled);
             toggle.setOnCheckedChangeListener((btn, checked) -> entry.setEnabled(checked));
 
-            // Update button — visible only when an update is available
-            if (entry.updateUrl != null) {
+            // Update button — visible only when an update is available and not
+            // currently being downloaded. While downloading, the spinner takes
+            // its place instead.
+            if (entry.isUpdating) {
+                update.setVisibility(View.GONE);
+                update.setOnClickListener(null);
+                updateProgress.setVisibility(View.VISIBLE);
+            } else if (entry.updateUrl != null) {
+                updateProgress.setVisibility(View.GONE);
                 update.setVisibility(View.VISIBLE);
                 update.setOnClickListener(v -> {
                     int pos = getBindingAdapterPosition();
                     if (pos != RecyclerView.NO_POSITION) applyUpdate(v.getContext(), entry, pos);
                 });
             } else {
+                updateProgress.setVisibility(View.GONE);
                 update.setVisibility(View.GONE);
                 update.setOnClickListener(null);
             }
@@ -846,6 +865,9 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         boolean enabled;
         @Nullable String updateUrl;
         @Nullable String updateFileName;
+        // True while a downloaded update jar is being fetched/applied for this
+        // mod — drives the per-row spinner that replaces the update button.
+        boolean isUpdating;
         // Friendly name read out of the jar's own metadata (fabric.mod.json,
         // mods.toml, etc.) once resolved. Null/empty until resolved or if
         // the jar simply has no name field — displayName() falls back to

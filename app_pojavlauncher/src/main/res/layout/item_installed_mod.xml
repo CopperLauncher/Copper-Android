@@ -90,6 +90,20 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
 
+    <!-- Download-in-progress spinner — takes the update button's place while
+         the update jar is being downloaded, hidden the rest of the time. -->
+    <ProgressBar
+        android:id="@+id/installed_mod_update_progress"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="@dimen/_38sdp"
+        android:layout_height="@dimen/_38sdp"
+        android:layout_marginEnd="@dimen/padding_small"
+        android:padding="@dimen/padding_moderate"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@+id/installed_mod_switch_version"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
     <!-- Switch version button — opens a kinda like Modrinth version picker for this mod :freaky_hd: -->
     <ImageButton
         android:id="@+id/installed_mod_switch_version"
