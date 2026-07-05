@@ -740,7 +740,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         final ImageView   icon;
         final TextView    name, version;
         final SwitchCompat toggle;
-        final android.widget.Button update;
+        final ImageButton update;
         final ImageButton delete;
         final ImageButton switchVersion;
 

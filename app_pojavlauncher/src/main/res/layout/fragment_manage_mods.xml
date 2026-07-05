@@ -36,6 +36,16 @@
             android:ellipsize="end"
             android:text="@string/mcl_button_manage_mods" />
 
+        <!-- Shown in place of the refresh button while an update check is running -->
+        <ProgressBar
+            android:id="@+id/manage_mods_update_progress"
+            style="?android:attr/progressBarStyleSmall"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:layout_marginEnd="@dimen/padding_small"
+            android:padding="@dimen/padding_moderate"
+            android:visibility="gone" />
+
         <ImageButton
             android:id="@+id/manage_mods_refresh"
             android:layout_width="@dimen/_38sdp"

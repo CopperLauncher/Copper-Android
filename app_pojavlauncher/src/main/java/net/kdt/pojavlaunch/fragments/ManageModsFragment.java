@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,6 +38,7 @@ public class ManageModsFragment extends Fragment {
 
     private ImageButton mFilterButton;
     private ImageButton mRefreshButton;
+    private ProgressBar mUpdateProgress;
     private InstalledModAdapter mAdapter;
 
     public ManageModsFragment() {
@@ -48,6 +50,7 @@ public class ManageModsFragment extends Fragment {
         ImageButton backButton = view.findViewById(R.id.manage_mods_back);
         mFilterButton          = view.findViewById(R.id.manage_mods_filter);
         mRefreshButton         = view.findViewById(R.id.manage_mods_refresh);
+        mUpdateProgress        = view.findViewById(R.id.manage_mods_update_progress);
         ImageButton addButton  = view.findViewById(R.id.manage_mods_add);
         TextView    title      = view.findViewById(R.id.manage_mods_title);
         RecyclerView recycler  = view.findViewById(R.id.manage_mods_recycler);
@@ -55,7 +58,7 @@ public class ManageModsFragment extends Fragment {
 
         backButton.setOnClickListener(v -> requireActivity().onBackPressed());
         mFilterButton.setOnClickListener(v -> showFilterDialog());
-        mRefreshButton.setOnClickListener(v -> runUpdateCheck());
+        mRefreshButton.setOnClickListener(v -> runUpdateCheck(false));
         addButton.setOnClickListener(v -> openModSearch());
 
         String profileName = getCurrentProfileName();
@@ -81,19 +84,24 @@ public class ManageModsFragment extends Fragment {
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
         recycler.setAdapter(mAdapter);
 
-        // Update checking is opt-in: only runs when the user taps the refresh
-        // button (see mRefreshButton's listener above). Auto-checking here used
-        // to fire a network call per mod the instant this screen opened, which
-        // also fought with the initial icon-resolution pass and made icons
-        // flash to the placeholder glyph.
+        // Auto-check for updates as soon as the screen opens, in addition to
+        // the manual refresh button. Silent (no "checking…" toast, and no
+        // "set a filter first" toast) since this fires automatically — if
+        // there's no filter set yet, it just quietly does nothing until the
+        // user configures one and hits refresh manually.
+        runUpdateCheck(true);
     }
 
     /**
      * Runs the Modrinth update check across all installed mods for this instance.
-     * Only ever triggered by the user tapping the refresh button — update
-     * checking is fully opt-in, never automatic.
+     * Triggered automatically when the screen opens (silent = true) and manually
+     * via the refresh button (silent = false).
+     *
+     * @param silent when true, skips the "checking…"/"set a filter first" toasts —
+     *               used for the automatic on-open check so it doesn't nag the
+     *               user if they haven't configured a version/loader filter yet.
      */
-    private void runUpdateCheck() {
+    private void runUpdateCheck(boolean silent) {
         if (mAdapter == null) return;
 
         String profileKey = getCurrentProfileKey();
@@ -103,17 +111,31 @@ public class ManageModsFragment extends Fragment {
         String loader  = prefs.getString(KEY_LOADER      + profileKey, "");
 
         if (version.isEmpty() && loader.isEmpty()) {
-            Toast.makeText(requireContext(),
-                    R.string.mod_update_no_filter, Toast.LENGTH_SHORT).show();
+            if (!silent) {
+                Toast.makeText(requireContext(),
+                        R.string.mod_update_no_filter, Toast.LENGTH_SHORT).show();
+            }
             return;
         }
 
         mAdapter.setFilter(version, loader);
 
+        // While checking: hide the refresh button and show just a spinner in
+        // its place. No per-mod update button appears until its own check
+        // resolves, so this spinner is the only thing indicating progress.
         mRefreshButton.setEnabled(false);
-        Toast.makeText(requireContext(), R.string.mod_update_checking, Toast.LENGTH_SHORT).show();
+        mRefreshButton.setVisibility(View.GONE);
+        if (mUpdateProgress != null) mUpdateProgress.setVisibility(View.VISIBLE);
 
-        mAdapter.checkForUpdates(() -> mRefreshButton.setEnabled(true));
+        if (!silent) {
+            Toast.makeText(requireContext(), R.string.mod_update_checking, Toast.LENGTH_SHORT).show();
+        }
+
+        mAdapter.checkForUpdates(() -> {
+            mRefreshButton.setEnabled(true);
+            mRefreshButton.setVisibility(View.VISIBLE);
+            if (mUpdateProgress != null) mUpdateProgress.setVisibility(View.GONE);
+        });
     }
 
     // ── Filter dialog ────────────────────────────────────────────────────────
