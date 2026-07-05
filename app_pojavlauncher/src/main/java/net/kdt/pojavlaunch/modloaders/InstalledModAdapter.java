@@ -288,6 +288,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         boolean wasDisabled = entry.file.getName().endsWith(".disabled");
         String  targetName  = wasDisabled ? updateName + ".disabled" : updateName;
         File    targetFile  = new File(entry.file.getParent(), targetName);
+        final File oldFile  = entry.file;
 
         Toast.makeText(context,
                 context.getString(R.string.mod_updating, entry.displayName()),
@@ -304,9 +305,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 File tmpFile = new File(entry.file.getParent(), targetName + ".tmp");
                 DownloadUtils.downloadFile(updateUrl, tmpFile);
 
-                // Delete old file, rename temp to final
-                entry.file.delete();
-                tmpFile.renameTo(targetFile);
+                replaceModFile(oldFile, tmpFile, targetFile);
 
                 mMainHandler.post(() -> {
                     entry.file        = targetFile;
@@ -330,6 +329,63 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 });
             }
         });
+    }
+
+    /**
+     * Replaces {@code oldFile} with the freshly downloaded {@code tmpFile}, ending
+     * up at {@code targetFile}. Handles both cases:
+     * <ul>
+     *   <li>Same file name (old == target): {@code renameTo} atomically replaces
+     *       the destination on most Android filesystems, so this always works
+     *       even if deleting the old file first happens to fail.</li>
+     *   <li>Different file name (old != target): these are two independent
+     *       filesystem entries, so the old one needs an explicit, verified
+     *       delete — otherwise a transient failure (e.g. the jar being briefly
+     *       held open by an icon/name-resolution read on another thread) leaves
+     *       it behind and it shows up as a duplicate mod next time the list is
+     *       rescanned.</li>
+     * </ul>
+     * Old-file deletion is retried a few times with a short backoff before
+     * giving up, since these locks are normally released within milliseconds.
+     */
+    private static void replaceModFile(File oldFile, File tmpFile, File targetFile) {
+        boolean sameName = oldFile.getAbsolutePath().equals(targetFile.getAbsolutePath());
+
+        if (sameName) {
+            // renameTo() onto an existing path replaces it atomically, so the
+            // old file is gone the moment this succeeds — no separate delete needed.
+            if (!tmpFile.renameTo(targetFile)) {
+                Log.w(TAG, "Failed to rename downloaded update into place: " + targetFile);
+            }
+            return;
+        }
+
+        // Different names: rename the new file into place first, then clean up
+        // the old one — never leave the mods folder without a working jar even
+        // if the delete step below has trouble.
+        if (!tmpFile.renameTo(targetFile)) {
+            Log.w(TAG, "Failed to rename downloaded update into place: " + targetFile);
+            return;
+        }
+
+        if (!deleteWithRetry(oldFile)) {
+            Log.w(TAG, "Failed to delete superseded jar, it will linger as a duplicate: " + oldFile);
+        }
+    }
+
+    /** Deletes a file, retrying briefly if it's transiently locked by another thread. */
+    private static boolean deleteWithRetry(File file) {
+        if (!file.exists()) return true;
+        for (int attempt = 0; attempt < 5; attempt++) {
+            if (file.delete() || !file.exists()) return true;
+            try {
+                Thread.sleep(60L * (attempt + 1));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return !file.exists();
     }
 
     // ── Switch version ───────────────────────────────────────────────────────
@@ -533,8 +589,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 File tmpFile = new File(entry.file.getParent(), targetName + ".tmp");
                 DownloadUtils.downloadFile(url, tmpFile);
 
-                oldFile.delete();
-                tmpFile.renameTo(targetFile);
+                replaceModFile(oldFile, tmpFile, targetFile);
 
                 mMainHandler.post(() -> {
                     entry.file        = targetFile;
