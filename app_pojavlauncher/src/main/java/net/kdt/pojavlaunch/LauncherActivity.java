@@ -72,7 +72,9 @@ public class LauncherActivity extends BaseActivity {
                 if(data != null) {
                     PojavApplication.sExecutorService.execute(() -> {
                         try {
-                            ModLoader loaderInfo = new CommonApi(getString(R.string.curseforge_api_key)).importModpack(this, data);
+                            ModLoader loaderInfo = new CommonApi(
+                                    net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveCurseforgeApiKey(this))
+                                    .importModpack(this, data);
                             if (loaderInfo == null) return;
                             loaderInfo.getDownloadTask(new NotificationDownloadListener(this, loaderInfo)).run();
                         } catch (IOException e) {

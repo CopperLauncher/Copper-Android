@@ -38,9 +38,25 @@ public class CommonApi implements ModpackApi {
     private final ModpackApi[] mModpackApis;
 
     public CommonApi(String curseforgeApiKey) {
+        this(curseforgeApiKey, false);
+    }
+
+    /**
+     * @param disableCurseforge when true, CurseForge is excluded from
+     *                          {@link #searchMod}'s result fan-out entirely —
+     *                          used by the "Disable CurseForge" experimental
+     *                          setting, since its API can be noticeably slower
+     *                          than Modrinth's. The instance is still created
+     *                          (cheap, no network) so {@link #getModpackApi}
+     *                          keeps working for things like importing an
+     *                          existing CurseForge modpack zip.
+     */
+    public CommonApi(String curseforgeApiKey, boolean disableCurseforge) {
         mCurseforgeApi = new CurseforgeApi(curseforgeApiKey);
         mModrinthApi = new ModrinthApi();
-        mModpackApis = new ModpackApi[]{mModrinthApi, mCurseforgeApi};
+        mModpackApis = disableCurseforge
+                ? new ModpackApi[]{mModrinthApi}
+                : new ModpackApi[]{mModrinthApi, mCurseforgeApi};
     }
 
     @Override

@@ -118,7 +118,8 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
     public InstalledModAdapter(Context context, File modsDir, EmptyStateListener listener) {
         mContext = context.getApplicationContext();
-        mCurseforgeApiKey = context.getString(R.string.curseforge_api_key);
+        mCurseforgeApiKey = net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_DISABLE_CURSEFORGE_API
+                ? null : net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveCurseforgeApiKey(context);
         mEmptyListener = listener;
         if (modsDir != null && modsDir.isDirectory()) {
             File[] files = modsDir.listFiles(f -> f.isFile() &&

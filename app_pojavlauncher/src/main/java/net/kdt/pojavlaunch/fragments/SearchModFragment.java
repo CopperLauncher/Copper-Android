@@ -67,7 +67,10 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        modpackApi = new ModpackSearchApi(context.getString(R.string.curseforge_api_key), mSearchFilters);
+        boolean disableCurseforge = net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_DISABLE_CURSEFORGE_API;
+        String curseforgeApiKey = disableCurseforge
+                ? "" : net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveCurseforgeApiKey(context);
+        modpackApi = new ModpackSearchApi(curseforgeApiKey, disableCurseforge, mSearchFilters);
     }
 
     @Override
@@ -213,8 +216,8 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         private final SearchFilters mFilters;
         private final ModrinthApi mModrinthApi = new ModrinthApi();
 
-        ModpackSearchApi(String curseforgeApiKey, SearchFilters filters) {
-            super(curseforgeApiKey);
+        ModpackSearchApi(String curseforgeApiKey, boolean disableCurseforge, SearchFilters filters) {
+            super(curseforgeApiKey, disableCurseforge);
             mFilters = filters;
         }
 

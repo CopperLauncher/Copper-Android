@@ -93,7 +93,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        mModpackApi = new ModsInstallApi(context.getString(R.string.curseforge_api_key), mSearchFilters);
+        String curseforgeApiKey = LauncherPreferences.PREF_DISABLE_CURSEFORGE_API
+                ? null : LauncherPreferences.resolveCurseforgeApiKey(context);
+        mModpackApi = new ModsInstallApi(curseforgeApiKey, mSearchFilters);
         ((ModsInstallApi) mModpackApi).mActivityContext = context;
     }
 
@@ -268,12 +270,16 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private final ModrinthApi mModrinthApi = new ModrinthApi();
         private final Handler mMainHandler = new Handler(Looper.getMainLooper());
         private Context mActivityContext;
+        @Nullable
         private final net.kdt.pojavlaunch.modloaders.modpacks.api.CurseforgeApi mCurseforgeApi;
 
-        ModsInstallApi(String curseforgeApiKey, SearchFilters filters) {
-            super(curseforgeApiKey);
+        /** @param curseforgeApiKey null when CurseForge is disabled in experimental settings */
+        ModsInstallApi(@Nullable String curseforgeApiKey, SearchFilters filters) {
+            super(curseforgeApiKey != null ? curseforgeApiKey : "", curseforgeApiKey == null);
             mFilters = filters;
-            mCurseforgeApi = new net.kdt.pojavlaunch.modloaders.modpacks.api.CurseforgeApi(curseforgeApiKey);
+            mCurseforgeApi = curseforgeApiKey != null
+                    ? new net.kdt.pojavlaunch.modloaders.modpacks.api.CurseforgeApi(curseforgeApiKey)
+                    : null;
         }
 
         /**
@@ -293,6 +299,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                         ? mFilters.modLoader : null;
                 detail = mModrinthApi.getModDetails(item, filterVer, filterLoader);
             } else if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_CURSEFORGE) {
+                if (mCurseforgeApi == null) return null; // disabled in experimental settings
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : null;
                 String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())

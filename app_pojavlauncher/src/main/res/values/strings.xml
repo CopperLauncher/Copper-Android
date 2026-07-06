@@ -352,6 +352,10 @@
 
     <string name="preference_force_big_core_title">Force the renderer to run on the big core</string>
     <string name="preference_force_big_core_desc">Forces the Minecraft render thread to run on the core with the highest maximum frequency.</string>
+    <string name="preference_disable_curseforge_title">Disable CurseForge</string>
+    <string name="preference_disable_curseforge_desc">Skip CurseForge entirely when searching or checking for mod updates — only Modrinth will be used. CurseForge\'s API can be noticeably slower.</string>
+    <string name="preference_curseforge_api_key_title">Your own CurseForge API key</string>
+    <string name="preference_curseforge_api_key_desc">Optional. Uses the built-in key by default, which is shared across every install of the app and can get rate-limited. Get your own key at console.curseforge.com for faster, more reliable responses.</string>
     <string name="preference_force_landscape_title">Force landscape orientation</string>
     <string name="preference_force_landscape_summary">Always rotate the launcher to landscape, regardless of device orientation.</string>
     <string name="preference_category_launcher_appearance">Launcher appearance</string>
