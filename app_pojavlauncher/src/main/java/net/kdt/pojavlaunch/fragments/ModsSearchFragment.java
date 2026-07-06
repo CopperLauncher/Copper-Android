@@ -295,7 +295,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             } else if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_CURSEFORGE) {
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : null;
-                detail = mCurseforgeApi.getModDetails(item, filterVer);
+                String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
+                        ? mFilters.modLoader : null;
+                detail = mCurseforgeApi.getModDetails(item, filterVer, filterLoader);
             } else {
                 detail = super.getModDetails(item);
             }

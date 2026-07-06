@@ -128,10 +128,23 @@ public class CurseforgeApi implements ModpackApi{
 
     @Override
     public ModDetail getModDetails(ModItem item) {
-        return getModDetails(item, null);
+        return getModDetails(item, null, null);
     }
 
     public ModDetail getModDetails(ModItem item, String filterMcVersion) {
+        return getModDetails(item, filterMcVersion, null);
+    }
+
+    /**
+     * @param filterMcVersion only return files tagged with this MC version (e.g. "1.20.1")
+     * @param filterLoader    only return files tagged with this loader (e.g. "fabric",
+     *                        "forge", "quilt", "neoforge"). CurseForge doesn't split loader
+     *                        into its own field on the file object — it's just another
+     *                        string mixed into the same "gameVersions" array as the MC
+     *                        version tags (e.g. ["1.20.1", "Fabric", "Client"]) — so without
+     *                        this filter, files built for every loader are shown together.
+     */
+    public ModDetail getModDetails(ModItem item, String filterMcVersion, String filterLoader) {
         // Short-circuit for restricted mods — no point fetching versions
         if (item.isRestricted) {
             return new ModDetail(item,
@@ -155,6 +168,22 @@ public class CurseforgeApi implements ModpackApi{
                 JsonArray gameVersions = v.getAsJsonArray("gameVersions");
                 for (JsonElement el : gameVersions) {
                     if (filterMcVersion.equals(el.getAsString())) {
+                        filtered.add(v);
+                        break;
+                    }
+                }
+            }
+            allModDetails = filtered;
+        }
+
+        // Filter by loader if specified. Same "gameVersions" array, just matched
+        // case-insensitively against the loader name instead of an MC version.
+        if (filterLoader != null && !filterLoader.isEmpty()) {
+            ArrayList<JsonObject> filtered = new ArrayList<>();
+            for (JsonObject v : allModDetails) {
+                JsonArray gameVersions = v.getAsJsonArray("gameVersions");
+                for (JsonElement el : gameVersions) {
+                    if (filterLoader.equalsIgnoreCase(el.getAsString())) {
                         filtered.add(v);
                         break;
                     }
