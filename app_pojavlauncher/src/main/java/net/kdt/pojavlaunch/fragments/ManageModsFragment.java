@@ -158,6 +158,15 @@ public class ManageModsFragment extends Fragment {
             Button   applyButton   = dialog.findViewById(R.id.search_mod_apply_filters);
             Spinner  loaderSpinner = dialog.findViewById(R.id.search_mod_loader_spinner);
 
+            // This dialog is shared with the mod/modpack search screens, which also
+            // show a Modrinth/CurseForge/Both engine picker — not applicable here,
+            // since Manage Mods just filters already-installed mods by version/loader
+            // for update checking, it doesn't pick a search engine.
+            View engineLabel   = dialog.findViewById(R.id.search_mod_engine_textview);
+            View engineSpinner = dialog.findViewById(R.id.search_mod_engine_spinner);
+            if (engineLabel != null) engineLabel.setVisibility(View.GONE);
+            if (engineSpinner != null) engineSpinner.setVisibility(View.GONE);
+
             if (versionText == null || selectVersion == null || applyButton == null) return;
 
             versionText.setText(savedVersion);
