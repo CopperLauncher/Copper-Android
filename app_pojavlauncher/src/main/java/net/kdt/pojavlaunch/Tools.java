@@ -848,10 +848,16 @@ public final class Tools {
         String internalLwjglVersion = iLwjglVersion >= 341 ? "3.4.1" : "3.3.3";
         File lwjgl3Folder = new File(Tools.DIR_GAME_HOME, "lwjgl3/"+internalLwjglVersion);
         String lwjglCore = lwjgl3Folder.getAbsolutePath() + "/lwjgl.jar";
-        String lwjglMerged = lwjgl3Folder.getAbsolutePath() + "/lwjgl-"+internalLwjglVersion+"-merged-modules";
+        String lwjglMerged = lwjgl3Folder.getAbsolutePath() + "/lwjgl-"+internalLwjglVersion+"-merged-modules.jar";
         String lwjglxFile = lwjgl3Folder + "/lwjgl-lwjglx.jar";
 
-
+        if (!new File(lwjglCore).exists() || !new File(lwjglMerged).exists() || !new File(lwjglxFile).exists()) {
+            try { // Delete the folder so on restart will re-extract them.
+                if (lwjgl3Folder.exists())
+                    org.apache.commons.io.FileUtils.deleteDirectory(lwjgl3Folder);
+            } catch (IOException ignored) {}
+            throw new RuntimeException("LWJGL jars incomplete, restart the app to reextract them.");
+        }
         launchClasspath.append(lwjglCore).append(":");
         // 2nd in priority in case we need to merge lwjgl.jar again for testing
         launchClasspath.append(lwjglMerged).append(":");
