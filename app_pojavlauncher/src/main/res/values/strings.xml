@@ -289,6 +289,10 @@
     <string name="profiles_latest_release">Latest release</string>
     <string name="profiles_profile_name">Name</string>
     <string name="profiles_profile_version">Version</string>
+    <string name="search_mod_engine_label">Search source</string>
+    <string name="search_mod_engine_modrinth">Modrinth</string>
+    <string name="search_mod_engine_curseforge">CurseForge</string>
+    <string name="search_mod_engine_both">Both</string>
     <string name="global_delete">Delete</string>
     <string name="pedit_java_runtime">Java Runtime</string>
     <string name="pedit_renderer">Renderer</string>

@@ -207,15 +207,51 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             Button mSelectVersionButton = dialog.findViewById(R.id.search_mod_mc_version_button);
             Button mApplyButton = dialog.findViewById(R.id.search_mod_apply_filters);
             android.widget.Spinner mLoaderSpinner = dialog.findViewById(R.id.search_mod_loader_spinner);
+            android.widget.Spinner mEngineSpinner = dialog.findViewById(R.id.search_mod_engine_spinner);
 
             assert mSelectedVersion != null;
             assert mSelectVersionButton != null;
             assert mApplyButton != null;
 
+            // Set up the "Modrinth / CurseForge / Both" engine picker. If CurseForge is
+            // disabled in experimental settings, only Modrinth is offered and the filter
+            // is pinned to it, since a CurseForge-only or Both search would otherwise
+            // silently return nothing.
+            boolean curseforgeDisabled = net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF
+                    .getBoolean("disableCurseforgeApi", false);
+            final int[] engineValues = curseforgeDisabled
+                    ? new int[]{Constants.ENGINE_MODRINTH}
+                    : new int[]{Constants.ENGINE_MODRINTH, Constants.ENGINE_CURSEFORGE, Constants.ENGINE_BOTH};
+            if (mEngineSpinner != null) {
+                String[] engineLabels = curseforgeDisabled
+                        ? new String[]{getString(R.string.search_mod_engine_modrinth)}
+                        : new String[]{getString(R.string.search_mod_engine_modrinth),
+                                        getString(R.string.search_mod_engine_curseforge),
+                                        getString(R.string.search_mod_engine_both)};
+                android.widget.ArrayAdapter<String> engineAdapter = new android.widget.ArrayAdapter<>(
+                        requireContext(), android.R.layout.simple_spinner_item, engineLabels);
+                engineAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                mEngineSpinner.setAdapter(engineAdapter);
+
+                if (curseforgeDisabled) {
+                    mSearchFilters.engine = Constants.ENGINE_MODRINTH;
+                    mEngineSpinner.setSelection(0);
+                    mEngineSpinner.setEnabled(false);
+                } else {
+                    mEngineSpinner.setEnabled(true);
+                    for (int i = 0; i < engineValues.length; i++) {
+                        if (engineValues[i] == mSearchFilters.engine) {
+                            mEngineSpinner.setSelection(i);
+                            break;
+                        }
+                    }
+                }
+            }
+
             // Set up loader spinner
+            final String[] loaderValues = {"", "fabric", "forge", "quilt", "neoforge"};
             if (mLoaderSpinner != null) {
                 String[] loaderLabels = {getString(R.string.search_mod_any_loader), "Fabric", "Forge", "Quilt", "NeoForge"};
-                final String[] loaderValues = {"", "fabric", "forge", "quilt", "neoforge"};
                 android.widget.ArrayAdapter<String> loaderAdapter = new android.widget.ArrayAdapter<>(
                         requireContext(), android.R.layout.simple_spinner_item, loaderLabels);
                 loaderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -229,34 +265,24 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                         break;
                     }
                 }
-
-                mSelectVersionButton.setOnClickListener(v ->
-                        VersionSelectorDialog.open(v.getContext(), true,
-                                (id, snapshot) -> mSelectedVersion.setText(id)));
-
-                mSelectedVersion.setText(mSearchFilters.mcVersion);
-
-                mApplyButton.setOnClickListener(v -> {
-                    mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
-                    int pos = mLoaderSpinner.getSelectedItemPosition();
-                    mSearchFilters.modLoader = loaderValues[pos];
-                    searchMods(mSearchEditText.getText().toString());
-                    dialogInterface.dismiss();
-                });
-            } else {
-                // Fallback if spinner view not found
-                mSelectVersionButton.setOnClickListener(v ->
-                        VersionSelectorDialog.open(v.getContext(), true,
-                                (id, snapshot) -> mSelectedVersion.setText(id)));
-
-                mSelectedVersion.setText(mSearchFilters.mcVersion);
-
-                mApplyButton.setOnClickListener(v -> {
-                    mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
-                    searchMods(mSearchEditText.getText().toString());
-                    dialogInterface.dismiss();
-                });
             }
+
+            mSelectVersionButton.setOnClickListener(v ->
+                    VersionSelectorDialog.open(v.getContext(), true,
+                            (id, snapshot) -> mSelectedVersion.setText(id)));
+            mSelectedVersion.setText(mSearchFilters.mcVersion);
+
+            mApplyButton.setOnClickListener(v -> {
+                if (mEngineSpinner != null) {
+                    mSearchFilters.engine = engineValues[mEngineSpinner.getSelectedItemPosition()];
+                }
+                if (mLoaderSpinner != null) {
+                    mSearchFilters.modLoader = loaderValues[mLoaderSpinner.getSelectedItemPosition()];
+                }
+                mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
+                searchMods(mSearchEditText.getText().toString());
+                dialogInterface.dismiss();
+            });
         });
 
         dialog.show();
