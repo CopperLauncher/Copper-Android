@@ -157,9 +157,24 @@ public class MainMenuFragment extends Fragment {
         openPaneFragment(fragment, ModsSearchFragment.TAG);
     }
 
+    /**
+     * True if {@code tag} is already the top entry on the right pane's back stack —
+     * i.e. that fragment is already showing. Used to swallow a double-tap on the
+     * same trigger instead of pushing a second, identical back-stack entry (which
+     * made Back have to be pressed twice to actually leave).
+     */
+    private boolean isTagAlreadyOnTop(String tag) {
+        if (!isTwoPane()) return false;
+        androidx.fragment.app.FragmentManager fm = getChildFragmentManager();
+        int count = fm.getBackStackEntryCount();
+        if (count == 0) return false;
+        return tag.equals(fm.getBackStackEntryAt(count - 1).getName());
+    }
+
     /** Navigate to a pre-built fragment instance (preserves args on fresh instances). */
     private void openPaneFragment(Fragment fragment, String tag) {
         if (isTwoPane()) {
+            if (isTagAlreadyOnTop(tag)) return; // already showing — ignore the double-tap
             getChildFragmentManager()
                     .beginTransaction()
                     .setReorderingAllowed(true)
@@ -179,6 +194,7 @@ public class MainMenuFragment extends Fragment {
     private void openPane(Class<? extends Fragment> fragmentClass, String tag,
                           @Nullable Bundle args) {
         if (isTwoPane()) {
+            if (isTagAlreadyOnTop(tag)) return; // already showing — ignore the double-tap
             getChildFragmentManager()
                     .beginTransaction()
                     .setReorderingAllowed(true)
