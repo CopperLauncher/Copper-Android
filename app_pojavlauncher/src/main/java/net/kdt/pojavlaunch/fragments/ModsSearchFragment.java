@@ -450,6 +450,36 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 return;
             }
 
+            // Drop any dependency that's already sitting in the mods folder (as any
+            // version, not just the one this mod happens to ask for) — otherwise every
+            // reinstall/update of a mod with common dependencies (Fabric API, Cloth
+            // Config, etc.) nags you to "install" something you already have.
+            PojavApplication.sExecutorService.execute(() -> {
+                java.util.Set<String> installedProjectIds = getInstalledModrinthProjectIds();
+                List<String> remainingIds = new ArrayList<>();
+                List<String> remainingTypes = new ArrayList<>();
+                for (int i = 0; i < depIds.length; i++) {
+                    if (depIds[i] != null && installedProjectIds.contains(depIds[i])) continue;
+                    remainingIds.add(depIds[i]);
+                    remainingTypes.add((depTypes != null && i < depTypes.length) ? depTypes[i] : "required");
+                }
+
+                if (remainingIds.isEmpty()) {
+                    // Every dependency is already installed — no need to prompt at all
+                    mMainHandler.post(() ->
+                            downloadMod(context, url, fileName, new String[0], new String[0], oldFilePath));
+                    return;
+                }
+
+                mMainHandler.post(() -> promptForDependencies(context, url, fileName,
+                        remainingIds.toArray(new String[0]), remainingTypes.toArray(new String[0]), oldFilePath));
+            });
+        }
+
+        /** Fetches display names for the (already filtered to not-yet-installed) dependency
+         *  list, then shows the install dialog once every name has resolved. */
+        private void promptForDependencies(Context context, String url, String fileName,
+                                            String[] depIds, String[] depTypes, String oldFilePath) {
             // Fetch project names for all deps, then show dialog
             String[] labels = new String[depIds.length];
             final boolean[] checkedDefaults = new boolean[depIds.length];
@@ -570,6 +600,55 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             } catch (Exception e) {
                 Log.w(TAG, "Failed to download dependency " + projectId + ": " + e.getMessage());
             }
+        }
+
+        /**
+         * Hashes every jar currently in the mods folder and bulk-resolves them against
+         * Modrinth's version_files endpoint to find which Modrinth project each one
+         * belongs to — used to filter "install dependencies" prompts down to ones that
+         * aren't already installed under some other version/file name.
+         */
+        private java.util.Set<String> getInstalledModrinthProjectIds() {
+            java.util.Set<String> projectIds = new java.util.HashSet<>();
+            File modsDir = getModsDir();
+            File[] files = modsDir.listFiles(f -> f.isFile() &&
+                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+            if (files == null || files.length == 0) return projectIds;
+
+            List<String> hashes = new ArrayList<>();
+            for (File f : files) {
+                String hash = sha1Hex(f);
+                if (hash != null) hashes.add(hash);
+            }
+            if (hashes.isEmpty()) return projectIds;
+
+            try {
+                com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+                com.google.gson.JsonArray hashArray = new com.google.gson.JsonArray();
+                for (String hash : hashes) hashArray.add(hash);
+                body.add("hashes", hashArray);
+                body.addProperty("algorithm", "sha1");
+
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("Content-Type", "application/json");
+                headers.put("Accept", "application/json");
+
+                String responseRaw = net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler.postRaw(
+                        headers, "https://api.modrinth.com/v2/version_files", body.toString());
+                if (responseRaw == null) return projectIds;
+
+                com.google.gson.JsonObject response = com.google.gson.JsonParser.parseString(responseRaw).getAsJsonObject();
+                for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : response.entrySet()) {
+                    if (!entry.getValue().isJsonObject()) continue;
+                    com.google.gson.JsonObject version = entry.getValue().getAsJsonObject();
+                    if (version.has("project_id") && !version.get("project_id").isJsonNull()) {
+                        projectIds.add(version.get("project_id").getAsString());
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to bulk-resolve installed mod hashes: " + e.getMessage());
+            }
+            return projectIds;
         }
 
         private String fetchProjectName(String projectId) {
