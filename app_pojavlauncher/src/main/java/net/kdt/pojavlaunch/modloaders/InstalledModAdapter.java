@@ -118,7 +118,8 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
     public InstalledModAdapter(Context context, File modsDir, EmptyStateListener listener) {
         mContext = context.getApplicationContext();
-        mCurseforgeApiKey = context.getString(R.string.curseforge_api_key);
+        mCurseforgeApiKey = net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_DISABLE_CURSEFORGE_API
+                ? null : net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveCurseforgeApiKey(context);
         mEmptyListener = listener;
         if (modsDir != null && modsDir.isDirectory()) {
             File[] files = modsDir.listFiles(f -> f.isFile() &&
@@ -279,7 +280,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
     /** Downloads the update, replaces the existing jar, refreshes the entry. */
     private void applyUpdate(Context context, ModEntry entry, int position) {
-        if (entry.updateUrl == null) return;
+        if (entry.updateUrl == null || entry.isUpdating) return;
 
         String updateUrl  = entry.updateUrl;
         String updateName = entry.updateFileName;
@@ -288,10 +289,16 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         boolean wasDisabled = entry.file.getName().endsWith(".disabled");
         String  targetName  = wasDisabled ? updateName + ".disabled" : updateName;
         File    targetFile  = new File(entry.file.getParent(), targetName);
+        final File oldFile  = entry.file;
 
         Toast.makeText(context,
                 context.getString(R.string.mod_updating, entry.displayName()),
                 Toast.LENGTH_SHORT).show();
+
+        // Flip the spinner on immediately so the update button disappears
+        // before the download even starts.
+        entry.isUpdating = true;
+        if (position < mMods.size()) notifyItemChanged(position);
 
         sUpdateCheckExecutor.execute(() -> {
             try {
@@ -299,15 +306,14 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 File tmpFile = new File(entry.file.getParent(), targetName + ".tmp");
                 DownloadUtils.downloadFile(updateUrl, tmpFile);
 
-                // Delete old file, rename temp to final
-                entry.file.delete();
-                tmpFile.renameTo(targetFile);
+                replaceModFile(oldFile, tmpFile, targetFile);
 
                 mMainHandler.post(() -> {
                     entry.file        = targetFile;
                     entry.enabled     = !wasDisabled;
                     entry.updateUrl   = null;
                     entry.updateFileName = null;
+                    entry.isUpdating  = false;
                     if (position < mMods.size()) notifyItemChanged(position);
                     Toast.makeText(context,
                             context.getString(R.string.mod_update_done, entry.displayName()),
@@ -315,12 +321,72 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 });
             } catch (Exception e) {
                 Log.e(TAG, "Update download failed: " + e.getMessage());
-                mMainHandler.post(() ->
-                        Toast.makeText(context,
-                                context.getString(R.string.mod_update_failed, entry.displayName()),
-                                Toast.LENGTH_SHORT).show());
+                mMainHandler.post(() -> {
+                    entry.isUpdating = false;
+                    if (position < mMods.size()) notifyItemChanged(position);
+                    Toast.makeText(context,
+                            context.getString(R.string.mod_update_failed, entry.displayName()),
+                            Toast.LENGTH_SHORT).show();
+                });
             }
         });
+    }
+
+    /**
+     * Replaces {@code oldFile} with the freshly downloaded {@code tmpFile}, ending
+     * up at {@code targetFile}. Handles both cases:
+     * <ul>
+     *   <li>Same file name (old == target): {@code renameTo} atomically replaces
+     *       the destination on most Android filesystems, so this always works
+     *       even if deleting the old file first happens to fail.</li>
+     *   <li>Different file name (old != target): these are two independent
+     *       filesystem entries, so the old one needs an explicit, verified
+     *       delete — otherwise a transient failure (e.g. the jar being briefly
+     *       held open by an icon/name-resolution read on another thread) leaves
+     *       it behind and it shows up as a duplicate mod next time the list is
+     *       rescanned.</li>
+     * </ul>
+     * Old-file deletion is retried a few times with a short backoff before
+     * giving up, since these locks are normally released within milliseconds.
+     */
+    private static void replaceModFile(File oldFile, File tmpFile, File targetFile) {
+        boolean sameName = oldFile.getAbsolutePath().equals(targetFile.getAbsolutePath());
+
+        if (sameName) {
+            // renameTo() onto an existing path replaces it atomically, so the
+            // old file is gone the moment this succeeds — no separate delete needed.
+            if (!tmpFile.renameTo(targetFile)) {
+                Log.w(TAG, "Failed to rename downloaded update into place: " + targetFile);
+            }
+            return;
+        }
+
+        // Different names: rename the new file into place first, then clean up
+        // the old one — never leave the mods folder without a working jar even
+        // if the delete step below has trouble.
+        if (!tmpFile.renameTo(targetFile)) {
+            Log.w(TAG, "Failed to rename downloaded update into place: " + targetFile);
+            return;
+        }
+
+        if (!deleteWithRetry(oldFile)) {
+            Log.w(TAG, "Failed to delete superseded jar, it will linger as a duplicate: " + oldFile);
+        }
+    }
+
+    /** Deletes a file, retrying briefly if it's transiently locked by another thread. */
+    private static boolean deleteWithRetry(File file) {
+        if (!file.exists()) return true;
+        for (int attempt = 0; attempt < 5; attempt++) {
+            if (file.delete() || !file.exists()) return true;
+            try {
+                Thread.sleep(60L * (attempt + 1));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+        return !file.exists();
     }
 
     // ── Switch version ───────────────────────────────────────────────────────
@@ -524,8 +590,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
                 File tmpFile = new File(entry.file.getParent(), targetName + ".tmp");
                 DownloadUtils.downloadFile(url, tmpFile);
 
-                oldFile.delete();
-                tmpFile.renameTo(targetFile);
+                replaceModFile(oldFile, tmpFile, targetFile);
 
                 mMainHandler.post(() -> {
                     entry.file        = targetFile;
@@ -740,7 +805,8 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         final ImageView   icon;
         final TextView    name, version;
         final SwitchCompat toggle;
-        final android.widget.Button update;
+        final ImageButton update;
+        final ProgressBar updateProgress;
         final ImageButton delete;
         final ImageButton switchVersion;
 
@@ -751,6 +817,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
             version= itemView.findViewById(R.id.installed_mod_version);
             toggle = itemView.findViewById(R.id.installed_mod_toggle);
             update = itemView.findViewById(R.id.installed_mod_update);
+            updateProgress = itemView.findViewById(R.id.installed_mod_update_progress);
             delete = itemView.findViewById(R.id.installed_mod_delete);
             switchVersion = itemView.findViewById(R.id.installed_mod_switch_version);
         }
@@ -803,14 +870,22 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
             toggle.setChecked(entry.enabled);
             toggle.setOnCheckedChangeListener((btn, checked) -> entry.setEnabled(checked));
 
-            // Update button — visible only when an update is available
-            if (entry.updateUrl != null) {
+            // Update button — visible only when an update is available and not
+            // currently being downloaded. While downloading, the spinner takes
+            // its place instead.
+            if (entry.isUpdating) {
+                update.setVisibility(View.GONE);
+                update.setOnClickListener(null);
+                updateProgress.setVisibility(View.VISIBLE);
+            } else if (entry.updateUrl != null) {
+                updateProgress.setVisibility(View.GONE);
                 update.setVisibility(View.VISIBLE);
                 update.setOnClickListener(v -> {
                     int pos = getBindingAdapterPosition();
                     if (pos != RecyclerView.NO_POSITION) applyUpdate(v.getContext(), entry, pos);
                 });
             } else {
+                updateProgress.setVisibility(View.GONE);
                 update.setVisibility(View.GONE);
                 update.setOnClickListener(null);
             }
@@ -846,6 +921,9 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         boolean enabled;
         @Nullable String updateUrl;
         @Nullable String updateFileName;
+        // True while a downloaded update jar is being fetched/applied for this
+        // mod — drives the per-row spinner that replaces the update button.
+        boolean isUpdating;
         // Friendly name read out of the jar's own metadata (fabric.mod.json,
         // mods.toml, etc.) once resolved. Null/empty until resolved or if
         // the jar simply has no name field — displayName() falls back to

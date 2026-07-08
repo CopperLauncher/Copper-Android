@@ -93,7 +93,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        mModpackApi = new ModsInstallApi(context.getString(R.string.curseforge_api_key), mSearchFilters);
+        String curseforgeApiKey = LauncherPreferences.PREF_DISABLE_CURSEFORGE_API
+                ? null : LauncherPreferences.resolveCurseforgeApiKey(context);
+        mModpackApi = new ModsInstallApi(curseforgeApiKey, mSearchFilters);
         ((ModsInstallApi) mModpackApi).mActivityContext = context;
     }
 
@@ -205,15 +207,51 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             Button mSelectVersionButton = dialog.findViewById(R.id.search_mod_mc_version_button);
             Button mApplyButton = dialog.findViewById(R.id.search_mod_apply_filters);
             android.widget.Spinner mLoaderSpinner = dialog.findViewById(R.id.search_mod_loader_spinner);
+            android.widget.Spinner mEngineSpinner = dialog.findViewById(R.id.search_mod_engine_spinner);
 
             assert mSelectedVersion != null;
             assert mSelectVersionButton != null;
             assert mApplyButton != null;
 
+            // Set up the "Modrinth / CurseForge / Both" engine picker. If CurseForge is
+            // disabled in experimental settings, only Modrinth is offered and the filter
+            // is pinned to it, since a CurseForge-only or Both search would otherwise
+            // silently return nothing.
+            boolean curseforgeDisabled = net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF
+                    .getBoolean("disableCurseforgeApi", false);
+            final int[] engineValues = curseforgeDisabled
+                    ? new int[]{Constants.ENGINE_MODRINTH}
+                    : new int[]{Constants.ENGINE_MODRINTH, Constants.ENGINE_CURSEFORGE, Constants.ENGINE_BOTH};
+            if (mEngineSpinner != null) {
+                String[] engineLabels = curseforgeDisabled
+                        ? new String[]{getString(R.string.search_mod_engine_modrinth)}
+                        : new String[]{getString(R.string.search_mod_engine_modrinth),
+                                        getString(R.string.search_mod_engine_curseforge),
+                                        getString(R.string.search_mod_engine_both)};
+                android.widget.ArrayAdapter<String> engineAdapter = new android.widget.ArrayAdapter<>(
+                        requireContext(), android.R.layout.simple_spinner_item, engineLabels);
+                engineAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                mEngineSpinner.setAdapter(engineAdapter);
+
+                if (curseforgeDisabled) {
+                    mSearchFilters.engine = Constants.ENGINE_MODRINTH;
+                    mEngineSpinner.setSelection(0);
+                    mEngineSpinner.setEnabled(false);
+                } else {
+                    mEngineSpinner.setEnabled(true);
+                    for (int i = 0; i < engineValues.length; i++) {
+                        if (engineValues[i] == mSearchFilters.engine) {
+                            mEngineSpinner.setSelection(i);
+                            break;
+                        }
+                    }
+                }
+            }
+
             // Set up loader spinner
+            final String[] loaderValues = {"", "fabric", "forge", "quilt", "neoforge"};
             if (mLoaderSpinner != null) {
                 String[] loaderLabels = {getString(R.string.search_mod_any_loader), "Fabric", "Forge", "Quilt", "NeoForge"};
-                final String[] loaderValues = {"", "fabric", "forge", "quilt", "neoforge"};
                 android.widget.ArrayAdapter<String> loaderAdapter = new android.widget.ArrayAdapter<>(
                         requireContext(), android.R.layout.simple_spinner_item, loaderLabels);
                 loaderAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -227,34 +265,24 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                         break;
                     }
                 }
-
-                mSelectVersionButton.setOnClickListener(v ->
-                        VersionSelectorDialog.open(v.getContext(), true,
-                                (id, snapshot) -> mSelectedVersion.setText(id)));
-
-                mSelectedVersion.setText(mSearchFilters.mcVersion);
-
-                mApplyButton.setOnClickListener(v -> {
-                    mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
-                    int pos = mLoaderSpinner.getSelectedItemPosition();
-                    mSearchFilters.modLoader = loaderValues[pos];
-                    searchMods(mSearchEditText.getText().toString());
-                    dialogInterface.dismiss();
-                });
-            } else {
-                // Fallback if spinner view not found
-                mSelectVersionButton.setOnClickListener(v ->
-                        VersionSelectorDialog.open(v.getContext(), true,
-                                (id, snapshot) -> mSelectedVersion.setText(id)));
-
-                mSelectedVersion.setText(mSearchFilters.mcVersion);
-
-                mApplyButton.setOnClickListener(v -> {
-                    mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
-                    searchMods(mSearchEditText.getText().toString());
-                    dialogInterface.dismiss();
-                });
             }
+
+            mSelectVersionButton.setOnClickListener(v ->
+                    VersionSelectorDialog.open(v.getContext(), true,
+                            (id, snapshot) -> mSelectedVersion.setText(id)));
+            mSelectedVersion.setText(mSearchFilters.mcVersion);
+
+            mApplyButton.setOnClickListener(v -> {
+                if (mEngineSpinner != null) {
+                    mSearchFilters.engine = engineValues[mEngineSpinner.getSelectedItemPosition()];
+                }
+                if (mLoaderSpinner != null) {
+                    mSearchFilters.modLoader = loaderValues[mLoaderSpinner.getSelectedItemPosition()];
+                }
+                mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
+                searchMods(mSearchEditText.getText().toString());
+                dialogInterface.dismiss();
+            });
         });
 
         dialog.show();
@@ -268,12 +296,16 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private final ModrinthApi mModrinthApi = new ModrinthApi();
         private final Handler mMainHandler = new Handler(Looper.getMainLooper());
         private Context mActivityContext;
+        @Nullable
         private final net.kdt.pojavlaunch.modloaders.modpacks.api.CurseforgeApi mCurseforgeApi;
 
-        ModsInstallApi(String curseforgeApiKey, SearchFilters filters) {
-            super(curseforgeApiKey);
+        /** @param curseforgeApiKey null when CurseForge is disabled in experimental settings */
+        ModsInstallApi(@Nullable String curseforgeApiKey, SearchFilters filters) {
+            super(curseforgeApiKey != null ? curseforgeApiKey : "", curseforgeApiKey == null);
             mFilters = filters;
-            mCurseforgeApi = new net.kdt.pojavlaunch.modloaders.modpacks.api.CurseforgeApi(curseforgeApiKey);
+            mCurseforgeApi = curseforgeApiKey != null
+                    ? new net.kdt.pojavlaunch.modloaders.modpacks.api.CurseforgeApi(curseforgeApiKey)
+                    : null;
         }
 
         /**
@@ -293,9 +325,12 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                         ? mFilters.modLoader : null;
                 detail = mModrinthApi.getModDetails(item, filterVer, filterLoader);
             } else if (item.apiSource == net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_CURSEFORGE) {
+                if (mCurseforgeApi == null) return null; // disabled in experimental settings
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : null;
-                detail = mCurseforgeApi.getModDetails(item, filterVer);
+                String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
+                        ? mFilters.modLoader : null;
+                detail = mCurseforgeApi.getModDetails(item, filterVer, filterLoader);
             } else {
                 detail = super.getModDetails(item);
             }
@@ -415,6 +450,36 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 return;
             }
 
+            // Drop any dependency that's already sitting in the mods folder (as any
+            // version, not just the one this mod happens to ask for) — otherwise every
+            // reinstall/update of a mod with common dependencies (Fabric API, Cloth
+            // Config, etc.) nags you to "install" something you already have.
+            PojavApplication.sExecutorService.execute(() -> {
+                java.util.Set<String> installedProjectIds = getInstalledModrinthProjectIds();
+                List<String> remainingIds = new ArrayList<>();
+                List<String> remainingTypes = new ArrayList<>();
+                for (int i = 0; i < depIds.length; i++) {
+                    if (depIds[i] != null && installedProjectIds.contains(depIds[i])) continue;
+                    remainingIds.add(depIds[i]);
+                    remainingTypes.add((depTypes != null && i < depTypes.length) ? depTypes[i] : "required");
+                }
+
+                if (remainingIds.isEmpty()) {
+                    // Every dependency is already installed — no need to prompt at all
+                    mMainHandler.post(() ->
+                            downloadMod(context, url, fileName, new String[0], new String[0], oldFilePath));
+                    return;
+                }
+
+                mMainHandler.post(() -> promptForDependencies(context, url, fileName,
+                        remainingIds.toArray(new String[0]), remainingTypes.toArray(new String[0]), oldFilePath));
+            });
+        }
+
+        /** Fetches display names for the (already filtered to not-yet-installed) dependency
+         *  list, then shows the install dialog once every name has resolved. */
+        private void promptForDependencies(Context context, String url, String fileName,
+                                            String[] depIds, String[] depTypes, String oldFilePath) {
             // Fetch project names for all deps, then show dialog
             String[] labels = new String[depIds.length];
             final boolean[] checkedDefaults = new boolean[depIds.length];
@@ -535,6 +600,55 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             } catch (Exception e) {
                 Log.w(TAG, "Failed to download dependency " + projectId + ": " + e.getMessage());
             }
+        }
+
+        /**
+         * Hashes every jar currently in the mods folder and bulk-resolves them against
+         * Modrinth's version_files endpoint to find which Modrinth project each one
+         * belongs to — used to filter "install dependencies" prompts down to ones that
+         * aren't already installed under some other version/file name.
+         */
+        private java.util.Set<String> getInstalledModrinthProjectIds() {
+            java.util.Set<String> projectIds = new java.util.HashSet<>();
+            File modsDir = getModsDir();
+            File[] files = modsDir.listFiles(f -> f.isFile() &&
+                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+            if (files == null || files.length == 0) return projectIds;
+
+            List<String> hashes = new ArrayList<>();
+            for (File f : files) {
+                String hash = sha1Hex(f);
+                if (hash != null) hashes.add(hash);
+            }
+            if (hashes.isEmpty()) return projectIds;
+
+            try {
+                com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+                com.google.gson.JsonArray hashArray = new com.google.gson.JsonArray();
+                for (String hash : hashes) hashArray.add(hash);
+                body.add("hashes", hashArray);
+                body.addProperty("algorithm", "sha1");
+
+                java.util.Map<String, String> headers = new java.util.HashMap<>();
+                headers.put("Content-Type", "application/json");
+                headers.put("Accept", "application/json");
+
+                String responseRaw = net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler.postRaw(
+                        headers, "https://api.modrinth.com/v2/version_files", body.toString());
+                if (responseRaw == null) return projectIds;
+
+                com.google.gson.JsonObject response = com.google.gson.JsonParser.parseString(responseRaw).getAsJsonObject();
+                for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : response.entrySet()) {
+                    if (!entry.getValue().isJsonObject()) continue;
+                    com.google.gson.JsonObject version = entry.getValue().getAsJsonObject();
+                    if (version.has("project_id") && !version.get("project_id").isJsonNull()) {
+                        projectIds.add(version.get("project_id").getAsString());
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to bulk-resolve installed mod hashes: " + e.getMessage());
+            }
+            return projectIds;
         }
 
         private String fetchProjectName(String projectId) {

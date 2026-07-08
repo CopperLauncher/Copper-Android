@@ -15,5 +15,18 @@
             android:title="@string/preference_force_big_core_title"
             android:summary="@string/preference_force_big_core_desc" />
 
+        <SwitchPreferenceCompat
+            android:key="disableCurseforgeApi"
+            android:defaultValue="false"
+            android:title="@string/preference_disable_curseforge_title"
+            android:summary="@string/preference_disable_curseforge_desc" />
+
+        <EditTextPreference
+            android:key="curseforgeApiKeyOverride"
+            android:title="@string/preference_curseforge_api_key_title"
+            android:summary="@string/preference_curseforge_api_key_desc"
+            android:dialogTitle="@string/preference_curseforge_api_key_title"
+            android:dialogMessage="@string/preference_curseforge_api_key_desc" />
+
     </PreferenceCategory>
 </PreferenceScreen>

@@ -77,6 +77,14 @@ public class LauncherPreferences {
     public static boolean PREF_MOUSE_GRAB_FORCE = false;
     public static boolean PREF_KEYBOARD_PANNING = true;
 
+    /** Experimental: skip CurseForge entirely (search, version lookups, icon
+     *  fallback) since its API can be noticeably slower than Modrinth's. */
+    public static boolean PREF_DISABLE_CURSEFORGE_API = false;
+    /** Experimental: user-supplied CurseForge API key, used instead of the
+     *  bundled one when non-empty — a personal key isn't shared with every
+     *  other install of the app, so it isn't rate-limited by them either. */
+    public static String PREF_CURSEFORGE_API_KEY_OVERRIDE = "";
+
 
     public static void loadPreferences(Context ctx) {
         //Required for CTRLDEF_FILE and MultiRT
@@ -123,6 +131,8 @@ public class LauncherPreferences {
         PREF_TOUCHCONTROLLER_VIBRATE_LENGTH = DEFAULT_PREF.getInt("touchControllerVibrateLength", 100);
         PREF_MOUSE_GRAB_FORCE = DEFAULT_PREF.getBoolean("always_grab_mouse", false);
         PREF_KEYBOARD_PANNING = DEFAULT_PREF.getBoolean("keyboardPanning", true);
+        PREF_DISABLE_CURSEFORGE_API = DEFAULT_PREF.getBoolean("disableCurseforgeApi", false);
+        PREF_CURSEFORGE_API_KEY_OVERRIDE = DEFAULT_PREF.getString("curseforgeApiKeyOverride", "");
 
         String argLwjglLibname = "-Dorg.lwjgl.opengl.libname=";
         for (String arg : JREUtils.parseJavaArguments(PREF_CUSTOM_JAVA_ARGS)) {
@@ -264,5 +274,19 @@ public class LauncherPreferences {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Resolves the CurseForge API key to actually use: the user's own key from
+     * the experimental settings if they've set one, otherwise the bundled
+     * default. Doesn't take PREF_DISABLE_CURSEFORGE_API into account — callers
+     * that can skip CurseForge entirely should check that flag themselves
+     * before bothering to resolve a key at all.
+     */
+    public static String resolveCurseforgeApiKey(Context ctx) {
+        if (PREF_CURSEFORGE_API_KEY_OVERRIDE != null && !PREF_CURSEFORGE_API_KEY_OVERRIDE.trim().isEmpty()) {
+            return PREF_CURSEFORGE_API_KEY_OVERRIDE.trim();
+        }
+        return ctx.getString(R.string.curseforge_api_key);
     }
 }

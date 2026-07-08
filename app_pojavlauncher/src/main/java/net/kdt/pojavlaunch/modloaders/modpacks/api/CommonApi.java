@@ -36,11 +36,43 @@ public class CommonApi implements ModpackApi {
     private final ModpackApi mCurseforgeApi;
     private final ModpackApi mModrinthApi;
     private final ModpackApi[] mModpackApis;
+    /** Parallel to mModpackApis — which Constants.SOURCE_* each entry is, for engine filtering. */
+    private final int[] mModpackApiSources;
 
     public CommonApi(String curseforgeApiKey) {
+        this(curseforgeApiKey, false);
+    }
+
+    /**
+     * @param disableCurseforge when true, CurseForge is excluded from
+     *                          {@link #searchMod}'s result fan-out entirely —
+     *                          used by the "Disable CurseForge" experimental
+     *                          setting, since its API can be noticeably slower
+     *                          than Modrinth's. The instance is still created
+     *                          (cheap, no network) so {@link #getModpackApi}
+     *                          keeps working for things like importing an
+     *                          existing CurseForge modpack zip.
+     */
+    public CommonApi(String curseforgeApiKey, boolean disableCurseforge) {
         mCurseforgeApi = new CurseforgeApi(curseforgeApiKey);
         mModrinthApi = new ModrinthApi();
-        mModpackApis = new ModpackApi[]{mModrinthApi, mCurseforgeApi};
+        if (disableCurseforge) {
+            mModpackApis = new ModpackApi[]{mModrinthApi};
+            mModpackApiSources = new int[]{Constants.SOURCE_MODRINTH};
+        } else {
+            mModpackApis = new ModpackApi[]{mModrinthApi, mCurseforgeApi};
+            mModpackApiSources = new int[]{Constants.SOURCE_MODRINTH, Constants.SOURCE_CURSEFORGE};
+        }
+    }
+
+    /** Whether the given per-api source should be queried under the requested engine filter. */
+    private static boolean isEngineIncluded(int apiSource, int engineFilter) {
+        switch (engineFilter) {
+            case Constants.ENGINE_MODRINTH:   return apiSource == Constants.SOURCE_MODRINTH;
+            case Constants.ENGINE_CURSEFORGE: return apiSource == Constants.SOURCE_CURSEFORGE;
+            case Constants.ENGINE_BOTH:
+            default:                          return true;
+        }
     }
 
     @Override
@@ -54,6 +86,8 @@ public class CommonApi implements ModpackApi {
 
         Future<?>[] futures = new Future<?>[mModpackApis.length];
         for(int i = 0; i < mModpackApis.length; i++) {
+            // Skip engines the user didn't pick in the search filter dialog (Modrinth / CurseForge / Both)
+            if(!isEngineIncluded(mModpackApiSources[i], searchFilters.engine)) continue;
             // If there is an array and its length is zero, this means that we've exhausted the results for this
             // search query and we don't need to actually do the search
             if(results[i] != null && results[i].results.length == 0) continue;
