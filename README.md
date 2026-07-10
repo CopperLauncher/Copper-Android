@@ -9,11 +9,8 @@
   <img src="https://github.com/CopperLauncher/Copper-Android/workflows/Android%20CI/badge.svg" alt="Android CI"/>
   <img src="https://badges.crowdin.net/pojavlauncher/localized.svg" alt="Crowdin"/>
   <a href="https://discord.gg/j8GTQv3YvY"><img src="https://img.shields.io/discord/1355213558631366897?color=5865F2&logo=discord&logoColor=white&label=&style=flat" alt="Discord"></a>
-  <a href="https://github.com/CopperLauncher"><img src="https://img.shields.io/badge/github-CopperLauncher-orange?logo=github" alt="GitHub"></a>
   <a href="https://www.curseforge.com/members/maxjubayeryt/projects"><img src="https://img.shields.io/badge/curseforge-maxjubayeryt-orange?logo=curseforge" alt="CurseForge"></a>
   <a href="https://modrinth.com/user/maxjubayeryt"><img src="https://img.shields.io/badge/modrinth-maxjubayeryt-green?logo=modrinth" alt="Modrinth User"></a>
-  <a href="https://modrinth.com/organization/copperlauncher"><img src="https://img.shields.io/badge/modrinth-CopperLauncher-green?logo=modrinth" alt="Modrinth Org"></a>
-</p>
 </p>
 
 Copper is a fork of [Amethyst](https://github.com/AngelAuraMC/Amethyst-Android) that allows you to play Minecraft: Java Edition on your Android devices.
@@ -89,8 +86,13 @@ If you need more control over the build process, follow these steps:
 * [x] Bug Fixes
 * [x] Fix GL4ES and KW in older versions
 * [x] Add Modpack export
-* [x] Add mclo.gs 
-* [ ] Add More Renders
+* [x] Add mclo.gs
+* [ ] Add Res pack downloader
+* [ ] Add Shader pack downloader
+* [ ] Add in launcher file manager
+* [ ] Add Res pack manager
+* [ ] Add Shader pack manager
+* [ ] Add More Renerers
 
 
 ## Known Issues
@@ -113,6 +115,7 @@ Copper is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-A
 * [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher/): [LGPL-3.0 license](https://github.com/AngelAuraMC/Amethyst-Android/blob/v3_openjdk/LICENSE)
 * Android Support Libraries: [Apache License 2.0](https://android.googlesource.com/platform/prebuilts/maven_repo/android/+/master/NOTICE.txt).
 * [GL4ES](https://github.com/AngelAuraMC/gl4es): [MIT License](https://github.com/ptitSeb/gl4es/blob/master/LICENSE).
+* [Krypton Wrapper](https://github.com/BZLZHH/NG-GL4ES): [MIT License](https://github.com/BZLZHH/NG-GL4ES/blob/main/LICENSE).
 * [MobileGlues](https://github.com/MobileGL-Dev/MobileGlues): [LGPL-2.1 License](https://github.com/MobileGL-Dev/MobileGlues/blob/dev-es/LICENSE).
 * [ANGLE](https://chromium.googlesource.com/angle/angle): [All Rights Reserved](app_pojavlauncher/src/main/assets/licenses/ANGLE_LICENSE).
 * [OpenJDK](https://github.com/AngelAuraMC/openjdk-multiarch-jdk8u): [GNU GPLv2 License](https://openjdk.java.net/legal/gplv2+ce.html).

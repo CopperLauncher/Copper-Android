@@ -45,9 +45,14 @@ import net.kdt.pojavlaunch.utils.DownloadUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * Searches and installs individual mods into the current instance's mods folder.
@@ -477,11 +482,22 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         }
 
         /** Fetches display names for the (already filtered to not-yet-installed) dependency
-         *  list, then shows the install dialog once every name has resolved. */
+         *  list, then shows the install dialog once every name has resolved.
+         *
+         *  The filter that ran before this only drops dependencies whose exact jar hash
+         *  matches something already in the mods folder on Modrinth's own database — so a
+         *  dependency that's installed but came from CurseForge, or was placed manually,
+         *  has a completely different file hash and slips right through, appearing in the
+         *  dialog as "required"/"optional" even though it's already there. To catch that,
+         *  we additionally read the mod id directly out of every installed jar's own
+         *  metadata (fabric.mod.json / quilt.mod.json / mods.toml) — this is source-agnostic
+         *  and needs no network — and cross-check it against each dependency's Modrinth slug. */
         private void promptForDependencies(Context context, String url, String fileName,
                                             String[] depIds, String[] depTypes, String oldFilePath) {
-            // Fetch project names for all deps, then show dialog
+            final java.util.Set<String> installedModIds = getInstalledModIds();
+
             String[] labels = new String[depIds.length];
+            String[] slugs = new String[depIds.length];
             final boolean[] checkedDefaults = new boolean[depIds.length];
             AtomicInteger remaining = new AtomicInteger(depIds.length);
 
@@ -499,15 +515,50 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
                 final String projectId = depIds[idx];
                 PojavApplication.sExecutorService.execute(() -> {
-                    // Fetch project name from Modrinth
-                    String name = fetchProjectName(projectId);
+                    // Fetch project title + slug from Modrinth
+                    String[] details = fetchProjectDetails(projectId);
+                    String name = details != null ? details[0] : null;
+                    slugs[idx] = details != null ? details[1] : null;
                     labels[idx] = prefix + (name != null ? name : projectId);
                     if (remaining.decrementAndGet() == 0) {
-                        mMainHandler.post(() -> showDepsDialog(context, url, fileName,
-                                depIds, depTypes, labels, checkedDefaults, oldFilePath));
+                        mMainHandler.post(() -> finishDependencyPrompt(context, url, fileName,
+                                depIds, depTypes, labels, slugs, checkedDefaults, installedModIds, oldFilePath));
                     }
                 });
             }
+        }
+
+        /** Drops any dependency whose slug matches a mod id already found in the mods
+         *  folder (see promptForDependencies), then shows the dialog with what's left —
+         *  or skips it entirely and downloads directly if nothing's left to ask about. */
+        private void finishDependencyPrompt(Context context, String url, String fileName,
+                                             String[] depIds, String[] depTypes, String[] labels,
+                                             String[] slugs, boolean[] checkedDefaults,
+                                             java.util.Set<String> installedModIds, String oldFilePath) {
+            List<String> keptIds = new ArrayList<>();
+            List<String> keptTypes = new ArrayList<>();
+            List<String> keptLabels = new ArrayList<>();
+            List<Boolean> keptChecked = new ArrayList<>();
+            for (int i = 0; i < depIds.length; i++) {
+                String slug = slugs[i];
+                if (slug != null && installedModIds.contains(slug.toLowerCase(java.util.Locale.ROOT))) continue;
+                keptIds.add(depIds[i]);
+                keptTypes.add((depTypes != null && i < depTypes.length) ? depTypes[i] : "required");
+                keptLabels.add(labels[i]);
+                keptChecked.add(checkedDefaults[i]);
+            }
+
+            if (keptIds.isEmpty()) {
+                downloadMod(context, url, fileName, new String[0], new String[0], oldFilePath);
+                return;
+            }
+
+            boolean[] checkedArr = new boolean[keptChecked.size()];
+            for (int i = 0; i < checkedArr.length; i++) checkedArr[i] = keptChecked.get(i);
+
+            showDepsDialog(context, url, fileName,
+                    keptIds.toArray(new String[0]), keptTypes.toArray(new String[0]),
+                    keptLabels.toArray(new String[0]), checkedArr, oldFilePath);
         }
 
         private void showDepsDialog(Context context, String url, String fileName,
@@ -651,15 +702,109 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             return projectIds;
         }
 
-        private String fetchProjectName(String projectId) {
+        /** Fetches a Modrinth project's title and slug in one call. Returns {title, slug}
+         *  (either element may be null), or null entirely if the lookup failed. */
+        private String[] fetchProjectDetails(String projectId) {
             try {
                 net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler handler =
                         new net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler("https://api.modrinth.com/v2");
                 com.google.gson.JsonObject obj = handler.get("project/" + projectId,
                         com.google.gson.JsonObject.class);
-                if (obj != null && obj.has("title")) return obj.get("title").getAsString();
+                if (obj == null) return null;
+                String title = (obj.has("title") && !obj.get("title").isJsonNull())
+                        ? obj.get("title").getAsString() : null;
+                String slug = (obj.has("slug") && !obj.get("slug").isJsonNull())
+                        ? obj.get("slug").getAsString() : null;
+                return new String[]{title, slug};
             } catch (Exception ignored) {}
             return null;
+        }
+
+        /**
+         * Reads the mod id (not the display name) embedded in every jar currently in the
+         * mods folder — straight from fabric.mod.json / quilt.mod.json / mods.toml /
+         * mcmod.info. Unlike {@link #getInstalledModrinthProjectIds()} this needs no
+         * network call and doesn't care where the jar originally came from, so it also
+         * catches dependencies that were installed via CurseForge or dropped in manually
+         * — cases the Modrinth-hash lookup can never see since those jars simply don't
+         * have a Modrinth file hash to match against.
+         */
+        private java.util.Set<String> getInstalledModIds() {
+            java.util.Set<String> ids = new java.util.HashSet<>();
+            File modsDir = getModsDir();
+            File[] files = modsDir.listFiles(f -> f.isFile() &&
+                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+            if (files == null) return ids;
+            for (File f : files) {
+                String id = extractModId(f);
+                if (id != null && !id.isEmpty()) ids.add(id.toLowerCase(java.util.Locale.ROOT));
+            }
+            return ids;
+        }
+
+        private static String extractModId(File jarFile) {
+            try (ZipFile zip = new ZipFile(jarFile)) {
+                String content = readZipEntry(zip, "fabric.mod.json");
+                if (content != null) {
+                    try {
+                        com.google.gson.JsonObject obj = com.google.gson.JsonParser.parseString(content).getAsJsonObject();
+                        if (obj.has("id") && !obj.get("id").isJsonNull()) {
+                            String id = obj.get("id").getAsString().trim();
+                            if (!id.isEmpty()) return id;
+                        }
+                    } catch (Exception ignored) {}
+                }
+                content = readZipEntry(zip, "quilt.mod.json");
+                if (content != null) {
+                    try {
+                        com.google.gson.JsonObject root = com.google.gson.JsonParser.parseString(content).getAsJsonObject();
+                        com.google.gson.JsonObject ql = root.has("quilt_loader") ? root.getAsJsonObject("quilt_loader") : null;
+                        if (ql != null && ql.has("id") && !ql.get("id").isJsonNull()) {
+                            String id = ql.get("id").getAsString().trim();
+                            if (!id.isEmpty()) return id;
+                        }
+                    } catch (Exception ignored) {}
+                }
+                for (String toml : new String[]{"META-INF/neoforge.mods.toml", "META-INF/mods.toml"}) {
+                    content = readZipEntry(zip, toml);
+                    if (content != null) {
+                        String modId = tomlStringField(content, "modId");
+                        if (modId != null && !modId.isEmpty()) return modId.trim();
+                    }
+                }
+                content = readZipEntry(zip, "mcmod.info");
+                if (content != null) {
+                    try {
+                        com.google.gson.JsonArray arr = com.google.gson.JsonParser.parseString(content).getAsJsonArray();
+                        if (arr.size() > 0 && arr.get(0).isJsonObject()) {
+                            com.google.gson.JsonObject mod = arr.get(0).getAsJsonObject();
+                            if (mod.has("modid") && !mod.get("modid").isJsonNull()) {
+                                String id = mod.get("modid").getAsString().trim();
+                                if (!id.isEmpty()) return id;
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to read mod id from JAR: " + jarFile.getName() + " - " + e.getMessage());
+            }
+            return null;
+        }
+
+        private static String readZipEntry(ZipFile zip, String entryPath) {
+            ZipEntry entry = zip.getEntry(entryPath);
+            if (entry == null) return null;
+            try (InputStream is = zip.getInputStream(entry)) {
+                return Tools.read(is);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        /** Minimal `field = "value"` line lookup — enough for the modId line in mods.toml. */
+        private static String tomlStringField(String content, String field) {
+            Matcher m = Pattern.compile(field + "\\s*=\\s*\"([^\"]*)\"").matcher(content);
+            return m.find() ? m.group(1) : null;
         }
 
         private static File getModsDir() {
