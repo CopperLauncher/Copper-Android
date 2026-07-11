@@ -162,6 +162,12 @@ public class ManageModsFragment extends Fragment {
         String version = prefs.getString(KEY_MC_VERSION + profileKey, "");
         String loader  = effectiveLoader(prefs.getString(KEY_LOADER + profileKey, ""));
 
+        if (version.isEmpty() && loader.isEmpty()) {
+            InstanceVersionResolver.Info info = InstanceVersionResolver.resolve(profileKey);
+            if (info.mcVersion != null) version = info.mcVersion;
+            loader = effectiveLoader(info.loader);
+        }
+
         Bundle args = new Bundle();
         if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
         if (!loader.isEmpty())  args.putString(ModsSearchFragment.ARG_PRESET_LOADER,     loader);

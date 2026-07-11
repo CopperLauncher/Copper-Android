@@ -150,6 +150,15 @@ public class MainMenuFragment extends Fragment {
         String version = prefs.getString("mc_version_" + profileKey, "");
         String loader  = prefs.getString("loader_"     + profileKey, "");
 
+        // Nothing saved yet for this instance — default to the version/loader it's
+        // actually running, same as the Manage Content filter does, so the results
+        // are already relevant without an extra filter-then-Apply step.
+        if (version.isEmpty() && loader.isEmpty()) {
+            InstanceVersionResolver.Info info = InstanceVersionResolver.resolve(profileKey);
+            if (info.mcVersion != null) version = info.mcVersion;
+            loader = info.loader;
+        }
+
         Bundle args = new Bundle();
         args.putString(ModsSearchFragment.ARG_CONTENT_TYPE, contentType.name());
         if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
@@ -175,6 +184,15 @@ public class MainMenuFragment extends Fragment {
                 new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                         .setView(R.layout.dialog_content_picker)
                         .create();
+
+        // The layout itself already draws a rounded card (background_card); without
+        // this, the dialog window's own default (square-cornered) background shows
+        // through behind it, so the corners look like they've got a mismatched
+        // rectangle peeking out from under the rounded card.
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
 
         dialog.setOnShowListener(di -> {
             android.widget.TextView title = dialog.findViewById(R.id.content_picker_title);
