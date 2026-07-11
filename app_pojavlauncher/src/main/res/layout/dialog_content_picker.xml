@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/background_card"
+    android:orientation="vertical"
+    android:padding="@dimen/fragment_padding_medium">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="@dimen/_10sdp">
+
+        <TextView
+            android:id="@+id/content_picker_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/content_picker_title_browse"
+            android:textSize="@dimen/_14ssp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/content_picker_filter"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/content_picker_filter"
+            android:src="@drawable/ic_filter"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <com.kdt.mcgui.MineButton
+        android:id="@+id/content_picker_mods"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/_14sdp"
+        android:text="@string/mcl_content_mods"
+        android:textSize="@dimen/_12ssp" />
+
+    <com.kdt.mcgui.MineButton
+        android:id="@+id/content_picker_resourcepacks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/_14sdp"
+        android:text="@string/mcl_content_resourcepacks"
+        android:textSize="@dimen/_12ssp" />
+
+    <com.kdt.mcgui.MineButton
+        android:id="@+id/content_picker_shaderpacks"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mcl_content_shaderpacks"
+        android:textSize="@dimen/_12ssp" />
+
+</LinearLayout>

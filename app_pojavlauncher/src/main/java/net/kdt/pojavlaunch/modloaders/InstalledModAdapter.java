@@ -34,6 +34,7 @@ import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler;
 import net.kdt.pojavlaunch.modloaders.modpacks.imagecache.ImageReceiver;
 import net.kdt.pojavlaunch.modloaders.modpacks.imagecache.ModIconCache;
+import net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType;
 import net.kdt.pojavlaunch.utils.DownloadUtils;
 import net.kdt.pojavlaunch.utils.Murmur2;
 
@@ -98,6 +99,10 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
 
     private final Context mContext;
     private final String  mCurseforgeApiKey;
+    /** Which kind of content this instance manages — drives the file extension used
+     *  for scanning/enabling/disabling entries. Icon and name extraction stay
+     *  extension-agnostic (they already fall back gracefully for non-mod content). */
+    private final ContentType mContentType;
 
     // Per-instance filter — set by ManageModsFragment before triggering update check
     private String mFilterMcVersion = "";
@@ -116,14 +121,21 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
     // loading (or anything else routed through sExecutorService) while they run.
     private static final ExecutorService sUpdateCheckExecutor = Executors.newFixedThreadPool(3);
 
+    /** Kept for any callers still constructing a mods-only adapter directly. */
     public InstalledModAdapter(Context context, File modsDir, EmptyStateListener listener) {
+        this(context, modsDir, ContentType.MOD, listener);
+    }
+
+    public InstalledModAdapter(Context context, File contentDir, ContentType contentType, EmptyStateListener listener) {
         mContext = context.getApplicationContext();
+        mContentType = contentType;
         mCurseforgeApiKey = net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_DISABLE_CURSEFORGE_API
                 ? null : net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveCurseforgeApiKey(context);
         mEmptyListener = listener;
-        if (modsDir != null && modsDir.isDirectory()) {
-            File[] files = modsDir.listFiles(f -> f.isFile() &&
-                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+        if (contentDir != null && contentDir.isDirectory()) {
+            String ext = mContentType.fileExtension;
+            File[] files = contentDir.listFiles(f -> f.isFile() &&
+                    (f.getName().endsWith(ext) || f.getName().endsWith(ext + ".disabled")));
             if (files != null) {
                 Arrays.sort(files, (a, b) -> a.getName().compareToIgnoreCase(b.getName()));
                 for (File f : files) mMods.add(new ModEntry(f));
@@ -939,15 +951,17 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         String displayName() {
             if (metaName != null && !metaName.isEmpty()) return metaName;
             String n = file.getName();
-            if (n.endsWith(".jar.disabled")) n = n.substring(0, n.length() - 13);
-            else if (n.endsWith(".jar"))     n = n.substring(0, n.length() - 4);
+            if (n.endsWith(".disabled")) n = n.substring(0, n.length() - ".disabled".length());
+            int dot = n.lastIndexOf('.');
+            if (dot > 0) n = n.substring(0, dot); // strip .jar / .zip
             return n;
         }
 
         void setEnabled(boolean enable) {
             if (enable == this.enabled) return;
             File target = enable
-                    ? new File(file.getParent(), file.getName().replace(".jar.disabled", ".jar"))
+                    ? new File(file.getParent(), file.getName().substring(0,
+                            file.getName().length() - ".disabled".length()))
                     : new File(file.getParent(), file.getName() + ".disabled");
             if (file.renameTo(target)) {
                 file = target;

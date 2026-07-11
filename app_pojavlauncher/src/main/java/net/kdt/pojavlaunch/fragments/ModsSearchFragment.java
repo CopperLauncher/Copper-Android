@@ -36,6 +36,7 @@ import net.kdt.pojavlaunch.modloaders.modpacks.models.ModDetail;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.ModItem;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchFilters;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.Constants;
+import net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.profiles.VersionSelectorDialog;
@@ -67,6 +68,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
     public static final String ARG_PRESET_MC_VERSION = "preset_mc_version";
     /** Bundle key: pre-seed the mod loader filter ("fabric","forge","quilt","neoforge"). */
     public static final String ARG_PRESET_LOADER     = "preset_loader";
+    /** Bundle key: which kind of content to browse. Value is a ContentType enum
+     *  name(); defaults to MOD when absent. */
+    public static final String ARG_CONTENT_TYPE      = "content_type";
 
     private View mOverlay;
     private float mOverlayTopCache;
@@ -139,22 +143,41 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         });
 
         mFilterButton.setOnClickListener(v -> displayFilterDialog());
-        mSearchEditText.setHint(R.string.hint_search_mod);
 
-        // Apply any pre-seeded filters passed in from ManageModsFragment filter button
+        // Apply any pre-seeded filters passed in from the Manage Content picker
         applyPresetArgs();
+
+        mSearchEditText.setHint(searchHintRes());
 
         searchMods(null);
     }
 
+    private int searchHintRes() {
+        switch (mSearchFilters.contentType) {
+            case RESOURCE_PACK: return R.string.hint_search_resourcepack;
+            case SHADER_PACK:   return R.string.hint_search_shaderpack;
+            default:            return R.string.hint_search_mod;
+        }
+    }
+
     /**
-     * Reads ARG_PRESET_MC_VERSION / ARG_PRESET_LOADER from the fragment's arguments
-     * and seeds mSearchFilters before the first search.  This lets ManageModsFragment
-     * pass in the current instance's version+loader so the search is already filtered.
+     * Reads ARG_CONTENT_TYPE / ARG_PRESET_MC_VERSION / ARG_PRESET_LOADER from the
+     * fragment's arguments and seeds mSearchFilters before the first search. This
+     * lets ManageModsFragment (via the Manage Content picker) pass in the current
+     * instance's content type + version/loader so the search opens already filtered.
+     *
+     * The loader preset is only applied for MOD — resource packs and shader packs
+     * aren't loader-specific, so a saved loader filter is ignored for those, both
+     * here and in the filter dialog itself.
      */
     private void applyPresetArgs() {
         Bundle args = getArguments();
         if (args == null) return;
+
+        String contentTypeName = args.getString(ARG_CONTENT_TYPE, null);
+        if (contentTypeName != null) {
+            mSearchFilters.contentType = ContentType.valueOf(contentTypeName);
+        }
 
         String presetVersion = args.getString(ARG_PRESET_MC_VERSION, null);
         String presetLoader  = args.getString(ARG_PRESET_LOADER,     null);
@@ -162,7 +185,8 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         if (presetVersion != null && !presetVersion.isEmpty()) {
             mSearchFilters.mcVersion = presetVersion;
         }
-        if (presetLoader != null && !presetLoader.isEmpty()) {
+        if (mSearchFilters.contentType == ContentType.MOD
+                && presetLoader != null && !presetLoader.isEmpty()) {
             mSearchFilters.modLoader = presetLoader;
         }
     }
@@ -253,9 +277,15 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 }
             }
 
-            // Set up loader spinner
+            // Set up loader spinner — only meaningful for mods. Resource packs and
+            // shader packs aren't loader-specific, so this whole row is hidden and
+            // any previously-set loader filter is simply not applied to the search.
+            TextView mLoaderLabel = dialog.findViewById(R.id.search_mod_loader_textview);
             final String[] loaderValues = {"", "fabric", "forge", "quilt", "neoforge"};
+            boolean showLoaderFilter = mSearchFilters.contentType == ContentType.MOD;
+            if (mLoaderLabel != null) mLoaderLabel.setVisibility(showLoaderFilter ? View.VISIBLE : View.GONE);
             if (mLoaderSpinner != null) {
+                mLoaderSpinner.setVisibility(showLoaderFilter ? View.VISIBLE : View.GONE);
                 String[] loaderLabels = {getString(R.string.search_mod_any_loader), "Fabric", "Forge", "Quilt", "NeoForge"};
                 android.widget.ArrayAdapter<String> loaderAdapter = new android.widget.ArrayAdapter<>(
                         requireContext(), android.R.layout.simple_spinner_item, loaderLabels);
@@ -275,14 +305,38 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             mSelectVersionButton.setOnClickListener(v ->
                     VersionSelectorDialog.open(v.getContext(), true,
                             (id, snapshot) -> mSelectedVersion.setText(id)));
+
+            // If nothing's been picked yet (no preset args, filter never touched
+            // before), default to the current instance's own version/loader
+            // instead of leaving the filter blank.
+            if ((mSearchFilters.mcVersion == null || mSearchFilters.mcVersion.isEmpty())
+                    && (mSearchFilters.modLoader == null || mSearchFilters.modLoader.isEmpty())) {
+                String profileKey = net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF
+                        .getString(net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_KEY_CURRENT_PROFILE, null);
+                if (profileKey != null) {
+                    InstanceVersionResolver.Info info = InstanceVersionResolver.resolve(profileKey);
+                    if (info.mcVersion != null) mSearchFilters.mcVersion = info.mcVersion;
+                    if (showLoaderFilter && !info.loader.isEmpty()) mSearchFilters.modLoader = info.loader;
+                    if (mLoaderSpinner != null) {
+                        for (int i = 0; i < loaderValues.length; i++) {
+                            if (loaderValues[i].equals(mSearchFilters.modLoader)) {
+                                mLoaderSpinner.setSelection(i);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
             mSelectedVersion.setText(mSearchFilters.mcVersion);
 
             mApplyButton.setOnClickListener(v -> {
                 if (mEngineSpinner != null) {
                     mSearchFilters.engine = engineValues[mEngineSpinner.getSelectedItemPosition()];
                 }
-                if (mLoaderSpinner != null) {
+                if (showLoaderFilter && mLoaderSpinner != null) {
                     mSearchFilters.modLoader = loaderValues[mLoaderSpinner.getSelectedItemPosition()];
+                } else {
+                    mSearchFilters.modLoader = "";
                 }
                 mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
                 searchMods(mSearchEditText.getText().toString());
@@ -359,7 +413,8 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
             File modsDir = getModsDir();
             File[] files = modsDir.listFiles(f -> f.isFile() &&
-                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+                    (f.getName().endsWith(mFilters.contentType.fileExtension) ||
+                            f.getName().endsWith(mFilters.contentType.fileExtension + ".disabled")));
             if (files == null || files.length == 0) return;
 
             java.util.Map<String, File> installedHashToFile = new java.util.HashMap<>();
@@ -437,7 +492,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             // Extract filename
             String rawName = url.substring(url.lastIndexOf('/') + 1);
             if (rawName.contains("?")) rawName = rawName.substring(0, rawName.indexOf('?'));
-            final String fileName = rawName.endsWith(".jar") ? rawName : rawName + ".jar";
+            final String fileName = rawName.endsWith(mFilters.contentType.fileExtension) ? rawName : rawName + mFilters.contentType.fileExtension;
 
             // If a different version of this same mod is already installed under
             // a different file name (the Update/Downgrade case), remember its path
@@ -645,7 +700,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 String depUrl = depDetail.versionUrls[0];
                 String depName = depUrl.substring(depUrl.lastIndexOf('/') + 1);
                 if (depName.contains("?")) depName = depName.substring(0, depName.indexOf('?'));
-                if (!depName.endsWith(".jar")) depName += ".jar";
+                if (!depName.endsWith(mFilters.contentType.fileExtension)) depName += mFilters.contentType.fileExtension;
 
                 DownloadUtils.downloadFile(depUrl, new File(modsDir, depName));
             } catch (Exception e) {
@@ -663,7 +718,8 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             java.util.Set<String> projectIds = new java.util.HashSet<>();
             File modsDir = getModsDir();
             File[] files = modsDir.listFiles(f -> f.isFile() &&
-                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+                    (f.getName().endsWith(mFilters.contentType.fileExtension) ||
+                            f.getName().endsWith(mFilters.contentType.fileExtension + ".disabled")));
             if (files == null || files.length == 0) return projectIds;
 
             List<String> hashes = new ArrayList<>();
@@ -733,7 +789,8 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             java.util.Set<String> ids = new java.util.HashSet<>();
             File modsDir = getModsDir();
             File[] files = modsDir.listFiles(f -> f.isFile() &&
-                    (f.getName().endsWith(".jar") || f.getName().endsWith(".jar.disabled")));
+                    (f.getName().endsWith(mFilters.contentType.fileExtension) ||
+                            f.getName().endsWith(mFilters.contentType.fileExtension + ".disabled")));
             if (files == null) return ids;
             for (File f : files) {
                 String id = extractModId(f);
@@ -807,17 +864,17 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             return m.find() ? m.group(1) : null;
         }
 
-        private static File getModsDir() {
+        private File getModsDir() {
             try {
                 String key = LauncherPreferences.DEFAULT_PREF
                         .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, null);
                 if (key != null && !key.isEmpty()) {
                     LauncherProfiles.load();
                     MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(key);
-                    if (profile != null) return new File(Tools.getGameDirPath(profile), "mods");
+                    if (profile != null) return new File(Tools.getGameDirPath(profile), mFilters.contentType.folderName);
                 }
             } catch (Exception ignored) {}
-            return new File(Tools.DIR_GAME_NEW, "mods");
+            return new File(Tools.DIR_GAME_NEW, mFilters.contentType.folderName);
         }
     }
 }
