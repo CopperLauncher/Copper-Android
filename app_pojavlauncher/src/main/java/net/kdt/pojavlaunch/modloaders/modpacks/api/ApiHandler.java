@@ -52,6 +52,10 @@ public class ApiHandler {
     }
 
     //Make a get request and return the response as a raw string;
+    private static final String USER_AGENT = "CopperLauncher/Copper-Android (https://github.com/CopperLauncher/Copper-Android)";
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+    private static final int READ_TIMEOUT_MS = 15_000;
+
     public static String getRaw(String url) {
         return getRaw(null, url);
     }
@@ -60,6 +64,9 @@ public class ApiHandler {
         Log.d("ApiHandler", url);
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(READ_TIMEOUT_MS);
+            conn.setRequestProperty("User-Agent", USER_AGENT);
             addHeaders(conn, headers);
             InputStream inputStream = conn.getInputStream();
             String data = Tools.read(inputStream);
@@ -80,9 +87,12 @@ public class ApiHandler {
     public static String postRaw(Map<String, String> headers, String url, String body) {
         try {
             HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(READ_TIMEOUT_MS);
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("Accept", "application/json");
+            conn.setRequestProperty("User-Agent", USER_AGENT);
             addHeaders(conn, headers);
             conn.setDoOutput(true);
 
@@ -98,7 +108,7 @@ public class ApiHandler {
             conn.disconnect();
             return data;
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.w("ApiHandler", "POST " + url + " failed: " + e.getMessage());
         }
         return null;
     }

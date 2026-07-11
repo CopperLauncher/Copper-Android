@@ -19,4 +19,11 @@ public class SearchFilters {
      */
     public int engine = Constants.ENGINE_MODRINTH;
 
+    /**
+     * Which kind of content to search for. Defaults to MOD; isModpack (when
+     * true) still takes priority over this for the existing modpack-browsing
+     * flow, since modpacks aren't one of the three ContentType values.
+     */
+    public ContentType contentType = ContentType.MOD;
+
 }

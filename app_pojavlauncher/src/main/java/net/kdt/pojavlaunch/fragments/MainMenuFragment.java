@@ -136,10 +136,12 @@ public class MainMenuFragment extends Fragment {
      * Internal navigation: right pane in landscape, full-screen swap in portrait.
      */
     /**
-     * Opens ModsSearchFragment with the saved per-instance filter pre-seeded.
-     * Always creates a fresh instance so the args bundle is applied on every open.
+     * Opens ModsSearchFragment with the saved per-instance filter pre-seeded, for
+     * the given content type. Always creates a fresh instance so the args bundle
+     * is applied on every open. The loader filter is only ever passed through for
+     * MOD — resource packs and shader packs aren't loader-specific.
      */
-    private void openModStore() {
+    private void openModStore(net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
         String profileKey = LauncherPreferences.DEFAULT_PREF
                 .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "default");
         SharedPreferences prefs = requireContext()
@@ -148,13 +150,105 @@ public class MainMenuFragment extends Fragment {
         String version = prefs.getString("mc_version_" + profileKey, "");
         String loader  = prefs.getString("loader_"     + profileKey, "");
 
+        // Nothing saved yet for this instance — default to the version/loader it's
+        // actually running, same as the Manage Content filter does, so the results
+        // are already relevant without an extra filter-then-Apply step.
+        if (version.isEmpty() && loader.isEmpty()) {
+            InstanceVersionResolver.Info info = InstanceVersionResolver.resolve(profileKey);
+            if (info.mcVersion != null) version = info.mcVersion;
+            loader = info.loader;
+        }
+
         Bundle args = new Bundle();
+        args.putString(ModsSearchFragment.ARG_CONTENT_TYPE, contentType.name());
         if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
-        if (!loader.isEmpty())  args.putString(ModsSearchFragment.ARG_PRESET_LOADER,     loader);
+        if (contentType == net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD
+                && !loader.isEmpty()) {
+            args.putString(ModsSearchFragment.ARG_PRESET_LOADER, loader);
+        }
 
         ModsSearchFragment fragment = new ModsSearchFragment();
         fragment.setArguments(args);
-        openPaneFragment(fragment, ModsSearchFragment.TAG);
+        openPaneFragment(fragment, ModsSearchFragment.TAG + ":" + contentType.name());
+    }
+
+    /**
+     * Shows the "Browse Content" / "Manage Content" picker: mods, resource packs,
+     * or shader packs, styled like the Microsoft/Local account picker. The manage
+     * variant also exposes the per-instance version/loader filter (relocated here
+     * from a button that used to live inside Manage Mods itself, since the filter
+     * is shared across all three content types rather than being mod-specific).
+     */
+    private void showContentPicker(boolean manage) {
+        androidx.appcompat.app.AlertDialog dialog =
+                new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                        .setView(R.layout.dialog_content_picker)
+                        .create();
+
+        // The layout itself already draws a rounded card (background_card); without
+        // this, the dialog window's own default (square-cornered) background shows
+        // through behind it, so the corners look like they've got a mismatched
+        // rectangle peeking out from under the rounded card.
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(
+                    new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        dialog.setOnShowListener(di -> {
+            android.widget.TextView title = dialog.findViewById(R.id.content_picker_title);
+            ImageButton filterButton      = dialog.findViewById(R.id.content_picker_filter);
+            View modsButton               = dialog.findViewById(R.id.content_picker_mods);
+            View resourcepacksButton      = dialog.findViewById(R.id.content_picker_resourcepacks);
+            View shaderpacksButton        = dialog.findViewById(R.id.content_picker_shaderpacks);
+
+            if (title != null) {
+                title.setText(manage ? R.string.content_picker_title_manage
+                                      : R.string.content_picker_title_browse);
+            }
+
+            if (filterButton != null) {
+                if (manage) {
+                    filterButton.setVisibility(View.VISIBLE);
+                    filterButton.setOnClickListener(v -> {
+                        String profileKey = LauncherPreferences.DEFAULT_PREF
+                                .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "default");
+                        ContentFilterDialog.show(requireContext(), profileKey, (version, loader) -> {
+                            Toast.makeText(requireContext(),
+                                    getString(R.string.manage_mods_filter_active, version, loader),
+                                    Toast.LENGTH_SHORT).show();
+                        });
+                    });
+                } else {
+                    filterButton.setVisibility(View.GONE);
+                }
+            }
+
+            if (modsButton != null) modsButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD);
+            });
+            if (resourcepacksButton != null) resourcepacksButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.RESOURCE_PACK);
+            });
+            if (shaderpacksButton != null) shaderpacksButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.SHADER_PACK);
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void onContentTypeChosen(boolean manage,
+                                      net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
+        if (manage) {
+            Bundle args = new Bundle();
+            args.putString(ManageModsFragment.ARG_CONTENT_TYPE, contentType.name());
+            openPane(ManageModsFragment.class, ManageModsFragment.TAG + ":" + contentType.name(), args);
+        } else {
+            openModStore(contentType);
+        }
     }
 
     /**
@@ -300,9 +394,9 @@ public class MainMenuFragment extends Fragment {
         mCustomControlButton.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
 
-        // Mod Store
+        // Browse Content (mods / resource packs / shader packs)
         if (mModStoreButton != null)
-            mModStoreButton.setOnClickListener(v -> openModStore());
+            mModStoreButton.setOnClickListener(v -> showContentPicker(false));
 
         // Execute .jar
         if (hasOnlineProfile()) {
@@ -320,9 +414,8 @@ public class MainMenuFragment extends Fragment {
         if (mShareLogsButton != null)
             mShareLogsButton.setOnClickListener(v -> shareLog(requireContext()));
 
-        // Manage Mods
-        mManageModsButton.setOnClickListener(v ->
-                openPane(ManageModsFragment.class, ManageModsFragment.TAG, null));
+        // Manage Content (mods / resource packs / shader packs)
+        mManageModsButton.setOnClickListener(v -> showContentPicker(true));
 
         // Open game directory
         if (mOpenDirectoryButton != null) {
