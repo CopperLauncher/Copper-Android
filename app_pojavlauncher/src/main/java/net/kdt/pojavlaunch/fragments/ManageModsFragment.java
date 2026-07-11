@@ -84,12 +84,11 @@ public class ManageModsFragment extends Fragment {
             ((TextView) emptyState).setText(contentTypeEmptyLabelRes());
         }
 
-        // Build adapter, inject saved filter (no auto update-check — opt-in via refresh button)
+        // Build adapter, inject saved (or instance-detected) filter
         String profileKey = getCurrentProfileKey();
-        SharedPreferences prefs = requireContext()
-                .getSharedPreferences(PREF_FILE, android.content.Context.MODE_PRIVATE);
-        String savedVersion = prefs.getString(KEY_MC_VERSION + profileKey, "");
-        String savedLoader  = effectiveLoader(prefs.getString(KEY_LOADER + profileKey, ""));
+        String[] filter = resolveFilter(profileKey);
+        String savedVersion = filter[0];
+        String savedLoader  = filter[1];
 
         mAdapter = new InstalledModAdapter(requireContext(), getContentDir(), mContentType, isEmpty -> {
             recycler.setVisibility(isEmpty ? View.GONE  : View.VISIBLE);
@@ -103,8 +102,8 @@ public class ManageModsFragment extends Fragment {
         // Auto-check for updates as soon as the screen opens, in addition to
         // the manual refresh button. Silent (no "checking…" toast, and no
         // "set a filter first" toast) since this fires automatically — if
-        // there's no filter set yet, it just quietly does nothing until the
-        // user configures one via the Manage Content filter icon.
+        // there's genuinely no version to go on (couldn't even detect one from
+        // the instance itself), it just quietly does nothing.
         runUpdateCheck(true);
     }
 
@@ -115,16 +114,14 @@ public class ManageModsFragment extends Fragment {
      *
      * @param silent when true, skips the "checking…"/"set a filter first" toasts —
      *               used for the automatic on-open check so it doesn't nag the
-     *               user if they haven't configured a version/loader filter yet.
+     *               user if a version genuinely couldn't be determined.
      */
     private void runUpdateCheck(boolean silent) {
         if (mAdapter == null) return;
 
-        String profileKey = getCurrentProfileKey();
-        SharedPreferences prefs = requireContext()
-                .getSharedPreferences(PREF_FILE, android.content.Context.MODE_PRIVATE);
-        String version = prefs.getString(KEY_MC_VERSION + profileKey, "");
-        String loader  = effectiveLoader(prefs.getString(KEY_LOADER + profileKey, ""));
+        String[] filter = resolveFilter(getCurrentProfileKey());
+        String version = filter[0];
+        String loader  = filter[1];
 
         if (version.isEmpty() && loader.isEmpty()) {
             if (!silent) {
@@ -155,18 +152,9 @@ public class ManageModsFragment extends Fragment {
     }
 
     private void openModSearch() {
-        String profileKey = getCurrentProfileKey();
-        SharedPreferences prefs = requireContext()
-                .getSharedPreferences(PREF_FILE, android.content.Context.MODE_PRIVATE);
-
-        String version = prefs.getString(KEY_MC_VERSION + profileKey, "");
-        String loader  = effectiveLoader(prefs.getString(KEY_LOADER + profileKey, ""));
-
-        if (version.isEmpty() && loader.isEmpty()) {
-            InstanceVersionResolver.Info info = InstanceVersionResolver.resolve(profileKey);
-            if (info.mcVersion != null) version = info.mcVersion;
-            loader = effectiveLoader(info.loader);
-        }
+        String[] filter = resolveFilter(getCurrentProfileKey());
+        String version = filter[0];
+        String loader  = filter[1];
 
         Bundle args = new Bundle();
         if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
@@ -176,6 +164,30 @@ public class ManageModsFragment extends Fragment {
         ModsSearchFragment fragment = new ModsSearchFragment();
         fragment.setArguments(args);
         navigateToFragment(fragment, ModsSearchFragment.TAG + ":" + mContentType.name());
+    }
+
+    /**
+     * The version/loader filter to actually use: whatever's saved for this profile,
+     * or — if nothing's been saved yet — whatever the instance itself is detected as
+     * running. This has to match what the filter dialog *shows* as its default (see
+     * ContentFilterDialog), otherwise the dialog can look like a filter is already
+     * set while everything that actually reads from SharedPreferences (like this
+     * screen's update check) still sees nothing and does nothing — which is exactly
+     * what used to happen, since the dialog's auto-fill was only ever visual until
+     * Apply was pressed.
+     */
+    private String[] resolveFilter(String profileKey) {
+        SharedPreferences prefs = requireContext()
+                .getSharedPreferences(PREF_FILE, android.content.Context.MODE_PRIVATE);
+        String version = prefs.getString(KEY_MC_VERSION + profileKey, "");
+        String loader  = effectiveLoader(prefs.getString(KEY_LOADER + profileKey, ""));
+
+        if (version.isEmpty() && loader.isEmpty()) {
+            InstanceVersionResolver.Info info = InstanceVersionResolver.resolve(profileKey);
+            if (info.mcVersion != null) version = info.mcVersion;
+            loader = effectiveLoader(info.loader);
+        }
+        return new String[]{version, loader};
     }
 
     /** Loader filters only make sense for mods — a saved loader preference is

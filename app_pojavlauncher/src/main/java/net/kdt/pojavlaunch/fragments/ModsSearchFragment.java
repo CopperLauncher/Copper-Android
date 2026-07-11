@@ -669,7 +669,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                     // Download selected dependencies
                     for (String depId : depIds) {
                         if (depId == null || depId.isEmpty()) continue;
-                        downloadDependency(depId, modsDir);
+                        downloadDependency(depId);
                     }
 
                     ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
@@ -684,13 +684,30 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             });
         }
 
-        private void downloadDependency(String projectId, File modsDir) {
-            // Fetch latest version for the current MC version/loader filter
+        /**
+         * Downloads a single dependency into whichever folder actually matches its own
+         * content type — not necessarily the same folder as whatever's depending on it.
+         * A shader pack's dependency is very often a mod (Iris); some resource packs
+         * depend on a mod too (Continuity, for CTM support). Downloading those into the
+         * shader pack / resource pack folder instead of the mods folder would mean the
+         * game's mod loader never even sees them — and forcing the parent's file
+         * extension onto them would leave a mangled file like "iris.jar.zip" behind.
+         */
+        private void downloadDependency(String projectId) {
             try {
+                String[] details = fetchProjectDetails(projectId);
+                ContentType depType = (details != null && details.length > 2 && details[2] != null)
+                        ? ContentType.fromModrinthType(details[2]) : mFilters.contentType;
+
                 String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
                         ? mFilters.mcVersion : "";
-                String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
+                // Loader filtering only makes sense when the dependency is itself a mod —
+                // resource pack / shader pack versions aren't tagged with fabric/forge/etc,
+                // so passing a loader filter through for those would zero out every result.
+                String filterLoader = (depType == ContentType.MOD
+                        && mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
                         ? mFilters.modLoader : null;
+
                 ModItem depItem = new ModItem(
                         net.kdt.pojavlaunch.modloaders.modpacks.models.Constants.SOURCE_MODRINTH,
                         false, projectId, projectId, "", "");
@@ -700,9 +717,12 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 String depUrl = depDetail.versionUrls[0];
                 String depName = depUrl.substring(depUrl.lastIndexOf('/') + 1);
                 if (depName.contains("?")) depName = depName.substring(0, depName.indexOf('?'));
-                if (!depName.endsWith(mFilters.contentType.fileExtension)) depName += mFilters.contentType.fileExtension;
+                if (!depName.endsWith(depType.fileExtension)) depName += depType.fileExtension;
 
-                DownloadUtils.downloadFile(depUrl, new File(modsDir, depName));
+                File targetDir = getContentDir(depType);
+                if (!targetDir.exists()) targetDir.mkdirs();
+
+                DownloadUtils.downloadFile(depUrl, new File(targetDir, depName));
             } catch (Exception e) {
                 Log.w(TAG, "Failed to download dependency " + projectId + ": " + e.getMessage());
             }
@@ -714,13 +734,33 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
          * belongs to — used to filter "install dependencies" prompts down to ones that
          * aren't already installed under some other version/file name.
          */
+        /**
+         * Every content file (mod/resourcepack/shaderpack) currently installed for this
+         * instance, across all three folders — not just whichever ContentType is being
+         * browsed right now. Dependencies aren't necessarily the same content type as
+         * the thing depending on them: shader packs commonly depend on a mod (Iris),
+         * and resource packs sometimes depend on a mod too (e.g. Continuity for CTM
+         * support). Scoping the "already installed" check to only the current content
+         * type's folder meant those cross-type dependencies could never be recognized
+         * as installed, even when they plainly were — this fixes that by checking
+         * everywhere a piece of content could live for this instance.
+         */
+        private File[] getAllInstalledContentFiles() {
+            List<File> all = new ArrayList<>();
+            for (ContentType type : ContentType.values()) {
+                File dir = getContentDir(type);
+                File[] files = dir.listFiles(f -> f.isFile() &&
+                        (f.getName().endsWith(type.fileExtension) ||
+                                f.getName().endsWith(type.fileExtension + ".disabled")));
+                if (files != null) all.addAll(java.util.Arrays.asList(files));
+            }
+            return all.toArray(new File[0]);
+        }
+
         private java.util.Set<String> getInstalledModrinthProjectIds() {
             java.util.Set<String> projectIds = new java.util.HashSet<>();
-            File modsDir = getModsDir();
-            File[] files = modsDir.listFiles(f -> f.isFile() &&
-                    (f.getName().endsWith(mFilters.contentType.fileExtension) ||
-                            f.getName().endsWith(mFilters.contentType.fileExtension + ".disabled")));
-            if (files == null || files.length == 0) return projectIds;
+            File[] files = getAllInstalledContentFiles();
+            if (files.length == 0) return projectIds;
 
             List<String> hashes = new ArrayList<>();
             for (File f : files) {
@@ -758,8 +798,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             return projectIds;
         }
 
-        /** Fetches a Modrinth project's title and slug in one call. Returns {title, slug}
-         *  (either element may be null), or null entirely if the lookup failed. */
+        /** Fetches a Modrinth project's title, slug, and project_type in one call.
+         *  Returns {title, slug, projectType} (any element may be null), or null
+         *  entirely if the lookup failed. */
         private String[] fetchProjectDetails(String projectId) {
             try {
                 net.kdt.pojavlaunch.modloaders.modpacks.api.ApiHandler handler =
@@ -771,7 +812,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                         ? obj.get("title").getAsString() : null;
                 String slug = (obj.has("slug") && !obj.get("slug").isJsonNull())
                         ? obj.get("slug").getAsString() : null;
-                return new String[]{title, slug};
+                String projectType = (obj.has("project_type") && !obj.get("project_type").isJsonNull())
+                        ? obj.get("project_type").getAsString() : null;
+                return new String[]{title, slug, projectType};
             } catch (Exception ignored) {}
             return null;
         }
@@ -787,12 +830,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
          */
         private java.util.Set<String> getInstalledModIds() {
             java.util.Set<String> ids = new java.util.HashSet<>();
-            File modsDir = getModsDir();
-            File[] files = modsDir.listFiles(f -> f.isFile() &&
-                    (f.getName().endsWith(mFilters.contentType.fileExtension) ||
-                            f.getName().endsWith(mFilters.contentType.fileExtension + ".disabled")));
-            if (files == null) return ids;
-            for (File f : files) {
+            for (File f : getAllInstalledContentFiles()) {
                 String id = extractModId(f);
                 if (id != null && !id.isEmpty()) ids.add(id.toLowerCase(java.util.Locale.ROOT));
             }
@@ -865,16 +903,20 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         }
 
         private File getModsDir() {
+            return getContentDir(mFilters.contentType);
+        }
+
+        private File getContentDir(ContentType type) {
             try {
                 String key = LauncherPreferences.DEFAULT_PREF
                         .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, null);
                 if (key != null && !key.isEmpty()) {
                     LauncherProfiles.load();
                     MinecraftProfile profile = LauncherProfiles.mainProfileJson.profiles.get(key);
-                    if (profile != null) return new File(Tools.getGameDirPath(profile), mFilters.contentType.folderName);
+                    if (profile != null) return new File(Tools.getGameDirPath(profile), type.folderName);
                 }
             } catch (Exception ignored) {}
-            return new File(Tools.DIR_GAME_NEW, mFilters.contentType.folderName);
+            return new File(Tools.DIR_GAME_NEW, type.folderName);
         }
     }
 }
