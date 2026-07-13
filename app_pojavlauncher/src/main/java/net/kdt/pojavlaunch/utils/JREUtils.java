@@ -231,6 +231,11 @@ public class JREUtils {
                 envMap.put("LIBGL_ES", "2"); // Krypton Wrapper crashes with 1
             }
             if(LOCAL_RENDERER.equals("freedreno_kgsl")){
+                // freedreno_kgsl is a Mesa Gallium driver like zink, so it's loaded through
+                // Mesa's own EGL, same as the zink+kopper path below. Without this, the
+                // MESA_LOADER_DRIVER_OVERRIDE=kgsl set above has no effect since EGL falls
+                // back to the platform driver instead of Mesa.
+                envMap.put("POJAVEXEC_EGL","libEGL_mesa.so"); // Use Mesa EGL
                 // Adreno 5XX and lower only expose Core 3.1 by default (missing hw extensions).
                 // 3.3 is required for modern Minecraft, and is known to work on this hardware.
                 if(GLInfoUtils.getGlInfo().isAdreno500Lower()) {
@@ -507,7 +512,6 @@ public class JREUtils {
             case "vulkan_zink": renderLibrary = "libOSMesa.so"; break;
             case "opengles_mobileglues": renderLibrary = "libmobileglues.so"; break;
             case "opengles3_desktopgl_zink": renderLibrary = "libglxshim.so"; break;
-            case "freedreno_kgsl": renderLibrary = "libglxshim.so"; break;
             case "opengles3_ltw" : renderLibrary = "libltw.so"; break;
             case "opengles3_KW" : renderLibrary = "libng_gl4es.so"; break;
             default:
