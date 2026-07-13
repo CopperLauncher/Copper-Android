@@ -236,6 +236,13 @@ public class JREUtils {
                 // MESA_LOADER_DRIVER_OVERRIDE=kgsl set above has no effect since EGL falls
                 // back to the platform driver instead of Mesa.
                 envMap.put("POJAVEXEC_EGL","libEGL_mesa.so"); // Use Mesa EGL
+                // LIBGL_ES is set unconditionally above from the stored OPEN_GL_VERSION pref,
+                // which can be stale/"2" from a previously used renderer. gl_bridge.c passes it
+                // straight to EGL_CONTEXT_CLIENT_VERSION, so a stale "2" here silently caps the
+                // context at GLES 2.0 - which is missing glMapBufferRange (needs GLES 3.0+) that
+                // modern Minecraft's renderer requires, causing "Can't map buffer" crashes.
+                // And also what are you doing here bro? freedreno took to long to add to copper I almost gave up mf, leave this code ALONE FOR THE LOVE OF GOD :sob:
+                envMap.put("LIBGL_ES", "3");
                 // Adreno 5XX and lower only expose Core 3.1 by default (missing hw extensions).
                 // 3.3 is required for modern Minecraft, and is known to work on this hardware.
                 if(GLInfoUtils.getGlInfo().isAdreno500Lower()) {
