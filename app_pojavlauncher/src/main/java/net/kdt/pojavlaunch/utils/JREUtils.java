@@ -208,7 +208,7 @@ public class JREUtils {
         envMap.put("force_glsl_extensions_warn", "true");
         envMap.put("allow_higher_compat_version", "true");
         envMap.put("allow_glsl_extension_directive_midshader", "true");
-        envMap.put("MESA_LOADER_DRIVER_OVERRIDE", "zink");
+        envMap.put("MESA_LOADER_DRIVER_OVERRIDE", "freedreno_kgsl".equals(LOCAL_RENDERER) ? "kgsl" : "zink");
         envMap.put("VTEST_SOCKET_NAME", new File(Tools.DIR_CACHE, ".virgl_test").getAbsolutePath());
 
         envMap.put("LD_LIBRARY_PATH", LD_LIBRARY_PATH);
@@ -229,6 +229,14 @@ public class JREUtils {
             }
             if(LOCAL_RENDERER.equals("opengles2")){
                 envMap.put("LIBGL_ES", "2"); // Krypton Wrapper crashes with 1
+            }
+            if(LOCAL_RENDERER.equals("freedreno_kgsl")){
+                // Adreno 5XX and lower only expose Core 3.1 by default (missing hw extensions).
+                // 3.3 is required for modern Minecraft, and is known to work on this hardware.
+                if(GLInfoUtils.getGlInfo().isAdreno500Lower()) {
+                    envMap.put("MESA_GL_VERSION_OVERRIDE", "3.3");
+                    envMap.put("MESA_GLSL_VERSION_OVERRIDE", "330");
+                }
             }
             if (LOCAL_RENDERER.equals("opengles3_desktopgl_zink_kopper")){
                 envMap.put("POJAVEXEC_EGL","libEGL_mesa.so"); // Use Mesa EGL
@@ -499,6 +507,7 @@ public class JREUtils {
             case "vulkan_zink": renderLibrary = "libOSMesa.so"; break;
             case "opengles_mobileglues": renderLibrary = "libmobileglues.so"; break;
             case "opengles3_desktopgl_zink": renderLibrary = "libglxshim.so"; break;
+            case "freedreno_kgsl": renderLibrary = "libglxshim.so"; break;
             case "opengles3_ltw" : renderLibrary = "libltw.so"; break;
             case "opengles3_KW" : renderLibrary = "libng_gl4es.so"; break;
             default:

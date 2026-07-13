@@ -1748,6 +1748,10 @@ public final class Tools {
         boolean deviceHasOpenGLES3 = JREUtils.getDetectedVersion() >= 3;
         // LTW is an optional proprietary dependency
         boolean appHasLtw = new File(Tools.NATIVE_LIB_DIR, "libltw.so").exists();
+        // Freedreno is Mesa's native OpenGL Gallium driver for Adreno GPUs, running directly
+        // over kgsl (no Vulkan involved). Current Mesa requires API 29+.
+        boolean deviceCompatibleMesa = SDK_INT >= 29;
+        boolean deviceIsAdreno = GLInfoUtils.getGlInfo().isAdreno();
         List<String> rendererIds = new ArrayList<>(defaultRenderers.length);
         List<String> rendererNames = new ArrayList<>(defaultRendererNames.length);
         for(int i = 0; i < defaultRenderers.length; i++) {
@@ -1755,6 +1759,7 @@ public final class Tools {
             if(rendererId.contains("vulkan") && !deviceHasVulkan) continue;
             if(rendererId.contains("vulkan_zink") && !deviceHasOSMesaZinkBinary) continue;
             if(rendererId.contains("ltw") && (!deviceHasOpenGLES3 || !appHasLtw)) continue;
+            if(rendererId.contains("freedreno") && (!deviceIsAdreno || !deviceCompatibleMesa)) continue;
             rendererIds.add(rendererId);
             rendererNames.add(defaultRendererNames[i]);
         }

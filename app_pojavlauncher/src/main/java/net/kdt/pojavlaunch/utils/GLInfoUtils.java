@@ -163,5 +163,17 @@ public class GLInfoUtils {
         public boolean isAdreno() {
             return renderer.contains("Adreno") && vendor.equals("Qualcomm");
         }
+
+        /**
+         * Check if this GLInfo belongs to a Qualcomm Adreno 200/300/400/500 graphics adapter
+         * @return
+         */
+        public boolean isAdreno500Lower(){
+            return vendor.equals("Qualcomm") &&
+                    (renderer.contains("Adreno (TM) 5") ||
+                    renderer.contains("Adreno (TM) 4") ||
+                    renderer.contains("Adreno (TM) 3") ||
+                    renderer.contains("Adreno (TM) 2"));
+        }
     }
 }
