@@ -236,6 +236,14 @@ public class JREUtils {
                 // MESA_LOADER_DRIVER_OVERRIDE=kgsl set above has no effect since EGL falls
                 // back to the platform driver instead of Mesa.
                 envMap.put("POJAVEXEC_EGL","libEGL_mesa.so"); // Use Mesa EGL
+                // gl4es binds to its own EGL/GLES implementation independently of
+                // POJAVEXEC_EGL (which is only read by our own gl_bridge.c). Without this,
+                // gl4es defaults to the bare "libEGL"/"libGLESv2" names, i.e. the stock
+                // system driver - a completely different implementation than the Mesa/kgsl
+                // context our bridge just created. That mismatch is what was causing "No
+                // context is current" and gl4es reporting the system driver's ES2.0
+                // capabilities instead of freedreno's.
+                envMap.put("LIBGL_EGL", "libEGL_mesa.so");
                 // LIBGL_ES is set unconditionally above from the stored OPEN_GL_VERSION pref,
                 // which can be stale/"2" from a previously used renderer. gl_bridge.c passes it
                 // straight to EGL_CONTEXT_CLIENT_VERSION, so a stale "2" here silently caps the
@@ -261,6 +269,12 @@ public class JREUtils {
             }
         }
         if(LauncherPreferences.PREF_BIG_CORE_AFFINITY) envMap.put("POJAV_BIG_CORE_AFFINITY", "1");
+        if(LauncherPreferences.PREF_FREEDRENO_SYSMEM) {
+            // We could also apply this only if freedreno_kgsl is active, but it's harmless
+            // otherwise since it's just a debug flag Turnip/Freedreno ignore when not in use.
+            envMap.put("FD_MESA_DEBUG", "sysmem");
+            envMap.put("TU_DEBUG", "sysmem");
+        }
         envMap.put("AWTSTUB_WIDTH", Integer.toString(CallbackBridge.windowWidth > 0 ? CallbackBridge.windowWidth : CallbackBridge.physicalWidth));
         envMap.put("AWTSTUB_HEIGHT", Integer.toString(CallbackBridge.windowHeight > 0 ? CallbackBridge.windowHeight : CallbackBridge.physicalHeight));
 

@@ -370,6 +370,8 @@
 
     <string name="preference_force_big_core_title">Force the renderer to run on the big core</string>
     <string name="preference_force_big_core_desc">Forces the Minecraft render thread to run on the core with the highest maximum frequency.</string>
+    <string name="preference_freedreno_sysmem_title">Force rendering into the system memory</string>
+    <string name="preference_freedreno_sysmem_desc">Forces Freedreno to render directly into the system memory. Enable if performance is low or you experience rendering issues.</string>
     <string name="preference_disable_curseforge_title">Disable CurseForge</string>
     <string name="preference_disable_curseforge_desc">Skip CurseForge entirely when searching or checking for mod updates — only Modrinth will be used. CurseForge\'s API can be noticeably slower.</string>
     <string name="preference_curseforge_api_key_title">Your own CurseForge API key</string>
