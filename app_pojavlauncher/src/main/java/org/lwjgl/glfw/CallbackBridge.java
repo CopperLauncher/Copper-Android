@@ -186,6 +186,8 @@ public class CallbackBridge {
         switch (type) {
             case SDL:
                 if (action[0] == INIT) {
+                    // We need to load this ourselves because some mods skip loading it due to
+                    // broken logic somewhere.
                     System.loadLibrary("SDL3");
                     System.loadLibrary("SDL2");
                     org.libsdl.app.SDL.setupJNI();

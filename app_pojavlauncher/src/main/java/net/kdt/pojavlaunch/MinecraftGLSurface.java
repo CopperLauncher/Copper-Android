@@ -256,11 +256,11 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
     }
 
     private void createGamepad(View contextView, InputDevice inputDevice) {
-        if(CallbackBridge.sGamepadDirectInput && !sdlEnabled) {
+        if (CallbackBridge.sGamepadDirectInput) {
             mGamepadHandler = new DirectGamepad();
-        }else if(!sdlEnabled) {
+        } else if (!sdlEnabled) {
             mGamepadHandler = new Gamepad(contextView, inputDevice, DefaultDataProvider.INSTANCE, true);
-        }else mGamepadHandler = (code, value) -> {}; // Ensure it isn't null while also not processing the events.
+        }
     }
 
     /**
@@ -279,12 +279,11 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                     Log.e(TAG, "SDL failed to send motionevent!");
                 }
             });
-            return true;
         }
         super.dispatchGenericMotionEvent(event);
         int mouseCursorIndex = -1;
 
-        if(!sdlEnabled && Gamepad.isGamepadEvent(event)){
+        if(Gamepad.isGamepadEvent(event)){
             if(mGamepadHandler == null) createGamepad(this, event.getDevice());
 
             mInputManager.handleMotionEventInput(getContext(), event, mGamepadHandler);
@@ -367,9 +366,8 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                     Log.e(TAG, "SDL failed to send keyevent!");
                 }
             });
-            return true;
         }
-        if(!sdlEnabled && isGamepadEvent){
+        if(isGamepadEvent){
             if(mGamepadHandler == null) createGamepad(this, event.getDevice());
 
             mInputManager.handleKeyEventInput(getContext(), event, mGamepadHandler);
