@@ -189,6 +189,7 @@ public class CallbackBridge {
                     System.loadLibrary("SDL3");
                     System.loadLibrary("SDL2");
                     org.libsdl.app.SDL.setupJNI();
+                    onDirectInputEnable();
                     MinecraftGLSurface.sdlEnabled = true;
                     if (SDLActivity.getSDLSurface() != null) {
                         // Notifies SDL of native surface res which is needed for proper input handling
