@@ -43,6 +43,7 @@ import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.utils.TouchControllerUtils;
 
+import org.libsdl.app.SDL;
 import org.libsdl.app.SDLActivity;
 import org.libsdl.app.SDLControllerManager;
 import org.libsdl.app.SDLSurface;
@@ -103,7 +104,6 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
         super(context, attributeSet);
         setFocusable(true);
         CallbackBridge.setDirectGamepadEnableHandler(this);
-        SDLControllerManager.setDirectGamepadEnableHandler(this);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -116,8 +116,10 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
         SDLSurface surface = new SDLSurface(ctx);
         motionListener = SDLActivity.getMotionListener();
         // Sets up the Java side, must be done here or else it might run on a non-looper thread
+        // which crashes the SDLCommandHandler
         org.libsdl.app.SDL.initialize();
-        SDLActivity.externalInitialize((MainActivity) ctx, surface, layout, nativeSurface);
+        SDL.setContext((MainActivity) ctx);
+        SDLActivity.externalInitialize(surface, layout, nativeSurface);
     }
 
     /** Initialize the view and all its settings
