@@ -399,6 +399,12 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
             case MotionEvent.BUTTON_SECONDARY:
                 glfwButton = LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_RIGHT;
                 break;
+            case MotionEvent.BUTTON_BACK:
+                glfwButton = LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_4;
+                break;
+            case MotionEvent.BUTTON_FORWARD:
+                glfwButton = LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_5;
+                break;
         }
         if(glfwButton == -256) return false;
         sendMouseButton(glfwButton, status);
