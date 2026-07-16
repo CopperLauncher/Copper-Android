@@ -582,15 +582,15 @@ public final class Tools {
             String TAG = "OldLegacy4JMitigation";
             Log.i(TAG, "Legacy4J detected!");
             oldL4JMitigationLogListener = loggedLine -> {
-                if (LauncherPreferences.PREF_GAMEPAD_SDL_PASSTHRU && loggedLine.contains("literal{SDL3 (isXander's libsdl4j)} isn't supported in this system. GLFW will be used instead.")) {
-                    Log.i(TAG, "Old version of Legacy4J detected! Force enabling SDL");
+                if (loggedLine.contains("literal{SDL3 (isXander's libsdl4j)} isn't supported in this system. GLFW will be used instead.")) {
+                    Logger.appendToLog("Amethyst-Android: Broken version of Legacy4J (below 1.8.51.8.5.2537.1) detected! Force enabling SDL");
                     Tools.SDL.initializeControllerSubsystems();
                     Tools.runOnUiThread(() -> {
                         Tools.dialog(activity, activity.getString(R.string.global_warning), activity.getString(R.string.oldL4JFound));
                     });
                     Logger.removeLogListener(oldL4JMitigationLogListener);
-                } else if (LauncherPreferences.PREF_GAMEPAD_SDL_PASSTHRU && loggedLine.contains("Added SDL Controller Mappings")) {
-                    Log.i(TAG, "Fixed version of Legacy4J detected! Have fun!");
+                } else if (loggedLine.contains("Added SDL Controller Mappings")) {
+                    Logger.appendToLog("Amethyst-Android: Fixed version of Legacy4J (1.8.5.2537.1 or higher) detected! Have fun!");
                     Logger.removeLogListener(oldL4JMitigationLogListener);
                 }
             };
