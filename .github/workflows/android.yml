@@ -29,11 +29,14 @@ jobs:
           java-version: '21'
 
       - name: Get LTW
-        run: |
-          sudo apt update && sudo apt install -y wget
-          mkdir -p app_pojavlauncher/libs
-          cd app_pojavlauncher/libs
-          wget https://github.com/CopperLauncher/LTW/releases/latest/download/ltw-release.aar
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          repo: CopperLauncher/LTW
+          workflow: android.yml 
+          workflow_conclusion: success
+          name: output-aar 
+          path: app_pojavlauncher/libs
       
       - name: Get JRE8
         uses: dawidd6/action-download-artifact@v6
