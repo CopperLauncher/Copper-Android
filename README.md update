@@ -87,11 +87,11 @@ If you need more control over the build process, follow these steps:
 * [x] Fix GL4ES and KW in older versions
 * [x] Add Modpack export
 * [x] Add mclo.gs
-* [ ] Add Res pack downloader
-* [ ] Add Shader pack downloader
+* [x] Add Res pack downloader
+* [x] Add Shader pack downloader
 * [ ] Add in launcher file manager
-* [ ] Add Res pack manager
-* [ ] Add Shader pack manager
+* [x] Add Res pack manager
+* [x] Add Shader pack manager
 * [ ] Add More Renerers
 
 
