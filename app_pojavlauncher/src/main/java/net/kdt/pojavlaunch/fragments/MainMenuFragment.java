@@ -39,6 +39,8 @@ public class MainMenuFragment extends Fragment {
 
     private mcVersionSpinner mVersionSpinner;
     private FrameLayout mRightPane;
+    private View mLeftSidebar;
+    private FrameLayout mLeftPaneContainer;
     private View mBottomBarBg;   // stub — kept so mTaskCountListener check compiles
     private View mPlayButton;
     private View mEditProfileButton;
@@ -180,6 +182,60 @@ public class MainMenuFragment extends Fragment {
      * is shared across all three content types rather than being mod-specific).
      */
     private void showContentPicker(boolean manage) {
+        if (isTwoPane()) {
+            openContentPickerPane(manage);
+            return;
+        }
+        showContentPickerDialog(manage);
+    }
+
+    /**
+     * Landscape: replaces the sidebar (left_sidebar) with ContentPickerFragment inside
+     * left_pane_container, and immediately loads the Mods section into the right pane
+     * as the default selection. The picker stays up so the user can switch between
+     * mods/resource packs/shader packs without reopening anything.
+     */
+    private void openContentPickerPane(boolean manage) {
+        if (isTagAlreadyOnTop(ContentPickerFragment.TAG)) return;
+
+        Bundle args = new Bundle();
+        args.putBoolean(ContentPickerFragment.ARG_MANAGE, manage);
+        ContentPickerFragment picker = new ContentPickerFragment();
+        picker.setArguments(args);
+
+        getChildFragmentManager()
+                .beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(R.id.left_pane_container, picker, ContentPickerFragment.TAG)
+                .addToBackStack(ContentPickerFragment.TAG)
+                .commit();
+
+        updateLeftPaneVisibility();
+
+        // Mods section shown by default when the picker opens
+        selectContentType(manage, net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD);
+    }
+
+    /**
+     * Called by {@link ContentPickerFragment} when the user taps one of its
+     * mods/resource packs/shader packs buttons. Opens the corresponding screen in the
+     * right pane while the picker itself remains in the left pane.
+     */
+    public void selectContentType(boolean manage,
+                                   net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
+        onContentTypeChosen(manage, contentType);
+    }
+
+    /** Shows/hides left_sidebar vs. left_pane_container based on whether the picker is active. */
+    private void updateLeftPaneVisibility() {
+        if (!isTwoPane() || mLeftSidebar == null || mLeftPaneContainer == null) return;
+        Fragment leftFragment = getChildFragmentManager().findFragmentById(R.id.left_pane_container);
+        boolean pickerActive = leftFragment instanceof ContentPickerFragment;
+        mLeftSidebar.setVisibility(pickerActive ? View.GONE : View.VISIBLE);
+        mLeftPaneContainer.setVisibility(pickerActive ? View.VISIBLE : View.GONE);
+    }
+
+    private void showContentPickerDialog(boolean manage) {
         androidx.appcompat.app.AlertDialog dialog =
                 new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                         .setView(R.layout.dialog_content_picker)
@@ -338,6 +394,9 @@ public class MainMenuFragment extends Fragment {
         // including instance picker (it has its own back button in the header).
         boolean showBar = getChildFragmentManager().getBackStackEntryCount() == 0;
         setBottomBarVisible(showBar);
+        // Keep left_sidebar vs. left_pane_container in sync — covers the content
+        // picker being popped off via the Back button as well as clearRightPane().
+        updateLeftPaneVisibility();
     };
 
     @Override
@@ -357,6 +416,8 @@ public class MainMenuFragment extends Fragment {
 
         // Detect two-pane landscape layout
         mRightPane = view.findViewById(R.id.right_pane_container);
+        mLeftSidebar = view.findViewById(R.id.left_sidebar);
+        mLeftPaneContainer = view.findViewById(R.id.left_pane_container);
 
         // Bottom bar refs
         mBottomBarBg       = view.findViewById(R.id._background_display_view);
@@ -473,6 +534,8 @@ public class MainMenuFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         mRightPane = null;
+        mLeftSidebar = null;
+        mLeftPaneContainer = null;
         mBottomBarBg = null;
         mPlayButton = null;
         mEditProfileButton = null;

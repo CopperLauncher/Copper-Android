@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/bgMainDrawable">
+
+    <!-- Header: title + optional filter button (Manage only) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/padding_heavy"
+        android:paddingTop="@dimen/padding_large"
+        android:paddingBottom="@dimen/padding_medium">
+
+        <TextView
+            android:id="@+id/content_picker_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/content_picker_title_browse"
+            android:textSize="@dimen/_14ssp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/content_picker_filter"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/content_picker_filter"
+            android:src="@drawable/ic_filter"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:background="?attr/colorDivider" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_mods"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_add"
+        android:text="@string/mcl_content_mods" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_resourcepacks"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_add"
+        android:text="@string/mcl_content_resourcepacks" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_shaderpacks"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_add"
+        android:text="@string/mcl_content_shaderpacks" />
+
+</LinearLayout>

@@ -6,6 +6,7 @@ import static net.kdt.pojavlaunch.Tools.hasNoOnlineProfileDialog;
 import android.Manifest;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -34,6 +35,7 @@ import net.kdt.pojavlaunch.extra.ExtraListener;
 import net.kdt.pojavlaunch.fragments.MainMenuFragment;
 import net.kdt.pojavlaunch.fragments.MicrosoftLoginFragment;
 import net.kdt.pojavlaunch.fragments.SelectAuthFragment;
+import net.kdt.pojavlaunch.fragments.SettingsHostFragment;
 import net.kdt.pojavlaunch.lifecycle.ContextAwareDoneListener;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutor;
 import net.kdt.pojavlaunch.modloaders.modpacks.ModloaderInstallTracker;
@@ -60,8 +62,34 @@ import java.lang.ref.WeakReference;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 
-public class LauncherActivity extends BaseActivity {
+public class LauncherActivity extends BaseActivity
+        implements androidx.preference.PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
     public static final String SETTING_FRAGMENT_TAG = "SETTINGS_FRAGMENT";
+
+    /**
+     * Portrait fallback for preference sub-screen navigation (e.g. tapping "Video" in
+     * pref_main). In landscape, {@link SettingsHostFragment} handles this itself since it's
+     * LauncherPreferenceFragment's direct parent fragment and androidx.preference checks
+     * that first; in portrait, LauncherPreferenceFragment has no parent fragment (it's added
+     * straight to the activity's FragmentManager), so androidx.preference falls back to the
+     * hosting Activity, which is here.
+     */
+    @Override
+    public boolean onPreferenceStartFragment(@NonNull androidx.preference.PreferenceFragmentCompat caller,
+                                              @NonNull androidx.preference.Preference pref) {
+        String fragmentClassName = pref.getFragment();
+        if (fragmentClassName == null) return false;
+        try {
+            @SuppressWarnings("unchecked")
+            Class<? extends Fragment> fragmentClass =
+                    (Class<? extends Fragment>) Class.forName(fragmentClassName);
+            Tools.swapFragment(this, fragmentClass, fragmentClassName, pref.getExtras());
+            return true;
+        } catch (ClassNotFoundException e) {
+            Log.e("LauncherActivity", "Preference fragment class not found: " + fragmentClassName, e);
+            return false;
+        }
+    }
 
     public final ActivityResultLauncher<Object> modInstallerLauncher =
             registerForActivityResult(new OpenDocumentWithExtension("jar"), (data)->{
@@ -129,19 +157,34 @@ public class LauncherActivity extends BaseActivity {
     /* Listener for the settings fragment */
     private final View.OnClickListener mSettingButtonListener = v -> {
         Fragment fragment = getSupportFragmentManager().findFragmentById(mFragmentView.getId());
+        boolean isLandscape = getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE;
+
         if (fragment instanceof MainMenuFragment) {
             MainMenuFragment mmf = (MainMenuFragment) fragment;
-            // In two-pane landscape: if right pane already has content, pressing the
-            // gear/home button pops back to home. If pane is at home, open settings.
+            // In two-pane landscape: if a pane already has content (e.g. the content
+            // picker), pressing the gear/home button pops back to home first, same as
+            // before. Only opens Settings once the main menu is already at home.
             if (mmf.isRightPaneActive()) {
                 mmf.clearRightPane();
+            } else if (isLandscape) {
+                // Landscape: settings gets its own two-pane screen (pref_main on the
+                // left, empty right pane) instead of borrowing the main menu's right pane.
+                Tools.swapFragment(this, SettingsHostFragment.class, SETTING_FRAGMENT_TAG, null);
             } else {
-                if (!mmf.tryOpenInRightPane(LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null)) {
-                    Tools.swapFragment(this, LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null);
-                }
+                Tools.swapFragment(this, LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null);
+            }
+        } else if (fragment instanceof SettingsHostFragment) {
+            // Already in settings (landscape): gear/home button pops the right pane's
+            // sub-screen back to empty, or leaves settings entirely if already empty.
+            SettingsHostFragment settingsHostFragment = (SettingsHostFragment) fragment;
+            if (settingsHostFragment.isRightPaneActive()) {
+                settingsHostFragment.clearRightPane();
+            } else {
+                Tools.backToMainMenu(this);
             }
         } else {
-            // Portrait: the settings button doubles as a home button when not on main menu
+            // Portrait (or any other fullscreen sub-fragment): settings button doubles
+            // as a home button when not on main menu
             Tools.backToMainMenu(this);
         }
     };
@@ -332,6 +375,19 @@ public class LauncherActivity extends BaseActivity {
                 fragment.goBack();
                 return;
             }
+        }
+
+        // Inside the landscape settings screen: pop its right pane first (back to the
+        // empty state), and only then fall through to leave the settings screen entirely.
+        Fragment topFragment = getSupportFragmentManager().findFragmentById(mFragmentView.getId());
+        if (topFragment instanceof SettingsHostFragment) {
+            SettingsHostFragment settingsHostFragment = (SettingsHostFragment) topFragment;
+            if (settingsHostFragment.isRightPaneActive()) {
+                settingsHostFragment.popRightPane();
+                return;
+            }
+            // Falls through to the default back-stack pop below, which reveals
+            // MainMenuFragment/ROOT again.
         }
 
         // In landscape two-pane mode: if the right pane has content, pop it instead of exiting
