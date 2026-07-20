@@ -864,8 +864,9 @@ public final class Tools {
 
         File[] lwjglModules = lwjgl3Folder.listFiles(pathname ->
                 pathname.getName().endsWith(".jar") &&
-            // Exclude our two special jars which goes first and last
+                // Exclude our three special jars which goes first, second and last
                 !pathname.getName().equals("lwjgl.jar") &&
+                !pathname.getName().equals("/lwjgl-"+internalLwjglVersion+"-merged-modules.jar") &&
                 !pathname.getName().endsWith("lwjglx.jar"));
 
         if (lwjglModules != null) {
