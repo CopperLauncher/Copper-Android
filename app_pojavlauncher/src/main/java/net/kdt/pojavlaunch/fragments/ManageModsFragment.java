@@ -72,7 +72,15 @@ public class ManageModsFragment extends Fragment {
         RecyclerView recycler  = view.findViewById(R.id.manage_mods_recycler);
         View        emptyState = view.findViewById(R.id.manage_mods_empty);
 
-        backButton.setOnClickListener(v -> requireActivity().onBackPressed());
+        // In landscape this screen is docked in MainMenuFragment's right pane, and the
+        // content picker's own back button (left pane) already covers "leave this
+        // screen" — a second one here was redundant. Portrait opens this full-screen
+        // with no picker alongside it, so it keeps its own back button there.
+        if (getParentFragment() instanceof MainMenuFragment) {
+            backButton.setVisibility(View.GONE);
+        } else {
+            backButton.setOnClickListener(v -> requireActivity().onBackPressed());
+        }
         mRefreshButton.setOnClickListener(v -> runUpdateCheck(false));
         addButton.setOnClickListener(v -> openModSearch());
 
