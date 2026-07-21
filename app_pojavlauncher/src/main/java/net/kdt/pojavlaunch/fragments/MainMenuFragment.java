@@ -144,6 +144,13 @@ public class MainMenuFragment extends Fragment {
      * MOD — resource packs and shader packs aren't loader-specific.
      */
     private void openModStore(net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
+        Bundle args = new Bundle();
+        populateModStoreArgs(args, contentType);
+        openPane(ModsSearchFragment.class, ModsSearchFragment.TAG + ":" + contentType.name(), args);
+    }
+
+    /** Shared by {@link #openModStore} and {@link #openContentPickerPane} so both build identical args. */
+    private void populateModStoreArgs(Bundle args, net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
         String profileKey = LauncherPreferences.DEFAULT_PREF
                 .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "default");
         SharedPreferences prefs = requireContext()
@@ -161,17 +168,12 @@ public class MainMenuFragment extends Fragment {
             loader = info.loader;
         }
 
-        Bundle args = new Bundle();
         args.putString(ModsSearchFragment.ARG_CONTENT_TYPE, contentType.name());
         if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
         if (contentType == net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD
                 && !loader.isEmpty()) {
             args.putString(ModsSearchFragment.ARG_PRESET_LOADER, loader);
         }
-
-        ModsSearchFragment fragment = new ModsSearchFragment();
-        fragment.setArguments(args);
-        openPaneFragment(fragment, ModsSearchFragment.TAG + ":" + contentType.name());
     }
 
     /**
@@ -192,28 +194,43 @@ public class MainMenuFragment extends Fragment {
     /**
      * Landscape: replaces the sidebar (left_sidebar) with ContentPickerFragment inside
      * left_pane_container, and immediately loads the Mods section into the right pane
-     * as the default selection. The picker stays up so the user can switch between
-     * mods/resource packs/shader packs without reopening anything.
+     * as the default selection — both in a single transaction/back-stack entry, so one
+     * Back press undoes the whole "open picker" action instead of two (previously the
+     * left-pane and right-pane replacements were separate transactions, which required
+     * pressing Back twice — once per pane — to actually leave, and briefly flashed the
+     * right pane back to its Home content in between).
      */
     private void openContentPickerPane(boolean manage) {
         if (isTagAlreadyOnTop(ContentPickerFragment.TAG)) return;
 
-        Bundle args = new Bundle();
-        args.putBoolean(ContentPickerFragment.ARG_MANAGE, manage);
-        ContentPickerFragment picker = new ContentPickerFragment();
-        picker.setArguments(args);
+        Bundle pickerArgs = new Bundle();
+        pickerArgs.putBoolean(ContentPickerFragment.ARG_MANAGE, manage);
+
+        net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType defaultType =
+                net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD;
+        Class<? extends Fragment> defaultFragmentClass;
+        Bundle defaultArgs = new Bundle();
+        String defaultTag;
+        if (manage) {
+            defaultFragmentClass = ManageModsFragment.class;
+            defaultArgs.putString(ManageModsFragment.ARG_CONTENT_TYPE, defaultType.name());
+            defaultTag = ManageModsFragment.TAG + ":" + defaultType.name();
+        } else {
+            defaultFragmentClass = ModsSearchFragment.class;
+            populateModStoreArgs(defaultArgs, defaultType);
+            defaultTag = ModsSearchFragment.TAG + ":" + defaultType.name();
+        }
 
         getChildFragmentManager()
                 .beginTransaction()
                 .setReorderingAllowed(true)
-                .replace(R.id.left_pane_container, picker, ContentPickerFragment.TAG)
+                .replace(R.id.left_pane_container, ContentPickerFragment.class, pickerArgs, ContentPickerFragment.TAG)
+                .replace(R.id.right_pane_container, defaultFragmentClass, defaultArgs, defaultTag)
                 .addToBackStack(ContentPickerFragment.TAG)
                 .commit();
-
-        updateLeftPaneVisibility();
-
-        // Mods section shown by default when the picker opens
-        selectContentType(manage, net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD);
+        // Visibility is updated by mBackStackListener once this transaction actually
+        // lands — calling updateLeftPaneVisibility() here would read stale state,
+        // since commit() runs asynchronously on the next main-thread pass.
     }
 
     /**
@@ -319,26 +336,6 @@ public class MainMenuFragment extends Fragment {
         int count = fm.getBackStackEntryCount();
         if (count == 0) return false;
         return tag.equals(fm.getBackStackEntryAt(count - 1).getName());
-    }
-
-    /** Navigate to a pre-built fragment instance (preserves args on fresh instances). */
-    private void openPaneFragment(Fragment fragment, String tag) {
-        if (isTwoPane()) {
-            if (isTagAlreadyOnTop(tag)) return; // already showing — ignore the double-tap
-            getChildFragmentManager()
-                    .beginTransaction()
-                    .setReorderingAllowed(true)
-                    .replace(R.id.right_pane_container, fragment, tag)
-                    .addToBackStack(tag)
-                    .commit();
-        } else {
-            requireActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .setReorderingAllowed(true)
-                    .replace(R.id.container_fragment, fragment, tag)
-                    .addToBackStack(tag)
-                    .commit();
-        }
     }
 
     private void openPane(Class<? extends Fragment> fragmentClass, String tag,

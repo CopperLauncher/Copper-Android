@@ -31,6 +31,23 @@ public class LauncherPreferenceFragment extends PreferenceFragmentCompat impleme
     public void onCreatePreferences(Bundle b, String str) {
         addPreferencesFromResource(R.xml.pref_main);
         setupNotificationRequestPreference();
+        hideBackButtonIfDockedAsSettingsRoot();
+    }
+
+    /**
+     * pref_main's own back button is redundant (and looked like a duplicate/ugly UI
+     * bug) when pref_main is permanently docked as SettingsHostFragment's left pane
+     * in landscape: the right pane's current screen already shows its own back
+     * button, and pref_main itself doesn't navigate anywhere on its own — only the
+     * right pane's content changes. Only ever applies to this exact class (pref_main
+     * itself), never to subclasses like the Video/Renderers/Controls screens, which
+     * keep their own back button as-is.
+     */
+    private void hideBackButtonIfDockedAsSettingsRoot() {
+        if (getClass() != LauncherPreferenceFragment.class) return;
+        if (!(getParentFragment() instanceof net.kdt.pojavlaunch.fragments.SettingsHostFragment)) return;
+        Preference backButton = findPreference("settings_root_back_button");
+        if (backButton != null) backButton.setVisible(false);
     }
 
     private void setupNotificationRequestPreference() {

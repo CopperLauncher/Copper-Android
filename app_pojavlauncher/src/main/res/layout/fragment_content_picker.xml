@@ -44,21 +44,21 @@
         android:id="@+id/content_picker_mods"
         style="@style/LauncherMenuButton.Universal"
         android:layout_width="match_parent"
-        android:drawableStart="@drawable/ic_add"
+        android:drawableStart="@drawable/ic_menu_install_jar"
         android:text="@string/mcl_content_mods" />
 
     <com.kdt.mcgui.LauncherMenuButton
         android:id="@+id/content_picker_resourcepacks"
         style="@style/LauncherMenuButton.Universal"
         android:layout_width="match_parent"
-        android:drawableStart="@drawable/ic_add"
+        android:drawableStart="@drawable/ic_setting_video"
         android:text="@string/mcl_content_resourcepacks" />
 
     <com.kdt.mcgui.LauncherMenuButton
         android:id="@+id/content_picker_shaderpacks"
         style="@style/LauncherMenuButton.Universal"
         android:layout_width="match_parent"
-        android:drawableStart="@drawable/ic_add"
+        android:drawableStart="@drawable/ic_shader.xml"
         android:text="@string/mcl_content_shaderpacks" />
 
 </LinearLayout>

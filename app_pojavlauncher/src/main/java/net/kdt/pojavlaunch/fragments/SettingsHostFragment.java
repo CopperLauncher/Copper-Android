@@ -14,12 +14,13 @@ import androidx.preference.PreferenceFragmentCompat;
 
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceFragment;
+import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceRendererSettingsFragment;
 
 /**
  * Landscape two-pane settings screen. {@code pref_main} (the root settings list) lives in
- * the left pane and never leaves it; tapping a category (a {@code Preference} with
- * {@code android:fragment} set, e.g. Video/Controls/Java/Misc/Appearance/Experimental) opens
- * that screen into the right pane, which starts out empty.
+ * the left pane and never leaves it; the right pane defaults to the Renderers screen and
+ * switches to whichever category (Video/Controls/Java/Misc/Appearance/Experimental) the user
+ * taps — a {@code Preference} with {@code android:fragment} set.
  *
  * <p>This is a separate host from {@link MainMenuFragment}'s own two-pane layout — opening
  * Settings replaces the whole main-menu screen (via {@code Tools.swapFragment}), it doesn't
@@ -37,6 +38,7 @@ public class SettingsHostFragment extends Fragment
 
     public static final String TAG = "SettingsHostFragment";
     private static final String LEFT_PANE_TAG = "SETTINGS_LEFT_PANE_MAIN";
+    private static final String DEFAULT_RIGHT_PANE_TAG = "SETTINGS_RIGHT_PANE_DEFAULT_RENDERERS";
 
     private OnBackPressedCallback mRightPaneBackCallback;
 
@@ -89,13 +91,21 @@ public class SettingsHostFragment extends Fragment
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        Fragment existing = getChildFragmentManager().findFragmentById(R.id.settings_left_pane_container);
-        if (existing == null) {
+        Fragment existingLeft = getChildFragmentManager().findFragmentById(R.id.settings_left_pane_container);
+        Fragment existingRight = getChildFragmentManager().findFragmentById(R.id.settings_right_pane_container);
+        if (existingLeft == null && existingRight == null) {
+            // Both panes are populated in one transaction, NOT added to the back
+            // stack — this is the settings screen's "home" state (Renderers shown
+            // by default), same pattern as RightPaneHomeFragment being the main
+            // menu's un-stacked base state. Only explicit taps on a pref_main
+            // category (onPreferenceStartFragment, below) get their own back-stack
+            // entry; if the default screen were stacked too, leaving Settings would
+            // wrongly take two Back presses instead of one.
             getChildFragmentManager()
                     .beginTransaction()
                     .setReorderingAllowed(true)
                     .replace(R.id.settings_left_pane_container, LauncherPreferenceFragment.class, null, LEFT_PANE_TAG)
-                    // Not added to back stack — pref_main is the base of this screen, not a destination.
+                    .replace(R.id.settings_right_pane_container, LauncherPreferenceRendererSettingsFragment.class, null, DEFAULT_RIGHT_PANE_TAG)
                     .commit();
         }
     }
