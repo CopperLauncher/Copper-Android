@@ -376,10 +376,6 @@ public class MainMenuFragment extends Fragment {
         };
         requireActivity().getOnBackPressedDispatcher()
                 .addCallback(this, mRightPaneBackCallback);
-
-        // Only register the back-stack listener once per fragment instance.
-        // Using a member reference so we can remove it in onDestroyView if needed.
-        getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
     }
 
     /** Keeps a stable reference so we never register it twice. */
@@ -398,6 +394,15 @@ public class MainMenuFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        // Registered here (not onCreate) so it's symmetric with the remove() call in
+        // onDestroyView — this fragment's VIEW is now torn down and recreated every
+        // time Settings is opened/closed (it's a full-screen swap, not nested inside
+        // this fragment's own right pane), so onCreate() only running once per
+        // Fragment instance was leaving this listener permanently unregistered after
+        // the first Settings visit, silently breaking bottom-bar/left-pane sync for
+        // every screen after that.
+        getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
+
         Button mNewsButton          = view.findViewById(R.id.news_button);
         Button mDiscordButton       = view.findViewById(R.id.discord_button);
         Button mCustomControlButton = view.findViewById(R.id.custom_control_button);
@@ -506,10 +511,12 @@ public class MainMenuFragment extends Fragment {
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
 
-        // Force correct initial bar state BEFORE registering task listener,
-        // so the listener's immediate callback doesn't fight an unset visibility.
+        // Force correct initial state BEFORE registering task listener, so its
+        // immediate callback doesn't fight an unset visibility. Also covers state
+        // left over from before this view was torn down (e.g. Settings replacing
+        // it), since the listener above only fires on the NEXT back-stack change.
         if (isTwoPane()) {
-            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
+            mBackStackListener.onBackStackChanged();
         }
 
         // Play button visibility during downloads handled by activity's ProgressLayout

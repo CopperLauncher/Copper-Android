@@ -5,6 +5,18 @@
     android:orientation="vertical"
     android:background="?attr/bgMainDrawable">
 
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_back"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_arrow_back_white"
+        android:text="@string/preference_back_title" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_1sdp"
+        android:background="?attr/colorDivider" />
+
     <!-- Header: title + optional filter button (Manage only) -->
     <LinearLayout
         android:layout_width="match_parent"

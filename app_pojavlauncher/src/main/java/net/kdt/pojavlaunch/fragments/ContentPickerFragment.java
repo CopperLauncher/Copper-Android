@@ -57,13 +57,18 @@ public class ContentPickerFragment extends Fragment {
             }
         }
 
-        View modsButton = view.findViewById(R.id.content_picker_mods);
-        View resourcepacksButton = view.findViewById(R.id.content_picker_resourcepacks);
-        View shaderpacksButton = view.findViewById(R.id.content_picker_shaderpacks);
+        View backButton = view.findViewById(R.id.content_picker_back);
 
         Fragment parent = getParentFragment();
         if (!(parent instanceof MainMenuFragment)) return;
         MainMenuFragment mainMenuFragment = (MainMenuFragment) parent;
+
+        if (backButton != null) backButton.setOnClickListener(
+                v -> mainMenuFragment.clearRightPane());
+
+        View modsButton = view.findViewById(R.id.content_picker_mods);
+        View resourcepacksButton = view.findViewById(R.id.content_picker_resourcepacks);
+        View shaderpacksButton = view.findViewById(R.id.content_picker_shaderpacks);
 
         if (modsButton != null) modsButton.setOnClickListener(
                 v -> mainMenuFragment.selectContentType(manage, ContentType.MOD));
