@@ -14,6 +14,15 @@
         android:visibility="gone"
         android:contentDescription="@null" />
 
+    <!-- Custom video wallpaper — shown instead of the ImageView above when the saved
+         background is a video file. Looped + muted by RightPaneHomeFragment. -->
+    <com.kdt.mcgui.CenterCropVideoView
+        android:id="@+id/right_pane_wallpaper_video"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
     <!-- Wiki + Discord pinned to the top of the pane -->
     <LinearLayout
         android:layout_width="match_parent"
