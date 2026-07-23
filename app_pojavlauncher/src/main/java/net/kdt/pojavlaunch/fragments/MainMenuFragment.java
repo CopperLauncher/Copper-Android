@@ -39,6 +39,8 @@ public class MainMenuFragment extends Fragment {
 
     private mcVersionSpinner mVersionSpinner;
     private FrameLayout mRightPane;
+    private View mLeftSidebar;
+    private FrameLayout mLeftPaneContainer;
     private View mBottomBarBg;   // stub — kept so mTaskCountListener check compiles
     private View mPlayButton;
     private View mEditProfileButton;
@@ -142,6 +144,13 @@ public class MainMenuFragment extends Fragment {
      * MOD — resource packs and shader packs aren't loader-specific.
      */
     private void openModStore(net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
+        Bundle args = new Bundle();
+        populateModStoreArgs(args, contentType);
+        openPane(ModsSearchFragment.class, ModsSearchFragment.TAG + ":" + contentType.name(), args);
+    }
+
+    /** Shared by {@link #openModStore} and {@link #openContentPickerPane} so both build identical args. */
+    private void populateModStoreArgs(Bundle args, net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
         String profileKey = LauncherPreferences.DEFAULT_PREF
                 .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "default");
         SharedPreferences prefs = requireContext()
@@ -159,17 +168,12 @@ public class MainMenuFragment extends Fragment {
             loader = info.loader;
         }
 
-        Bundle args = new Bundle();
         args.putString(ModsSearchFragment.ARG_CONTENT_TYPE, contentType.name());
         if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
         if (contentType == net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD
                 && !loader.isEmpty()) {
             args.putString(ModsSearchFragment.ARG_PRESET_LOADER, loader);
         }
-
-        ModsSearchFragment fragment = new ModsSearchFragment();
-        fragment.setArguments(args);
-        openPaneFragment(fragment, ModsSearchFragment.TAG + ":" + contentType.name());
     }
 
     /**
@@ -180,6 +184,75 @@ public class MainMenuFragment extends Fragment {
      * is shared across all three content types rather than being mod-specific).
      */
     private void showContentPicker(boolean manage) {
+        if (isTwoPane()) {
+            openContentPickerPane(manage);
+            return;
+        }
+        showContentPickerDialog(manage);
+    }
+
+    /**
+     * Landscape: replaces the sidebar (left_sidebar) with ContentPickerFragment inside
+     * left_pane_container, and immediately loads the Mods section into the right pane
+     * as the default selection — both in a single transaction/back-stack entry, so one
+     * Back press undoes the whole "open picker" action instead of two (previously the
+     * left-pane and right-pane replacements were separate transactions, which required
+     * pressing Back twice — once per pane — to actually leave, and briefly flashed the
+     * right pane back to its Home content in between).
+     */
+    private void openContentPickerPane(boolean manage) {
+        if (isTagAlreadyOnTop(ContentPickerFragment.TAG)) return;
+
+        Bundle pickerArgs = new Bundle();
+        pickerArgs.putBoolean(ContentPickerFragment.ARG_MANAGE, manage);
+
+        net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType defaultType =
+                net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType.MOD;
+        Class<? extends Fragment> defaultFragmentClass;
+        Bundle defaultArgs = new Bundle();
+        String defaultTag;
+        if (manage) {
+            defaultFragmentClass = ManageModsFragment.class;
+            defaultArgs.putString(ManageModsFragment.ARG_CONTENT_TYPE, defaultType.name());
+            defaultTag = ManageModsFragment.TAG + ":" + defaultType.name();
+        } else {
+            defaultFragmentClass = ModsSearchFragment.class;
+            populateModStoreArgs(defaultArgs, defaultType);
+            defaultTag = ModsSearchFragment.TAG + ":" + defaultType.name();
+        }
+
+        getChildFragmentManager()
+                .beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(R.id.left_pane_container, ContentPickerFragment.class, pickerArgs, ContentPickerFragment.TAG)
+                .replace(R.id.right_pane_container, defaultFragmentClass, defaultArgs, defaultTag)
+                .addToBackStack(ContentPickerFragment.TAG)
+                .commit();
+        // Visibility is updated by mBackStackListener once this transaction actually
+        // lands — calling updateLeftPaneVisibility() here would read stale state,
+        // since commit() runs asynchronously on the next main-thread pass.
+    }
+
+    /**
+     * Called by {@link ContentPickerFragment} when the user taps one of its
+     * mods/resource packs/shader packs buttons. Opens the corresponding screen in the
+     * right pane while the picker itself remains in the left pane.
+     */
+    public void selectContentType(boolean manage,
+                                   net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType contentType) {
+        onContentTypeChosen(manage, contentType);
+    }
+
+    /** Shows/hides left_sidebar vs. left_pane_container based on whether the picker is active. */
+    private void updateLeftPaneVisibility() {
+        if (!isTwoPane() || mLeftSidebar == null || mLeftPaneContainer == null) return;
+        Fragment leftFragment = getChildFragmentManager().findFragmentById(R.id.left_pane_container);
+        boolean pickerActive = leftFragment instanceof ContentPickerFragment;
+        mLeftSidebar.setVisibility(pickerActive ? View.GONE : View.VISIBLE);
+        mLeftPaneContainer.setVisibility(pickerActive ? View.VISIBLE : View.GONE);
+    }
+
+    private void showContentPickerDialog(boolean manage) {
         androidx.appcompat.app.AlertDialog dialog =
                 new androidx.appcompat.app.AlertDialog.Builder(requireContext())
                         .setView(R.layout.dialog_content_picker)
@@ -265,26 +338,6 @@ public class MainMenuFragment extends Fragment {
         return tag.equals(fm.getBackStackEntryAt(count - 1).getName());
     }
 
-    /** Navigate to a pre-built fragment instance (preserves args on fresh instances). */
-    private void openPaneFragment(Fragment fragment, String tag) {
-        if (isTwoPane()) {
-            if (isTagAlreadyOnTop(tag)) return; // already showing — ignore the double-tap
-            getChildFragmentManager()
-                    .beginTransaction()
-                    .setReorderingAllowed(true)
-                    .replace(R.id.right_pane_container, fragment, tag)
-                    .addToBackStack(tag)
-                    .commit();
-        } else {
-            requireActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .setReorderingAllowed(true)
-                    .replace(R.id.container_fragment, fragment, tag)
-                    .addToBackStack(tag)
-                    .commit();
-        }
-    }
-
     private void openPane(Class<? extends Fragment> fragmentClass, String tag,
                           @Nullable Bundle args) {
         if (isTwoPane()) {
@@ -323,10 +376,6 @@ public class MainMenuFragment extends Fragment {
         };
         requireActivity().getOnBackPressedDispatcher()
                 .addCallback(this, mRightPaneBackCallback);
-
-        // Only register the back-stack listener once per fragment instance.
-        // Using a member reference so we can remove it in onDestroyView if needed.
-        getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
     }
 
     /** Keeps a stable reference so we never register it twice. */
@@ -338,10 +387,22 @@ public class MainMenuFragment extends Fragment {
         // including instance picker (it has its own back button in the header).
         boolean showBar = getChildFragmentManager().getBackStackEntryCount() == 0;
         setBottomBarVisible(showBar);
+        // Keep left_sidebar vs. left_pane_container in sync — covers the content
+        // picker being popped off via the Back button as well as clearRightPane().
+        updateLeftPaneVisibility();
     };
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        // Registered here (not onCreate) so it's symmetric with the remove() call in
+        // onDestroyView — this fragment's VIEW is now torn down and recreated every
+        // time Settings is opened/closed (it's a full-screen swap, not nested inside
+        // this fragment's own right pane), so onCreate() only running once per
+        // Fragment instance was leaving this listener permanently unregistered after
+        // the first Settings visit, silently breaking bottom-bar/left-pane sync for
+        // every screen after that.
+        getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
+
         Button mNewsButton          = view.findViewById(R.id.news_button);
         Button mDiscordButton       = view.findViewById(R.id.discord_button);
         Button mCustomControlButton = view.findViewById(R.id.custom_control_button);
@@ -357,6 +418,8 @@ public class MainMenuFragment extends Fragment {
 
         // Detect two-pane landscape layout
         mRightPane = view.findViewById(R.id.right_pane_container);
+        mLeftSidebar = view.findViewById(R.id.left_sidebar);
+        mLeftPaneContainer = view.findViewById(R.id.left_pane_container);
 
         // Bottom bar refs
         mBottomBarBg       = view.findViewById(R.id._background_display_view);
@@ -448,10 +511,12 @@ public class MainMenuFragment extends Fragment {
                     openPane(InstancePickerFragment.class, InstancePickerFragment.TAG, null));
         }
 
-        // Force correct initial bar state BEFORE registering task listener,
-        // so the listener's immediate callback doesn't fight an unset visibility.
+        // Force correct initial state BEFORE registering task listener, so its
+        // immediate callback doesn't fight an unset visibility. Also covers state
+        // left over from before this view was torn down (e.g. Settings replacing
+        // it), since the listener above only fires on the NEXT back-stack change.
         if (isTwoPane()) {
-            setBottomBarVisible(getChildFragmentManager().getBackStackEntryCount() == 0);
+            mBackStackListener.onBackStackChanged();
         }
 
         // Play button visibility during downloads handled by activity's ProgressLayout
@@ -473,6 +538,8 @@ public class MainMenuFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         mRightPane = null;
+        mLeftSidebar = null;
+        mLeftPaneContainer = null;
         mBottomBarBg = null;
         mPlayButton = null;
         mEditProfileButton = null;

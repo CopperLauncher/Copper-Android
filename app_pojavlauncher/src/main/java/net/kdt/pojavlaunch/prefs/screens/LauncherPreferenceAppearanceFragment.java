@@ -30,9 +30,9 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
  */
 public class LauncherPreferenceAppearanceFragment extends LauncherPreferenceFragment {
 
-    private final ActivityResultLauncher<String> mImagePickerLauncher =
-            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-                if (uri != null) copyImageToBgFile(uri);
+    private final ActivityResultLauncher<String[]> mMediaPickerLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) copyMediaToBgFile(uri);
             });
 
     @Override
@@ -69,27 +69,38 @@ public class LauncherPreferenceAppearanceFragment extends LauncherPreferenceFrag
 
     private void setupCustomBackground() {
         requirePreference("set_custom_launcher_bg").setOnPreferenceClickListener(p -> {
-            mImagePickerLauncher.launch("image/*");
+            mMediaPickerLauncher.launch(new String[]{"image/*", "video/*"});
             return true;
         });
 
         requirePreference("remove_custom_launcher_bg").setOnPreferenceClickListener(p -> {
             File bgFile = new File(RightPaneHomeFragment.CUSTOM_BG_PATH);
             if (bgFile.exists()) bgFile.delete();
+            net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF.edit()
+                    .remove(RightPaneHomeFragment.CUSTOM_BG_KIND_KEY)
+                    .apply();
             notifyHomeFragmentBgChanged();
             toast(R.string.preference_custom_bg_removed);
             return true;
         });
     }
 
-    private void copyImageToBgFile(@NonNull Uri uri) {
+    private void copyMediaToBgFile(@NonNull Uri uri) {
         File bgFile = new File(RightPaneHomeFragment.CUSTOM_BG_PATH);
+        String mimeType = requireContext().getContentResolver().getType(uri);
+        boolean isVideo = mimeType != null && mimeType.startsWith("video/");
+
         try (InputStream in  = requireContext().getContentResolver().openInputStream(uri);
              OutputStream out = new FileOutputStream(bgFile)) {
             if (in == null) throw new Exception("Cannot open URI");
             byte[] buf = new byte[8192];
             int len;
             while ((len = in.read(buf)) != -1) out.write(buf, 0, len);
+            net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF.edit()
+                    .putString(RightPaneHomeFragment.CUSTOM_BG_KIND_KEY,
+                            isVideo ? RightPaneHomeFragment.BG_KIND_VIDEO
+                                    : RightPaneHomeFragment.BG_KIND_IMAGE)
+                    .apply();
             notifyHomeFragmentBgChanged();
             toast(R.string.preference_custom_bg_set_success);
         } catch (Exception e) {

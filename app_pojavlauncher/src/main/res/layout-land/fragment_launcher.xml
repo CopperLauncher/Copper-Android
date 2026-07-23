@@ -139,6 +139,19 @@
         </LinearLayout>
     </ScrollView>
 
+    <!-- ══════════════ LEFT PANE CONTAINER — hosts swapped-in fragments  ══════════════
+         (e.g. ContentPickerFragment for Browse/Manage Content, in place of the sidebar).
+         GONE by default; MainMenuFragment toggles this vs. left_sidebar's visibility. -->
+    <FrameLayout
+        android:id="@+id/left_pane_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/pane_divider" />
+
     <!-- Thin vertical divider -->
     <View
         android:id="@+id/pane_divider"

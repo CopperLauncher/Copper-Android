@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/bgMainDrawable">
+
+    <!-- Portrait fallback: SettingsHostFragment is only ever opened in landscape
+         (see LauncherActivity's settings button listener), but a mid-navigation
+         rotation could still land here, so keep this from crashing by giving it a
+         sane single-pane layout instead of the missing two-pane one. -->
+    <FrameLayout
+        android:id="@+id/settings_left_pane_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Right pane collapses to nothing in portrait; kept present so findViewById
+         calls in SettingsHostFragment don't NPE. Whatever sub-screen would have
+         gone here is opened full-screen instead — see SettingsHostFragment. -->
+    <FrameLayout
+        android:id="@+id/settings_right_pane_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
+
+</FrameLayout>

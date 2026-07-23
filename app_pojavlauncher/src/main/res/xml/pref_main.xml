@@ -7,7 +7,7 @@
     app:key=""
     >
 
-    <net.kdt.pojavlaunch.prefs.BackButtonPreference/>
+    <net.kdt.pojavlaunch.prefs.BackButtonPreference android:key="settings_root_back_button"/>
 
     <PreferenceCategory
         android:title="@string/preference_category_main_categories"
