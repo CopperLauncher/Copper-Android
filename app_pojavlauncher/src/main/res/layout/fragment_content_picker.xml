@@ -17,11 +17,15 @@
         android:layout_height="@dimen/_1sdp"
         android:background="?attr/colorDivider" />
 
-    <!-- Header: title + optional filter button (Manage only).
+    <!-- Header: title + filter button (filter always shown now, in both Manage and
+         Browse — Browse's filter used to live in the search box in the right pane;
+         see fragment_content_picker.xml's landscape-only usage and ContentPickerFragment).
          Horizontal padding matches LauncherMenuButton's own fixed internal padding
          (22sdp, set in code, not padding_heavy) so this row's title lines up with the
          back button above and the mods/resourcepacks/shaderpacks buttons below instead
-         of looking shifted relative to them. -->
+         of looking shifted relative to them. Vertical padding is symmetric (padding_medium
+         top and bottom) so the row centers the title against the filter icon instead of
+         being pushed off-center by a taller top inset. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -29,7 +33,7 @@
         android:orientation="horizontal"
         android:paddingStart="@dimen/_22sdp"
         android:paddingEnd="@dimen/_12sdp"
-        android:paddingTop="@dimen/padding_large"
+        android:paddingTop="@dimen/padding_medium"
         android:paddingBottom="@dimen/padding_medium">
 
         <TextView
@@ -37,6 +41,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:includeFontPadding="false"
             android:text="@string/content_picker_title_browse"
             android:textSize="@dimen/_14ssp"
             android:textStyle="bold" />
@@ -49,8 +54,7 @@
             android:scaleType="fitCenter"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/content_picker_filter"
-            android:src="@drawable/ic_filter"
-            android:visibility="gone" />
+            android:src="@drawable/ic_filter" />
 
     </LinearLayout>
 
