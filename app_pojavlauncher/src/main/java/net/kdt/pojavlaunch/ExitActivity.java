@@ -37,6 +37,10 @@ public class ExitActivity extends AppCompatActivity {
     }
 
     public static void showExitMessage(Context ctx, int code, boolean isSignal) {
+        if(!isSignal && code == 0) {
+            if(ctx != null) Tools.restartLauncherActivity(ctx);
+            return;
+        }
         Intent i = new Intent(ctx,ExitActivity.class);
         i.putExtra("code",code);
         i.putExtra("isSignal", isSignal);

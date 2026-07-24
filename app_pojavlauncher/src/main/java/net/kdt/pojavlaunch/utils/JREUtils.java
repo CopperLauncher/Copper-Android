@@ -362,6 +362,7 @@ public class JREUtils {
 
             LifecycleAwareAlertDialog.haltOnDialog(activity.getLifecycle(), activity, dialogCreator);
         }
+        Tools.restartLauncherActivity(activity);
         Tools.fullyExit();
     }
 
