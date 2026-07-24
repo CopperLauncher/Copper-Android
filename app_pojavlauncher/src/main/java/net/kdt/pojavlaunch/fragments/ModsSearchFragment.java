@@ -226,7 +226,10 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         mModItemAdapter.performSearchQuery(mSearchFilters);
     }
 
-    private void displayFilterDialog() {
+    /** Public so {@link ContentPickerFragment}'s left-pane filter button (landscape only)
+     *  can trigger the same dialog as this fragment's own (now hidden in landscape)
+     *  search_mod_filter button. */
+    public void displayFilterDialog() {
         AlertDialog dialog = new AlertDialog.Builder(requireContext())
                 .setView(R.layout.dialog_mod_filters)
                 .create();

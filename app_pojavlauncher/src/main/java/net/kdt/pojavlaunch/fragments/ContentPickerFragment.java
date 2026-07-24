@@ -41,8 +41,8 @@ public class ContentPickerFragment extends Fragment {
 
         ImageButton filterButton = view.findViewById(R.id.content_picker_filter);
         if (filterButton != null) {
+            filterButton.setVisibility(View.VISIBLE);
             if (manage) {
-                filterButton.setVisibility(View.VISIBLE);
                 filterButton.setOnClickListener(v -> {
                     String profileKey = LauncherPreferences.DEFAULT_PREF
                             .getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "default");
@@ -53,7 +53,19 @@ public class ContentPickerFragment extends Fragment {
                     });
                 });
             } else {
-                filterButton.setVisibility(View.GONE);
+                // Browse mode: this button replaces the search_mod_filter button that used
+                // to sit inside the search box in the right pane (see the layout-land
+                // override of fragment_mod_search.xml). Forward the tap to whichever
+                // ModsSearchFragment is currently showing there.
+                filterButton.setOnClickListener(v -> {
+                    Fragment parentFragment = getParentFragment();
+                    if (!(parentFragment instanceof MainMenuFragment)) return;
+                    Fragment rightPaneFragment = ((MainMenuFragment) parentFragment)
+                            .getChildFragmentManager().findFragmentById(R.id.right_pane_container);
+                    if (rightPaneFragment instanceof ModsSearchFragment) {
+                        ((ModsSearchFragment) rightPaneFragment).displayFilterDialog();
+                    }
+                });
             }
         }
 
