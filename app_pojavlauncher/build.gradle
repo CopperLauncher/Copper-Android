@@ -1,5 +1,5 @@
 plugins {
-    id 'com.android.application' version '8.7.2'
+    id 'com.android.application' version '9.3.1'
 }
 
 static def getDate() { return new Date().format('yyyyMMdd') }
@@ -7,38 +7,36 @@ static def getDate() { return new Date().format('yyyyMMdd') }
 def getVersionName = {
     // Get the last version tag, as well as the short head of the last commit
     ByteArrayOutputStream TAG = new ByteArrayOutputStream()
-    String semVer = "1.3.1"
+    String semVer = "1.3.2"
     // Used by the fallback for github actions
-    ByteArrayOutputStream TAG_PART_COMMIT = new ByteArrayOutputStream()
+    String TAG_PART_COMMIT = ""
     String TAG_STRING
 
-    exec {
-        try {
+    try {
+        TAG = providers.exec {
             commandLine 'git', 'describe', '--tags'
-            ignoreExitValue true
-            standardOutput = TAG
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            ignoreExitValue = true
+        }.getStandardOutput().asText.get()
+    } catch (Exception e) {
+        e.printStackTrace()
     }
 
-    if (TAG.toString() == "") {
-        exec {
-            // Fallback for action builds
-            try {
+    // Fallback for action builds
+    if (TAG.toString().trim().isEmpty()) {
+        try {
+            TAG_PART_COMMIT = providers.exec {
                 commandLine 'git', 'describe', '--always', '--tags'
-                ignoreExitValue true
-                standardOutput = TAG_PART_COMMIT
-            } catch (Exception e) {
-            }
+                ignoreExitValue = true
+            }.getStandardOutput().asText.get()
+        } catch (Exception ignored) {
         }
     }
 
 
-    if(TAG.toString() != ""){
-        TAG_STRING = TAG.toString()
+    if(!TAG.isBlank()){
+        TAG_STRING = TAG
     }else {
-        if(TAG_PART_COMMIT.toString().trim() == ""){
+        if(TAG_PART_COMMIT.isBlank()){
              //Fallback no repo
             return ("LOCAL-" + "${getDate()}")
         }else {
@@ -50,9 +48,9 @@ def getVersionName = {
 
     def isRelease = project.gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
     if(!isRelease){
-        return TAG_STRING.trim().replace("-g", "-") + "-" + semVer + "-debug"
+        return TAG_STRING.trim().replace("-g", "-") + "-" + "debug-" + semVer
     }else {
-        return TAG_STRING.trim().replace("-g", "-") + "-" + semVer + "-release"
+        return TAG_STRING.trim().replace("-g", "-") + "-" + "release-" + semVer
     }
 }
 
@@ -77,11 +75,8 @@ configurations {
 android {
     namespace 'net.kdt.pojavlaunch'
 
-    compileSdk = 34
+    compileSdk = 37
 
-    lintOptions {
-        abortOnError false
-    }
 
     signingConfigs {
         customDebug {
@@ -146,7 +141,7 @@ android {
         release {
             // Don't set to true or java.awt will be a.a or something similar.
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.customRelease
             // defaultConfig already set
             // multiDexEnabled = true
@@ -185,11 +180,9 @@ android {
     packagingOptions {
         jniLibs {
             useLegacyPackaging = true
+            keepDebugSymbols += ['**/libcutils.so']
+            pickFirsts += ['**/libbytehook.so']
         }
-        doNotStrip += [
-                "**/libcutils.so"
-        ]
-        pickFirst '**/libbytehook.so'
     }
 
     buildFeatures {
@@ -197,13 +190,27 @@ android {
         buildConfig true
     }
 
-    buildToolsVersion = '34.0.0'
+    lint {
+        abortOnError false
+    }
 }
 
 afterEvaluate {
-    // Explicit dependencies for which the apk relies on
-    tasks.mergeDebugAssets.dependsOn(":forge_installer:jar", ":arc_dns_injector:jar", ":methods_injector_agent:jar", ":jre_lwjgl3glfw:jar")
-    tasks.mergeReleaseAssets.dependsOn(":forge_installer:jar", ":arc_dns_injector:jar", ":methods_injector_agent:jar", ":jre_lwjgl3glfw:jar")
+    def componentJars = [
+            ":forge_installer:jar",
+            ":arc_dns_injector:jar",
+            ":methods_injector_agent:jar",
+            ":jre_lwjgl3glfw:jar"
+    ]
+
+    tasks.withType(com.android.build.gradle.tasks.MergeSourceSetFolders).configureEach { t ->
+        t.dependsOn(componentJars)
+    }
+
+    // Needed or else the release builds complain about undeclared dependencies
+    tasks.matching { it.name.toLowerCase().contains("lint") }.configureEach { t ->
+        t.dependsOn(componentJars)
+    }
 }
 
 dependencies {
@@ -233,7 +240,7 @@ dependencies {
     // Our version of exp4j can be built from source at
     // https://github.com/PojavLauncherTeam/exp4j
     implementation 'net.sourceforge.htmlcleaner:htmlcleaner:2.6.1'
-    implementation 'com.bytedance:bytehook:1.0.9'
+    implementation 'com.bytedance:bytehook:1.1.2'
 
     // implementation 'net.sourceforge.streamsupport:streamsupport-cfuture:1.7.0'
 
@@ -244,3 +251,4 @@ dependencies {
     implementation "net.java.dev.jna:jna:5.14.0@aar"
 
 }
+apply from: rootProject.file('gradle/prefab_bypass.gradle')

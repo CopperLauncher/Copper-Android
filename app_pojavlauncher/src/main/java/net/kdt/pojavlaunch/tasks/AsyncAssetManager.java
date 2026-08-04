@@ -9,9 +9,11 @@ import static net.kdt.pojavlaunch.PojavApplication.sExecutorService;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.kdt.mcgui.ProgressLayout;
 
+import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
@@ -74,9 +76,8 @@ public class AsyncAssetManager {
                     String assetSha1 = new String(org.apache.commons.codec.binary.Hex.encodeHex(org.apache.commons.codec.digest.DigestUtils.sha1(is)));
                     if (!Tools.compareSHA1(new File(Tools.CTRLDEF_FILE), assetSha1)) {
                         Tools.copyAssetFile(ctx, "default.json", Tools.CTRLMAP_PATH, "new_default.json" , false);
-                        // Be annoying and set their default to the new one heehee
-                        LauncherPreferences.DEFAULT_PREF.edit().putString("defaultCtrl", Tools.CTRLMAP_PATH+"/new_default.json").apply();
-                    } else Tools.copyAssetFile(ctx, "default.json", Tools.CTRLMAP_PATH, false);
+                    } else if (!new File(Tools.CTRLMAP_PATH+"/new_default.json").exists())
+                    Tools.copyAssetFile(ctx, "default.json", Tools.CTRLMAP_PATH, false);
                 }
 
                 Tools.copyAssetFile(ctx, "launcher_profiles.json", Tools.DIR_GAME_NEW, false);

@@ -141,6 +141,9 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         if (Tools.hasTouchController(new File(gameDirPath)) || LauncherPreferences.PREF_FORCE_ENABLE_TOUCHCONTROLLER) {
             TouchControllerUtils.initialize(this, touchControllerInputView);
         }
+        if (LauncherPreferences.PREF_GAMEPAD_FORCEDSDL_PASSTHRU) {
+            CallbackBridge.notifyLauncher(CallbackBridge.NOTIF_TYPE_SDL, CallbackBridge.ACTION_INIT_LAUNCHER_INTEGRATION);
+        }
 
         mGyroControl = new GyroControl(this);
 
@@ -498,6 +501,10 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         Tools.launchMinecraft(this, minecraftAccount, minecraftProfile, versionId, requiredJavaVersion);
         //Note that we actually stall in the above function, even if the game crashes. But let's be safe.
         Tools.runOnUiThread(()-> mServiceBinder.isActive = false);
+    }
+
+    public void setmLastIndex(int a){
+        mHotbarView.setmLastIndex(a);
     }
 
     private void dialogSendCustomKey() {

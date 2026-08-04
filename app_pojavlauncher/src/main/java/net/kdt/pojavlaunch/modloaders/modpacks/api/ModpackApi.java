@@ -81,8 +81,7 @@ public interface ModpackApi {
      * Imports the mod(pack) from a file.
      * May require the download of additional files.
      * May requires launching the installation of a modloader
-     * @param activity any activity
-     * @param zipUri URI to DocumentsUI selected zip file
+     * @param modpackFile Zip file to mrpack or cf zip pack
      */
-    ModLoader importModpack(Activity activity, Uri zipUri) throws IOException, NoSuchAlgorithmException;
+    ModLoader importModpack(File modpackFile) throws IOException, NoSuchAlgorithmException;
 }

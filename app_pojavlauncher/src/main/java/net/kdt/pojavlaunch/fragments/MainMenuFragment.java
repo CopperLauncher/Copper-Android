@@ -25,6 +25,7 @@ import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
+import net.kdt.pojavlaunch.modloaders.LWJGL3ifyUtils;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
@@ -32,7 +33,7 @@ import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
 
 import java.io.File;
 import android.content.SharedPreferences;
-import net.kdt.pojavlaunch.fragments.ModsSearchFragment;
+import androidx.appcompat.app.AlertDialog;
 
 public class MainMenuFragment extends Fragment {
     public static final String TAG = "MainMenuFragment";
@@ -522,8 +523,19 @@ public class MainMenuFragment extends Fragment {
         // Play button visibility during downloads handled by activity's ProgressLayout
 
         // Play
-        mPlayBtn.setOnClickListener(
-                v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));
+        mPlayBtn.setOnClickListener(v -> {
+            if (Tools.hasMods("sodium") && !(LauncherPreferences.DEFAULT_PREF.getBoolean("sodium_override", false))) {
+                AlertDialog sodiumWarningDialog = new AlertDialog.Builder(requireContext())
+                        .setTitle(R.string.sodium_warning_title)
+                        .setMessage(R.string.sodium_warning_message)
+                        .setNeutralButton(R.string.delete_sodium, (d, w) -> {
+                            Tools.deleteSodiumMods();
+                            ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
+                        })
+                        .create();
+                sodiumWarningDialog.show();
+            } else ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
+        });
 
         // Long-press wiki → gamepad mapper (hidden feature)
         if (mNewsButton != null)

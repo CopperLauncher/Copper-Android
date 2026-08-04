@@ -12,10 +12,9 @@ public class ModDetail extends ModItem {
     public String[] versionUrls;
     /* SHA 1 hashes, null if a hash is unavailable */
     public String[] versionHashes;
-    /* Per-version dependency project IDs */
-    public String[][] versionDependencyIds;
-    /* Per-version dependency types — "required" or "optional" */
-    public String[][] versionDependencyTypes;
+    /* Per-version project ID that this version belongs to (Modrinth's version id) */
+    public String[] versionIds;
+    public Dependencies[][] dependencies;
     /* Index into the version arrays that matches a mod already present in the
      * current instance's mods folder (matched by SHA1 hash), or -1 if this
      * mod/project isn't currently installed. Resolved by the caller after
@@ -32,20 +31,20 @@ public class ModDetail extends ModItem {
     public String installedFilePath = null;
 
     public ModDetail(ModItem item, String[] versionNames, String[] mcVersionNames, String[] versionUrls, String[] hashes) {
-        this(item, versionNames, mcVersionNames, versionUrls, hashes, null, null);
+        this(item, versionNames, null, mcVersionNames, versionUrls, hashes, null);
     }
 
-    public ModDetail(ModItem item, String[] versionNames, String[] mcVersionNames, String[] versionUrls, String[] hashes,
-                     String[][] depIds, String[][] depTypes) {
+    public ModDetail(ModItem item, String[] versionNames, String[] versionIds, String[] mcVersionNames, String[] versionUrls, String[] hashes,
+                     Dependencies[][] dependencies) {
         super(item.apiSource, item.isModpack, item.id, item.title, item.description, item.imageUrl);
         this.isRestricted = item.isRestricted;
         this.websiteUrl = item.websiteUrl;
         this.versionNames = versionNames;
         this.mcVersionNames = mcVersionNames;
+        this.versionIds = versionIds;
         this.versionUrls = versionUrls;
         this.versionHashes = hashes;
-        this.versionDependencyIds = depIds;
-        this.versionDependencyTypes = depTypes;
+        this.dependencies = dependencies;
 
         // Add the mc version to the version model
         for (int i=0; i<versionNames.length; i++){
@@ -60,6 +59,7 @@ public class ModDetail extends ModItem {
         return "ModDetail{" +
                 "versionNames=" + Arrays.toString(versionNames) +
                 ", mcVersionNames=" + Arrays.toString(mcVersionNames) +
+                ", versionIds=" + Arrays.toString(versionIds) +
                 ", versionUrls=" + Arrays.toString(versionUrls) +
                 ", id='" + id + '\'' +
                 ", title='" + title + '\'' +
@@ -69,4 +69,18 @@ public class ModDetail extends ModItem {
                 ", isModpack=" + isModpack +
                 '}';
     }
+
+    public static class Dependencies{
+        public String project_id; // the main id in item.id
+        public String version_id;
+        public String file_name;
+        public String dependency_type;
+        public Dependencies(String project_id, String version_id, String file_name, String dependency_type){
+            this.project_id = project_id;
+            this.version_id = version_id;
+            this.file_name = file_name;
+            this.dependency_type = dependency_type;
+        }
+    }
+
 }

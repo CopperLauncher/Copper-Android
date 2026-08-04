@@ -200,3 +200,30 @@ JNIEXPORT jint JNICALL Java_net_kdt_pojavlaunch_utils_JREUtils_executeForkedBina
 }
 */
 
+// WARNING: This does not release the global ref, this can be a memory leak
+JNIEXPORT jstring JNICALL
+Java_net_kdt_pojavlaunch_Tools_jObjectToString(JNIEnv *env, jclass clazz, jobject object) {
+    if (object == NULL) {
+        return NULL;
+    }
+
+    jobject globalRef = (*env)->NewGlobalRef(env, object);
+    if (globalRef == NULL) {
+        return NULL;
+    }
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%p", globalRef);
+
+    return (*env)->NewStringUTF(env, buf);
+}
+
+JNIEXPORT jlong JNICALL
+Java_net_kdt_pojavlaunch_Tools_getJavaVMPointer(JNIEnv *env, jclass clazz) {
+	JavaVM *vm;
+	if ((*env)->GetJavaVM(env, &vm) != JNI_OK) {
+		return -1;
+	}
+
+	return (jlong)(uintptr_t)vm;
+}

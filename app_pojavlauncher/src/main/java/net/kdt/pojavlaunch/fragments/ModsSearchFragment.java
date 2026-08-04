@@ -504,8 +504,18 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             final String oldFilePath = modDetail.installedFilePath;
 
             // Check if this version has dependencies
-            String[] depIds   = (modDetail.versionDependencyIds   != null) ? modDetail.versionDependencyIds[selectedVersion]   : null;
-            String[] depTypes = (modDetail.versionDependencyTypes != null) ? modDetail.versionDependencyTypes[selectedVersion] : null;
+            ModDetail.Dependencies[] versionDeps = (modDetail.dependencies != null && selectedVersion < modDetail.dependencies.length)
+                    ? modDetail.dependencies[selectedVersion] : null;
+            String[] depIds   = null;
+            String[] depTypes = null;
+            if (versionDeps != null) {
+                depIds   = new String[versionDeps.length];
+                depTypes = new String[versionDeps.length];
+                for (int i = 0; i < versionDeps.length; i++) {
+                    depIds[i]   = versionDeps[i].project_id;
+                    depTypes[i] = versionDeps[i].dependency_type;
+                }
+            }
 
             if (depIds == null || depIds.length == 0) {
                 // No deps — download directly
