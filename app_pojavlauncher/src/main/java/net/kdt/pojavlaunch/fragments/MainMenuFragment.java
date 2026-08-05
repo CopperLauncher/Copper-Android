@@ -523,19 +523,7 @@ public class MainMenuFragment extends Fragment {
         // Play button visibility during downloads handled by activity's ProgressLayout
 
         // Play
-        mPlayBtn.setOnClickListener(v -> {
-            if (Tools.hasMods("sodium") && !(LauncherPreferences.DEFAULT_PREF.getBoolean("sodium_override", false))) {
-                AlertDialog sodiumWarningDialog = new AlertDialog.Builder(requireContext())
-                        .setTitle(R.string.sodium_warning_title)
-                        .setMessage(R.string.sodium_warning_message)
-                        .setNeutralButton(R.string.delete_sodium, (d, w) -> {
-                            Tools.deleteSodiumMods();
-                            ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
-                        })
-                        .create();
-                sodiumWarningDialog.show();
-            } else ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
-        });
+        mPlayBtn.setOnClickListener(v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));
 
         // Long-press wiki → gamepad mapper (hidden feature)
         if (mNewsButton != null)
