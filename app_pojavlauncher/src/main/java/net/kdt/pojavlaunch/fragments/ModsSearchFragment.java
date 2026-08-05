@@ -504,8 +504,18 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             final String oldFilePath = modDetail.installedFilePath;
 
             // Check if this version has dependencies
-            String[] depIds   = (modDetail.versionDependencyIds   != null) ? modDetail.versionDependencyIds[selectedVersion]   : null;
-            String[] depTypes = (modDetail.versionDependencyTypes != null) ? modDetail.versionDependencyTypes[selectedVersion] : null;
+            ModDetail.Dependencies[] versionDeps = (modDetail.dependencies != null && selectedVersion < modDetail.dependencies.length)
+                    ? modDetail.dependencies[selectedVersion] : null;
+            String[] depIds   = null;
+            String[] depTypes = null;
+            if (versionDeps != null) {
+                depIds   = new String[versionDeps.length];
+                depTypes = new String[versionDeps.length];
+                for (int i = 0; i < versionDeps.length; i++) {
+                    depIds[i]   = versionDeps[i].project_id;
+                    depTypes[i] = versionDeps[i].dependency_type;
+                }
+            }
 
             if (depIds == null || depIds.length == 0) {
                 // No deps — download directly
@@ -517,14 +527,16 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             // version, not just the one this mod happens to ask for) — otherwise every
             // reinstall/update of a mod with common dependencies (Fabric API, Cloth
             // Config, etc.) nags you to "install" something you already have.
+            final String[] finalDepIds = depIds;
+            final String[] finalDepTypes = depTypes;
             PojavApplication.sExecutorService.execute(() -> {
                 java.util.Set<String> installedProjectIds = getInstalledModrinthProjectIds();
                 List<String> remainingIds = new ArrayList<>();
                 List<String> remainingTypes = new ArrayList<>();
-                for (int i = 0; i < depIds.length; i++) {
-                    if (depIds[i] != null && installedProjectIds.contains(depIds[i])) continue;
-                    remainingIds.add(depIds[i]);
-                    remainingTypes.add((depTypes != null && i < depTypes.length) ? depTypes[i] : "required");
+                for (int i = 0; i < finalDepIds.length; i++) {
+                    if (finalDepIds[i] != null && installedProjectIds.contains(finalDepIds[i])) continue;
+                    remainingIds.add(finalDepIds[i]);
+                    remainingTypes.add((finalDepTypes != null && i < finalDepTypes.length) ? finalDepTypes[i] : "required");
                 }
 
                 if (remainingIds.isEmpty()) {

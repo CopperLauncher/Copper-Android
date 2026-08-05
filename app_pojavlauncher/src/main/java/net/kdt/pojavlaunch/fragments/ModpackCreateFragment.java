@@ -6,6 +6,7 @@ import static net.kdt.pojavlaunch.Tools.hasOnlineProfile;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
@@ -13,6 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.kdt.mcgui.MineButton;
+import com.kdt.mcgui.ProgressLayout;
 
 import net.kdt.pojavlaunch.BaseActivity;
 import net.kdt.pojavlaunch.LauncherActivity;
@@ -36,6 +38,10 @@ public class ModpackCreateFragment extends Fragment {
             Activity launcheractivity = requireActivity();
             if (!(launcheractivity instanceof LauncherActivity))
                     throw new IllegalStateException("Cannot import modpack without LauncherActivity");
+            if(ProgressLayout.hasProcesses()){
+                Toast.makeText(launcheractivity, R.string.tasks_ongoing, Toast.LENGTH_LONG).show();
+                return;
+            }
             ((LauncherActivity) launcheractivity).modpackImportLauncher.launch(null);
         });;
     }

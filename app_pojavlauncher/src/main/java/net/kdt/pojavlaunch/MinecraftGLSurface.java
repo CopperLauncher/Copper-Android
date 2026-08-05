@@ -132,8 +132,13 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
         if(Tools.isAndroid8OrHigher()) setUpPointerCapture(touchpad);
         mInGUIProcessor.setAbstractTouchpad(touchpad);
         // Kopper Zink has orientation issues on SurfaceView
+        // Angelica has some rendering issues if you tab out on SurfaceView in LWJGL3ify 2.x
+        // FIXME: LWJGL3ify 3.x does not like when surface randomly dies on SurfaceView
+        // (it doesnt swap to 1x1 pbuffer cause it uses sdl for swap instead of glfw)
         try {
-            useSurfaceView = useSurfaceView && !LOCAL_RENDERER.equals("opengles3_desktopgl_zink_kopper");
+            useSurfaceView = useSurfaceView && !LOCAL_RENDERER.equals("opengles3_desktopgl_zink_kopper") &&
+                    !Tools.hasMods("angelica") &&
+                    !Tools.hasMods("lwjgl3ify-3");
         } catch (NullPointerException ignored){}
         if(useSurfaceView){
             SurfaceView surfaceView = new SurfaceView(getContext());
@@ -146,6 +151,8 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                 public void surfaceCreated(@NonNull SurfaceHolder holder) {
                     if(isCalled) {
                         JREUtils.setupBridgeWindow(mNativeSurface);
+                        if (sdlEnabled) SDLSurface.setNativeSurface(mNativeSurface);
+                        refreshSize(true);
                         return;
                     }
                     isCalled = true;
@@ -155,6 +162,9 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
 
                 @Override
                 public void surfaceChanged(@NonNull SurfaceHolder holder, int format, int width, int height) {
+                    // Don't use the scaled resolution, SDL doesn't work like that, it'll render offscreen instead.
+                    // The first two args go unused, you can put any garbage in em.
+                    if (sdlEnabled) SDLActivity.getSDLSurface().surfaceChanged(holder, format, Tools.currentDisplayMetrics.widthPixels, Tools.currentDisplayMetrics.heightPixels);
                     refreshSize();
                 }
 
@@ -167,6 +177,7 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                     window, it appears to automatically release the associated ANativeWindow. This
                     can cause a crash if not handled.
                      */
+                    if (sdlEnabled) SDLActivity.getSDLSurface().surfaceDestroyed(holder);
                 }
             });
 
@@ -185,6 +196,7 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                     setupSDL(getContext(), mNativeSurface, (ViewGroup) getParent());
                     if(isCalled) {
                         JREUtils.setupBridgeWindow(mNativeSurface);
+                        if (sdlEnabled) SDLSurface.setNativeSurface(mNativeSurface);
                         return;
                     }
                     isCalled = true;
@@ -194,6 +206,9 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
 
                 @Override
                 public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
+                    // Don't use the scaled resolution, SDL doesn't work like that, it'll render offscreen instead.
+                    // The first two args go unused, you can put any garbage in em.
+                    if (sdlEnabled) SDLActivity.getSDLSurface().surfaceChanged(null, 0, Tools.currentDisplayMetrics.widthPixels, Tools.currentDisplayMetrics.heightPixels);
                     refreshSize();
                 }
 
@@ -204,6 +219,7 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                     into a floating window. Subsequent turns to floating window no longer trigger
                     recreation. Tabbing out and in does not trigger recreation.
                      */
+                    if (sdlEnabled) SDLActivity.getSDLSurface().surfaceDestroyed(null);
                     return true;
                 }
 
@@ -348,9 +364,11 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
         if(event.getDevice() != null
                 && ( (event.getSource() & InputDevice.SOURCE_MOUSE_RELATIVE) == InputDevice.SOURCE_MOUSE_RELATIVE
                 ||   (event.getSource() & InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE)  ){
-
             if(eventKeycode == KeyEvent.KEYCODE_BACK){
-                sendMouseButton(LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_RIGHT, event.getAction() == KeyEvent.ACTION_DOWN);
+                sendMouseButton(LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_4, event.getAction() == KeyEvent.ACTION_DOWN);
+                return true;
+            }else if(eventKeycode == KeyEvent.KEYCODE_FORWARD){
+                sendMouseButton(LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_5, event.getAction() == KeyEvent.ACTION_DOWN);
                 return true;
             }
         }
@@ -422,11 +440,13 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
             post(this::refreshSize);
             return;
         }
+        int newWidth;
+        int newHeight;
         // Use the width and height of the View instead of display dimensions to avoid
         // getting squiched/stretched due to inconsistencies between the layout and
         // screen dimensions.
-        int newWidth = Tools.getDisplayFriendlyRes(getWidth(), LauncherPreferences.PREF_SCALE_FACTOR);
-        int newHeight = Tools.getDisplayFriendlyRes(getHeight(), LauncherPreferences.PREF_SCALE_FACTOR);
+        newWidth = Tools.getDisplayFriendlyRes(getWidth(), LauncherPreferences.PREF_SCALE_FACTOR);
+        newHeight = Tools.getDisplayFriendlyRes(getHeight(), LauncherPreferences.PREF_SCALE_FACTOR);
         if (newHeight < 1 || newWidth < 1) {
             Log.e("MGLSurface", String.format("Impossible resolution : %dx%d", newWidth, newHeight));
             return;
@@ -448,9 +468,9 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
                 view.getSurfaceTexture().setDefaultBufferSize(windowWidth, windowHeight);
             }
         }
+        if (sdlEnabled) SDLActivity.getSDLSurface().nativeResize(windowWidth, windowHeight);
 
         CallbackBridge.sendUpdateWindowSize(windowWidth, windowHeight);
-
     }
 
     private void realStart(Surface surface){

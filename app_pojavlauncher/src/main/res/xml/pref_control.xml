@@ -174,6 +174,15 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/preference_category_SDL_settings">
+        <androidx.preference.SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="gamepadPassthruForced"
+            android:summary="@string/mcl_gamepad_forcedSDL_subtitle"
+            android:title="@string/mcl_gamepad_forcedSDL"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/preference_category_touchcontroller_settings">
         <SwitchPreference
             android:key="forceEnableTouchController"

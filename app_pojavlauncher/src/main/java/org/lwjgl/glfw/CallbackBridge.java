@@ -8,14 +8,13 @@ import android.content.*;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Choreographer;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
-import org.libsdl.app.SDL;
 import org.libsdl.app.SDLActivity;
-import org.libsdl.app.SDLSurface;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -38,13 +37,14 @@ public class CallbackBridge {
     
     public static volatile int windowWidth, windowHeight;
     public static volatile int physicalWidth, physicalHeight;
-    public static float mouseX, mouseY;
+    public static float mouseX, mouseY, deltaX, deltaY;
     public volatile static boolean holdingAlt, holdingCapslock, holdingCtrl,
             holdingNumlock, holdingShift;
 
     public static final ByteBuffer sGamepadButtonBuffer;
     public static final FloatBuffer sGamepadAxisBuffer;
     public static boolean sGamepadDirectInput = false;
+    private static int sMouseButtonState = 0;
 
     public static void putMouseEventWithCoords(int button, float x, float y) {
         putMouseEventWithCoords(button, true, x, y);
@@ -62,8 +62,11 @@ public class CallbackBridge {
         mouseY = y;
         nativeSendCursorPos(mouseX, mouseY);
         // HOVER_MOVE and MOVE are equivalent in SDL
-        if (MinecraftGLSurface.sdlEnabled)
+        if (!MinecraftGLSurface.sdlEnabled) return;
+        if (!isGrabbing)
             SDLActivity.onNativeMouse(0, MotionEvent.ACTION_MOVE, x, y, false);
+        else
+            SDLActivity.onNativeMouse(0, MotionEvent.ACTION_MOVE, deltaX, deltaY, true);
     }
 
     /**
@@ -87,6 +90,17 @@ public class CallbackBridge {
             nativeSendCharMods(keychar,modifiers);
             nativeSendChar(keychar);
         }
+        if (!MinecraftGLSurface.sdlEnabled) return;
+        if(isDown){
+            SDLActivity.onNativeKeyDown(EfficientAndroidLWJGLKeycode.getAndroidKeycode(keycode));
+        } else SDLActivity.onNativeKeyUp(EfficientAndroidLWJGLKeycode.getAndroidKeycode(keycode));
+        // If not in GUI and pressed a hotbar key, update HotbarView's last index for gesture
+        // detection. This is still faulty but should be less so.
+        if (isGrabbing()){
+            if (keycode >= LwjglGlfwKeycode.GLFW_KEY_0 && keycode <= LwjglGlfwKeycode.GLFW_KEY_9){
+                ((MainActivity) SDLActivity.getContext()).setmLastIndex(keycode - LwjglGlfwKeycode.GLFW_KEY_0);
+            }
+        }
     }
 
     public static void sendChar(char keychar, int modifiers){
@@ -95,6 +109,9 @@ public class CallbackBridge {
         // See net/kdt/pojavlaunch/customcontrols/keyboard/TouchCharInput.java#L147 (onTextChanged)
         nativeSendCharMods(keychar,modifiers);
         nativeSendChar(keychar);
+        if (!MinecraftGLSurface.sdlEnabled) return;
+        SDLActivity.onNativeKeyDown(EfficientAndroidLWJGLKeycode.getAndroidKeycode(keychar));
+        SDLActivity.onNativeKeyUp(EfficientAndroidLWJGLKeycode.getAndroidKeycode(keychar));
     }
 
     public static void sendKeyPress(int keyCode, int modifiers, boolean status) {
@@ -125,8 +142,38 @@ public class CallbackBridge {
     public static void sendMouseKeycode(int button, int modifiers, boolean isDown) {
         // if (isGrabbing()) DEBUG_STRING.append("MouseGrabStrace: " + android.util.Log.getStackTraceString(new Throwable()) + "\n");
         nativeSendMouseButton(button, isDown ? 1 : 0, modifiers);
-        if (MinecraftGLSurface.sdlEnabled)
-            SDLActivity.onNativeMouse(button, isDown ? MotionEvent.ACTION_DOWN : MotionEvent.ACTION_UP, mouseX, mouseY, false);
+        if (!MinecraftGLSurface.sdlEnabled) return;
+        int aKey = -1;
+        switch (button) {
+            case LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_LEFT:
+                aKey = MotionEvent.BUTTON_PRIMARY;
+                break;
+            case LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_RIGHT:
+                aKey = MotionEvent.BUTTON_SECONDARY;
+                break;
+            case LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_MIDDLE:
+                aKey = MotionEvent.BUTTON_TERTIARY;
+                break;
+            // Yes, back and forward are flipped, for some reason it's just flipped on SDL, don't ask
+            case LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_5:
+                aKey = MotionEvent.BUTTON_BACK;
+                break;
+            case LwjglGlfwKeycode.GLFW_MOUSE_BUTTON_4:
+                aKey = MotionEvent.BUTTON_FORWARD;
+                break;
+        }
+        // This is disgusting. We need to do this weird stuff because this actually expects
+        // MotionEvent.getButtonState(), which gives a state that does not include the key that was
+        // released.
+        // This really needs to be rewritten to get the MotionEvent itself...oh well
+        if (aKey != -1) {
+            if (isDown) {
+                sMouseButtonState |= aKey;
+            } else {
+                sMouseButtonState &= ~aKey;
+            }
+            SDLActivity.onNativeMouse(sMouseButtonState, isDown ? MotionEvent.ACTION_DOWN : MotionEvent.ACTION_UP, mouseX, mouseY, false);
+        }
     }
 
     public static void sendMouseKeycode(int keycode) {
@@ -134,8 +181,10 @@ public class CallbackBridge {
         sendMouseKeycode(keycode, CallbackBridge.getCurrentMods(), false);
     }
     
-    public static void sendScroll(double xoffset, double yoffset) {
+    public static void sendScroll(float xoffset, float yoffset) {
         nativeSendScroll(xoffset, yoffset);
+        if (!MinecraftGLSurface.sdlEnabled) return;
+        SDLActivity.onNativeMouse(0, MotionEvent.ACTION_SCROLL, xoffset, yoffset, false);
     }
 
     public static void sendUpdateWindowSize(int w, int h) {
@@ -171,10 +220,11 @@ public class CallbackBridge {
     }
 
     // Notification types
-    private static final int SDL = 0;
+    public static final int NOTIF_TYPE_SDL = 0;
 
     // Notification actions
-    private static final int INIT = 0;
+    public static final int ACTION_INIT_LAUNCHER_INTEGRATION = 0;
+    public static final int ACTION_SEND_TEXTBOX_RECT = 1;
     /**
      * Used for any sort of notification that needs to be given from the JRE side
      * @return if notification successful
@@ -184,22 +234,30 @@ public class CallbackBridge {
     @Keep
     public static boolean notifyLauncher(int type, int... action) {
         switch (type) {
-            case SDL:
-                if (action[0] == INIT) {
-                    // We need to load this ourselves because some mods skip loading it due to
-                    // broken logic somewhere.
-                    System.loadLibrary("SDL3");
-                    System.loadLibrary("SDL2");
-                    org.libsdl.app.SDL.setupJNI();
-                    onDirectInputEnable();
-                    MinecraftGLSurface.sdlEnabled = true;
-                    if (SDLActivity.getSDLSurface() != null) {
-                        // Notifies SDL of native surface res which is needed for proper input handling
-                        SDLActivity.getSDLSurface().surfaceChanged();
+            case NOTIF_TYPE_SDL:
+                if (action[0] == ACTION_INIT_LAUNCHER_INTEGRATION) {
+                    try {
+                        // We need to load this ourselves because some mods skip loading it due to
+                        // broken logic somewhere.
+                        System.loadLibrary("SDL3");
+                        System.loadLibrary("SDL2");
+                        org.libsdl.app.SDL.setupJNI();
+                        onDirectInputEnable();
+                        MinecraftGLSurface.sdlEnabled = true;
+                        if (SDLActivity.getSDLSurface() != null) {
+                            // Notifies SDL of native surface res which is needed for proper input handling
+                            SDLActivity.getSDLSurface().nativeResize(windowWidth, windowHeight);
+                        }
+                        Logger.appendToLog("Amethyst-Android: SDL support enabled!");
+                        return true;
+                    } catch (Exception e){
+                        Logger.appendToLog("Amethyst-Android: Failed to initialize SDL launcher-side integration! We will likely crash");
                     }
-                    Logger.appendToLog("Amethyst-Android: SDL support enabled!");
-                    return true;
                 }
+                if (action[0] == ACTION_SEND_TEXTBOX_RECT) {
+                    // implement
+                }
+
         }
         return false;
     }

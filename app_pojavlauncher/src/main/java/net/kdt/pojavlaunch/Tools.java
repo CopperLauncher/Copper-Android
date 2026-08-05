@@ -120,7 +120,7 @@ public final class Tools {
 
     public static final Gson GLOBAL_GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    public static final String URL_HOME = "https://angelauramc.dev/wiki";
+    public static final String URL_HOME = "https://copperlauncher.github.io/";
     public static String NATIVE_LIB_DIR;
     public static String DIR_DATA; //Initialized later to get context
     public static File DIR_CACHE;
@@ -279,15 +279,66 @@ public final class Tools {
      * @return Whether or not the .jar is found
      */
     public static boolean hasMods(String... filenames) {
+        return !getMods(filenames).isEmpty();
+    }
+
+    /**
+     * Searches for mod in mods directory of current selected profile
+     * Not case-sensitive
+     * @param filenames Filename(s) of the .jar mod(s)
+     * @return The found mods
+     */
+    public static List<File> getMods(String... filenames) {
         File gameDir = getGameDir();
         File modsDir = new File(gameDir, "mods");
-        File[] modFiles = modsDir.listFiles(file -> file.isFile() && file.getName().endsWith(".jar"));
-        if (modFiles == null) return false;
+        File[] modFiles = modsDir.listFiles(file -> file.isFile() && file.getName().toLowerCase().endsWith(".jar"));
+        if (modFiles == null) return new ArrayList<>();
+        List<File> foundModFiles = new ArrayList<>();
         for (File file : modFiles) {
             for (String filename : filenames)
-                if (file.getName().toLowerCase().contains(filename.toLowerCase())) return true;
+                if (file.getName().toLowerCase().contains(filename.toLowerCase()) &&
+                        file.getName().toLowerCase().endsWith(".jar")) {
+                    foundModFiles.add(file);
+                    break;
+                }
         }
-        return false;
+        return foundModFiles;
+    }
+
+    /**
+     * Tries to delete any sodium related mods of the currently selected profile via string matching
+     * the files in the mods folder.
+     */
+    public static void deleteSodiumMods() {
+        File modsDir = new File(getGameDir(), "mods");
+        File[] mods = modsDir.listFiles(file -> file.isFile() && file.getName().endsWith(".jar"));
+        if (mods == null) return;
+        for (File file : mods) {
+            String name = file.getName().toLowerCase();
+            if (name.contains("sodium") ||
+                    name.contains("beddium")    || // Also covers embeddium
+                    name.contains("rubidium")   ||
+                    name.contains("xenon")      || // Name conflicts with another mod
+                    name.contains("celeritas")  ||
+                    name.contains("relictium")  ||
+                    name.contains("vintagium")  ||
+                    name.contains("podium")     ||
+                    name.contains("indium")     ||
+                    name.contains("lazurite")   ||
+                    name.contains("iris")       ||
+                    name.contains("monocle")    ||
+                    name.contains("voxy")       ||
+                    name.contains("nvidium")    ||
+                    name.contains("chloride")   ||
+                    name.contains("bedrodium")  ||
+                    name.contains("substrate")  || // Name conflicts with another mod
+                    name.contains("blendium")   ||
+                    name.contains("ryoamium")
+                // The name conflicts are for pretty dead mods so we ignore them.
+                // I doubt they're using some mod with less than 5k downloads with sodium.
+            ) if (!file.delete())
+                throw new RuntimeException("Failed to delete Sodium and related mods!");
+        }
     }
 
     /**
@@ -866,7 +917,7 @@ public final class Tools {
                 pathname.getName().endsWith(".jar") &&
                 // Exclude our three special jars which goes first, second and last
                 !pathname.getName().equals("lwjgl.jar") &&
-                !pathname.getName().equals("/lwjgl-"+internalLwjglVersion+"-merged-modules.jar") &&
+                !pathname.getName().equals("lwjgl-"+internalLwjglVersion+"-merged-modules.jar") &&
                 !pathname.getName().endsWith("lwjglx.jar"));
 
         if (lwjglModules != null) {
@@ -1935,7 +1986,7 @@ public final class Tools {
         return motionListener;
     }
 
-    static class SDL {
+    public static class SDL {
         /**
          * Initializes gamepad, joystick, and event subsystems.
          * This triggers {@link SDLControllerManager#pollInputDevices()} and subsequently disables
@@ -1943,4 +1994,6 @@ public final class Tools {
          */
         public static native void initializeControllerSubsystems();
     }
+    public static native String jObjectToString(Object object);
+    public static native long getJavaVMPointer();
 }

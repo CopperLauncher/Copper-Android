@@ -51,7 +51,7 @@ public class SDLDummyEdit extends View implements View.OnKeyListener
         // FIXME: An even more effective way would be if Android provided this out of the box, but where would the fun be in that :)
         if (event.getAction()==KeyEvent.ACTION_UP && keyCode == KeyEvent.KEYCODE_BACK) {
             if (SDLActivity.mTextEdit != null && SDLActivity.mTextEdit.getVisibility() == View.VISIBLE) {
-                SDLActivity.onNativeKeyboardFocusLost();
+                SDLActivity.onNativeScreenKeyboardHidden();
             }
         }
         return super.onKeyPreIme(keyCode, event);

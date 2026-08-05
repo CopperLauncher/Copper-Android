@@ -14,6 +14,7 @@ import net.kdt.pojavlaunch.modloaders.modpacks.models.ModDetail;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.ModItem;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchFilters;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchResult;
+import net.kdt.pojavlaunch.utils.ZipUtils;
 
 import org.jdom2.IllegalDataException;
 
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 /**
@@ -158,8 +160,8 @@ public class CommonApi implements ModpackApi {
     }
 
     @Override
-    public ModLoader importModpack(Activity activity, Uri zipUri) throws IOException, NoSuchAlgorithmException {
-        return getModpackApi(activity, zipUri).importModpack(activity, zipUri);
+    public ModLoader importModpack(File modpackFile) throws IOException, NoSuchAlgorithmException {
+        return getModpackApi(modpackFile).importModpack(modpackFile);
     }
 
     private @NonNull ModpackApi getModpackApi(int apiSource) {
@@ -173,29 +175,37 @@ public class CommonApi implements ModpackApi {
         }
     }
 
-    private @NonNull ModpackApi getModpackApi(Activity activity, Uri zipUri){
-        String modrinthPackInfoFileName = "modrinth.index.json";
-        String curseforgePackInfoFileName = "manifest.json";
-        InputStream inputStream = null;
-        try {
-            inputStream = activity.getContentResolver().openInputStream(zipUri);
-            ZipInputStream zipInputStream = new ZipInputStream(inputStream);
-            ZipEntry zipEntry;
+    private @NonNull ModpackApi getModpackApi(@NonNull File modpackFile) throws IOException {
+        try (ZipFile zip = new ZipFile(modpackFile)) {
             boolean isModrinth;
             boolean isCurseforge;
-            while ((zipEntry = zipInputStream.getNextEntry()) != null) {
-                isModrinth = zipEntry.getName().equals(modrinthPackInfoFileName);
-                isCurseforge = zipEntry.getName().equals(curseforgePackInfoFileName);
-                if(isModrinth) {
-                    return mModrinthApi;
-                } else if (isCurseforge) {
-                    return mCurseforgeApi;
-                }
+
+            try {
+                ZipUtils.getEntryStream(zip, "modrinth.index.json");
+                isModrinth = true;
+            } catch (IOException ignored) {
+                isModrinth = false;
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+            try {
+                ZipUtils.getEntryStream(zip, "manifest.json");
+                isCurseforge = true;
+            } catch (IOException ignored) {
+                isCurseforge = false;
+            }
+
+            if (isModrinth && isCurseforge) {
+                String name = modpackFile.getName();
+                int dot = name.lastIndexOf('.');
+                String extension = (dot == -1) ? "" : name.substring(dot + 1);
+                if (extension.equalsIgnoreCase("mrpack")) return mModrinthApi;
+                throw new IOException("Ambiguous file contains both modrinth.index.json and manifest.json. Cannot determine modpack format.");
+            }
+            if (isModrinth) return mModrinthApi;
+            if (isCurseforge) return mCurseforgeApi;
+
+            throw new IllegalArgumentException("Zip provided does not contain a manifest file.");
         }
-        throw new IllegalArgumentException("Zip provided does not contain a manifest file");
     }
 
     /** Fuse the arrays in a way that's fair for every endpoint */

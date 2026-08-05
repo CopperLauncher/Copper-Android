@@ -32,14 +32,7 @@
 #define EVENT_TYPE_MOUSE_BUTTON 1006
 #define EVENT_TYPE_SCROLL 1007
 
-#define TRY_ATTACH_ENV(env_name, vm, error_message, then) JNIEnv* env_name;\
-do {                                                                       \
-    env_name = get_attached_env(vm);                                       \
-    if(env_name == NULL) {                                                 \
-        printf(error_message);                                             \
-        then                                                               \
-    }                                                                      \
-} while(0)
+
 
 static void registerFunctions(JNIEnv *env);
 
@@ -590,9 +583,7 @@ Java_org_lwjgl_glfw_CallbackBridge_nativeCreateGamepadAxisBuffer(JNIEnv *env, jc
 
 // HACK: Legacy4J has faulty detection that hardwires us to GLFW unless we init SDL ourselves.
 // This is a horribly made function that should really have more checks around it but meh.
-#define SDL_INIT_JOYSTICK   0x00000200u
-#define SDL_INIT_GAMEPAD    0x00002000u
-#define SDL_INIT_EVENTS     0x00004000u
+#include <SDL3/SDL.h>
 
 static inline void initSubsystem(void) {
     typedef int (*SDL_Init_Func)(uint32_t flags);
