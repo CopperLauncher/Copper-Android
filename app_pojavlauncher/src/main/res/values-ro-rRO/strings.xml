@@ -541,7 +541,7 @@
     <string name="error_vanilla_json_corrupt">Vanilla json seems to be corrupt. Please send a bug report on github or discord.</string>
     <string name="preference_ask_for_microphone_title">Allow microphone</string>
     <string name="preference_ask_for_microphone_description">Click to re-request the notification permission, required for voice chat mods like Simple Voice Chat.</string>
-    <string name="mcl_gamepad_forcedSDL_subtitle">Can allow old versions of Legacy4J to use SDL backend</string>
+    <string name="mcl_gamepad_forcedSDL_subtitle">If 26.3-snapshot-4 and above or controller mods are not properly functioning, this can fix it.</string>
     <string name="mcl_gamepad_forcedSDL">Forcibly start SDL controller handling</string>
     <string name="preference_category_SDL_settings">SDL Settings</string>
     <string name="oldL4JFound">You are using a version of Legacy4J without the android fixes! You will need to manually enable SDL in the controller settings to get the best experience!</string>
@@ -566,6 +566,15 @@
     <string name="error_key_unsupported">Error! The key assigned to this button is invalid. Did you try updating?</string>
     <string name="error_invalid_value">Error! Invalid value!</string>
     <string name="minecraft_no_username_set">Your Minecraft username is not set! You must set it in the Minecraft website before being able to log in!</string>
+    <string name="create_lwjgl3ify_profile">Create LWJGL3ify profile</string>
+    <string name="select_lwjgl3ify_version">Select LWJGL3ify version</string>
+    <string name="lwjgl3ify_installer_available_versions">Supported LWJGL3IFY versions</string>
+    <string name="lwjgl3ify_installer_broken_versions">Broken LWJGL3ify versions (SDL)</string>
+    <string name="new_default_controls">Extracted new default controls into new_default.json. Try it out!</string>
+    <string name="import_modpack_start">Importing modpack…</string>
+    <string name="import_modpack_hash">Hashing modpack file… (%s MB/ %s MB)</string>
+    <string name="import_modpack_json">Reading modpack info…</string>
+    <string name="import_modpack_copy">Copying modpack file to cache… (%s MB/ %s MB)</string>
     <string name="mod_deps_title">Select dependencies to install</string>
     <string name="mod_deps_install_selected">Install selected</string>
     <string name="mod_deps_install_without">Install without deps</string>
