@@ -518,8 +518,8 @@ public class JREUtils {
             case "opengles3_ltw" : renderLibrary = "libltw.so"; break;
             case "opengles3_KW" : renderLibrary = "libng_gl4es.so"; break;
             default:
-                Log.w("RENDER_LIBRARY", "No renderer selected, defaulting to Krypton Wrapper");
-                renderLibrary = "libng_gl4es.so";
+                Log.w("RENDER_LIBRARY", "No renderer selected, defaulting to Holy GL4ES");
+                renderLibrary = "libgl4es_115.so";
                 break;
         }
         // Has to run before dlopening mobileglues
@@ -533,10 +533,10 @@ public class JREUtils {
         }
 
         if (!dlopen(renderLibrary) && !dlopen(findInLdLibPath(renderLibrary))) {
-            Log.e("RENDER_LIBRARY","Failed to load renderer " + renderLibrary + ". Falling back to Krypton Wrapper");
-            LOCAL_RENDERER = "opengles3_KW";
-            renderLibrary = "libng_gl4es.so";
-            dlopen(NATIVE_LIB_DIR + "/libng_gl4es.so");
+            Log.e("RENDER_LIBRARY","Failed to load renderer " + renderLibrary + ". Falling back to Holy GL4ES");
+            LOCAL_RENDERER = "opengles3";
+            renderLibrary = "libgl4es_115.so";
+            dlopen(NATIVE_LIB_DIR + "/libgl4es_115.so");
         }
         return renderLibrary;
     }
