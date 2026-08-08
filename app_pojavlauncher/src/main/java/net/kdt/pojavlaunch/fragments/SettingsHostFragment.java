@@ -14,11 +14,11 @@ import androidx.preference.PreferenceFragmentCompat;
 
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceFragment;
-import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceRendererSettingsFragment;
+import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceVideoFragment;
 
 /**
  * Landscape two-pane settings screen. {@code pref_main} (the root settings list) lives in
- * the left pane and never leaves it; the right pane defaults to the Renderers screen and
+ * the left pane and never leaves it; the right pane defaults to the Video screen and
  * switches to whichever category (Video/Controls/Java/Misc/Appearance/Experimental) the user
  * taps — a {@code Preference} with {@code android:fragment} set.
  *
@@ -38,7 +38,7 @@ public class SettingsHostFragment extends Fragment
 
     public static final String TAG = "SettingsHostFragment";
     private static final String LEFT_PANE_TAG = "SETTINGS_LEFT_PANE_MAIN";
-    private static final String DEFAULT_RIGHT_PANE_TAG = "SETTINGS_RIGHT_PANE_DEFAULT_RENDERERS";
+    private static final String DEFAULT_RIGHT_PANE_TAG = "SETTINGS_RIGHT_PANE_DEFAULT_VIDEO";
 
     private OnBackPressedCallback mRightPaneBackCallback;
 
@@ -95,7 +95,7 @@ public class SettingsHostFragment extends Fragment
         Fragment existingRight = getChildFragmentManager().findFragmentById(R.id.settings_right_pane_container);
         if (existingLeft == null && existingRight == null) {
             // Both panes are populated in one transaction, NOT added to the back
-            // stack — this is the settings screen's "home" state (Renderers shown
+            // stack — this is the settings screen's "home" state (Video shown
             // by default), same pattern as RightPaneHomeFragment being the main
             // menu's un-stacked base state. Only explicit taps on a pref_main
             // category (onPreferenceStartFragment, below) get their own back-stack
@@ -105,7 +105,7 @@ public class SettingsHostFragment extends Fragment
                     .beginTransaction()
                     .setReorderingAllowed(true)
                     .replace(R.id.settings_left_pane_container, LauncherPreferenceFragment.class, null, LEFT_PANE_TAG)
-                    .replace(R.id.settings_right_pane_container, LauncherPreferenceRendererSettingsFragment.class, null, DEFAULT_RIGHT_PANE_TAG)
+                    .replace(R.id.settings_right_pane_container, LauncherPreferenceVideoFragment.class, null, DEFAULT_RIGHT_PANE_TAG)
                     .commit();
         }
     }
