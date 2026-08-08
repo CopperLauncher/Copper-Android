@@ -128,7 +128,11 @@ public class RightPaneHomeFragment extends Fragment {
 
         // ImageDecoder returns AnimatedImageDrawable paused — has to be started explicitly,
         // unlike Drawable.createFromPath's static-only result which needs no such call.
-        if (d instanceof AnimatedImageDrawable) {
+        // AnimatedImageDrawable is API 28+ (decodeImage() only ever produces one at P+,
+        // via ImageDecoder) — the SDK check below is required, not just the instanceof,
+        // because merely referencing the class on older API levels throws
+        // NoClassDefFoundError as soon as this method runs.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && d instanceof AnimatedImageDrawable) {
             ((AnimatedImageDrawable) d).start();
         }
         return true;
