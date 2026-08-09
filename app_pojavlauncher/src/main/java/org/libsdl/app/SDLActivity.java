@@ -392,28 +392,36 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static void enableSDLEditKeyboard(){
         if (mTextEdit == null) return;
 
-        // disableSDLEditKeyboard() (or the initial state) can leave mTextEdit at
-        // 0x0 size. A 0x0 view can't reliably take focus or have the IME attach to
-        // it on some OEM keyboards — same "minimum size of 1 pixel, so it takes
-        // focus" requirement as the CommandHandler#COMMAND_TEXTEDIT_SHOW path below.
-        // Skipping this made the keyboard slow to appear, or never appear, on
-        // devices whose IME is strict about laid-out view bounds before showing.
-        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mTextEdit.getLayoutParams();
-        if (params == null || params.width <= 0 || params.height <= 0) {
-            mTextEdit.setLayoutParams(new FrameLayout.LayoutParams(1, 1));
-        }
+        // Deferred via commandHandler.post(), same as showTextInput()/
+        // ShowTextInputTask below: running requestFocus()/showSoftInput()
+        // synchronously from inside the calling touch-event callback stack
+        // (e.g. a control button's onTouchEvent) is unreliable on some devices —
+        // the window/IME state isn't always ready for a focus request made
+        // mid-dispatch. Posting lets it run on a clean looper iteration instead.
+        commandHandler.post(() -> {
+            if (mTextEdit == null) return;
 
-        mTextEdit.setInputType(TYPE_CLASS_TEXT | TYPE_TEXT_VARIATION_NORMAL);
+            // disableSDLEditKeyboard() (or the initial state) can leave mTextEdit
+            // at 0x0 size. A 0x0 view can't reliably take focus or have the IME
+            // attach to it on some OEM keyboards — same "minimum size of 1 pixel,
+            // so it takes focus" requirement as ShowTextInputTask uses below.
+            FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mTextEdit.getLayoutParams();
+            if (params == null || params.width <= 0 || params.height <= 0) {
+                mTextEdit.setLayoutParams(new FrameLayout.LayoutParams(1, 1));
+            }
 
-        mTextEdit.setVisibility(View.VISIBLE);
-        mTextEdit.requestFocus();
+            mTextEdit.setInputType(TYPE_CLASS_TEXT | TYPE_TEXT_VARIATION_NORMAL);
 
-        InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.showSoftInput(mTextEdit, 0);
+            mTextEdit.setVisibility(View.VISIBLE);
+            mTextEdit.requestFocus();
 
-        if (imm.isAcceptingText()) {
-            onNativeScreenKeyboardShown();
-        }
+            InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(mTextEdit, 0);
+
+            if (imm.isAcceptingText()) {
+                onNativeScreenKeyboardShown();
+            }
+        });
     }
     public static void disableSDLEditKeyboard(){
         mTextEdit.setLayoutParams(new FrameLayout.LayoutParams(0, 0));
