@@ -385,6 +385,10 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static boolean isUsingSDLTextEdit(){
         return mTextEdit != null;
     }
+    /** True if the SDL-owned text edit is currently the one showing/holding the keyboard. */
+    public static boolean isSDLEditKeyboardShown(){
+        return mTextEdit != null && mTextEdit.hasFocus();
+    }
     public static void enableSDLEditKeyboard(){
         if (mTextEdit == null) return;
 
