@@ -86,6 +86,13 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         mRecyclerview = view.findViewById(R.id.search_mod_list);
         mStatusTextView = view.findViewById(R.id.search_mod_status_text);
         mFilterButton = view.findViewById(R.id.search_mod_filter);
+        // layout-land/fragment_mod_search.xml sets this button's visibility to
+        // GONE by default — that's meant for ModsSearchFragment (mod/resource/
+        // /shader search), which is hosted inside ContentPickerFragment's two-pane
+        // picker and has its own left-pane filter button in landscape instead.
+        // This fragment (the standalone modpack search/installer) has no such
+        // host or alternate filter entry point, so force it back on here.
+        mFilterButton.setVisibility(View.VISIBLE);
 
         mDefaultTextColor = mStatusTextView.getTextColors();
 

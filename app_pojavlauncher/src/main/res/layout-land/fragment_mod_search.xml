@@ -28,9 +28,13 @@
 
 
         >
-        <!-- Search text: fills the full width here since the filter button now lives
-             in ContentPickerFragment's left pane (see fragment_content_picker.xml)
-             instead of next to this search box. -->
+        <!-- Search text: end-constrained to the filter button's start, same as the
+             portrait layout. ConstraintLayout collapses a GONE view for constraint
+             purposes, so this still expands to fill the row for ModsSearchFragment
+             (mod/resource/shader search, filter button left GONE — its filter now
+             lives in ContentPickerFragment's left pane instead), while correctly
+             leaving room for the button when SearchModFragment (modpack search)
+             forces it back to VISIBLE in code. -->
         <EditText
             android:id="@+id/search_mod_edittext"
             android:layout_width="0dp"
@@ -45,7 +49,7 @@
             android:paddingHorizontal="@dimen/padding_heavy"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/search_mod_filter"
             />
 
         <!-- Kept in the tree (same id, GONE) so ModsSearchFragment.java's findViewById
