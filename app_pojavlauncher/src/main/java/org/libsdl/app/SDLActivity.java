@@ -388,6 +388,17 @@ public class SDLActivity extends Activity implements View.OnSystemUiVisibilityCh
     public static void enableSDLEditKeyboard(){
         if (mTextEdit == null) return;
 
+        // disableSDLEditKeyboard() (or the initial state) can leave mTextEdit at
+        // 0x0 size. A 0x0 view can't reliably take focus or have the IME attach to
+        // it on some OEM keyboards — same "minimum size of 1 pixel, so it takes
+        // focus" requirement as the CommandHandler#COMMAND_TEXTEDIT_SHOW path below.
+        // Skipping this made the keyboard slow to appear, or never appear, on
+        // devices whose IME is strict about laid-out view bounds before showing.
+        FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) mTextEdit.getLayoutParams();
+        if (params == null || params.width <= 0 || params.height <= 0) {
+            mTextEdit.setLayoutParams(new FrameLayout.LayoutParams(1, 1));
+        }
+
         mTextEdit.setInputType(TYPE_CLASS_TEXT | TYPE_TEXT_VARIATION_NORMAL);
 
         mTextEdit.setVisibility(View.VISIBLE);
