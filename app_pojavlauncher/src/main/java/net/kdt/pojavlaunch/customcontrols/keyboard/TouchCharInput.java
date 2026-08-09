@@ -65,7 +65,15 @@ public class TouchCharInput extends androidx.appcompat.widget.AppCompatEditText 
      * Toggle on and off the soft keyboard, depending of the state
      */
     public void switchKeyboardState(){
-        if(hasFocus()){
+        // When SDL owns the keyboard, enable() focuses SDLActivity's own dummy
+        // edit view, never `this` — so hasFocus() below would always read false
+        // and this method would always fall into enable(), unable to ever detect
+        // "already shown" and toggle it off. That made the on-screen keyboard
+        // button need several taps in-game before the IME actually appeared.
+        boolean isShown = SDLActivity.isUsingSDLTextEdit()
+                ? SDLActivity.isSDLEditKeyboardShown()
+                : hasFocus();
+        if(isShown){
             clear();
             disable();
         }else{
