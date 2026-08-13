@@ -31,6 +31,7 @@ import net.kdt.pojavlaunch.lifecycle.LifecycleAwareAlertDialog;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.multirt.Runtime;
 import net.kdt.pojavlaunch.plugins.FFmpegPlugin;
+import net.kdt.pojavlaunch.plugins.RendererPlugin;
 import net.kdt.pojavlaunch.prefs.*;
 
 import org.lwjgl.glfw.*;
@@ -161,6 +162,10 @@ public class JREUtils {
         if(FFmpegPlugin.isAvailable) {
             ldLibraryPath.append(FFmpegPlugin.libraryPath).append(":");
         }
+        RendererPlugin.PluginRenderer selectedRendererPlugin = RendererPlugin.getById(LOCAL_RENDERER);
+        if(selectedRendererPlugin != null) {
+            ldLibraryPath.append(selectedRendererPlugin.nativeLibraryDir).append(":");
+        }
         ldLibraryPath.append(jreHome)
                 .append("/").append(Tools.DIRNAME_HOME_JRE)
                 .append("/jli:").append(jreHome).append("/").append(Tools.DIRNAME_HOME_JRE)
@@ -239,6 +244,14 @@ public class JREUtils {
                 // This is sketch but it fixes a lot of things, if it causes problems we can just undo it.
                 envMap.put("MESA_GL_VERSION_OVERRIDE","4.6COMPAT");
                 envMap.put("MESA_GLSL_VERSION_OVERRIDE","460");
+            }
+            if (LOCAL_RENDERER.startsWith(RendererPlugin.ID_PREFIX)) {
+                RendererPlugin.PluginRenderer pluginRenderer = RendererPlugin.getById(LOCAL_RENDERER);
+                if (pluginRenderer != null) {
+                    applyRendererPluginEnv(pluginRenderer, envMap);
+                } else {
+                    Log.e("JREUtils", "Selected renderer plugin " + LOCAL_RENDERER + " is no longer installed");
+                }
             }
         }
 
@@ -500,12 +513,58 @@ public class JREUtils {
     }
 
     /**
+     * Apply the POJAVEXEC_EGL and pojavEnv environment variables declared by an
+     * FCLRendererPlugin-compatible renderer plugin. Mirrors FCLauncher's addRendererEnv().
+     */
+    private static void applyRendererPluginEnv(RendererPlugin.PluginRenderer pluginRenderer, Map<String, String> envMap) {
+        String eglPath = pluginRenderer.getEglPath();
+        if (eglPath != null) envMap.put("POJAVEXEC_EGL", eglPath);
+        if (pluginRenderer.pojavEnv == null) return;
+        for (String entry : pluginRenderer.pojavEnv) {
+            String[] split = entry.split("=");
+            if (split.length < 2 || split[0].equals("DLOPEN")) continue; // DLOPEN is handled in loadGraphicsLibrary()
+            if (split[0].equals("LIB_MESA_NAME") || split[0].equals("MESA_LIBRARY")) {
+                envMap.put(split[0], pluginRenderer.nativeLibraryDir + "/" + split[1]);
+            } else {
+                envMap.put(split[0], split[1]);
+            }
+        }
+    }
+
+    /** Extra libraries a renderer plugin asked to be dlopen()'d before its main render library. */
+    private static void dlopenPluginDependencies(RendererPlugin.PluginRenderer pluginRenderer) {
+        if (pluginRenderer.pojavEnv == null) return;
+        for (String entry : pluginRenderer.pojavEnv) {
+            String[] split = entry.split("=");
+            if (split.length < 2 || !split[0].equals("DLOPEN")) continue;
+            for (String lib : split[1].split(",")) {
+                if (!lib.isEmpty()) dlopen(pluginRenderer.nativeLibraryDir + "/" + lib);
+            }
+        }
+    }
+
+    /**
      * Open the render library in accordance to the settings.
      * It will fallback if it fails to load the library.
      * @return The name of the loaded library
      */
     public static String loadGraphicsLibrary(){
         if(LOCAL_RENDERER == null) return null;
+        if(LOCAL_RENDERER.startsWith(RendererPlugin.ID_PREFIX)) {
+            RendererPlugin.PluginRenderer pluginRenderer = RendererPlugin.getById(LOCAL_RENDERER);
+            if (pluginRenderer != null) {
+                dlopenPluginDependencies(pluginRenderer);
+                if (dlopen(pluginRenderer.getGlPath())) {
+                    return pluginRenderer.glName;
+                }
+                Log.e("RENDER_LIBRARY", "Failed to load renderer plugin library " + pluginRenderer.getGlPath() + ". Falling back to Holy GL4ES");
+            } else {
+                Log.e("RENDER_LIBRARY", "Selected renderer plugin " + LOCAL_RENDERER + " is no longer installed. Falling back to Holy GL4ES");
+            }
+            LOCAL_RENDERER = "opengles3";
+            dlopen(NATIVE_LIB_DIR + "/libgl4es_115.so");
+            return "libgl4es_115.so";
+        }
         String renderLibrary;
         switch (LOCAL_RENDERER){
             case "opengles2":
