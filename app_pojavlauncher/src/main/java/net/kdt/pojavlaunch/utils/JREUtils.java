@@ -248,6 +248,16 @@ public class JREUtils {
             if (LOCAL_RENDERER.startsWith(RendererPlugin.ID_PREFIX)) {
                 RendererPlugin.PluginRenderer pluginRenderer = RendererPlugin.getById(LOCAL_RENDERER);
                 if (pluginRenderer != null) {
+                    // Renderer plugins are GL4ES-family EGL/GLES libraries loaded in place of a
+                    // built-in one. Native code (egl_bridge.c, gl_bridge.c) and GLFW.java key off
+                    // AMETHYST_RENDERER starting with "opengles" to set up the GL bridge function
+                    // table at all; the raw "plugin:<id>" value matches neither that nor
+                    // "vulkan_zink", so the table was silently left unset and the very first call
+                    // through it segfaulted at a null pointer. Override it here, after the
+                    // unconditional put above, without touching LOCAL_RENDERER itself (still
+                    // needed as-is for RendererPlugin.getById() lookups and dlopen path
+                    // resolution elsewhere in this file).
+                    envMap.put("AMETHYST_RENDERER", "opengles3_plugin");
                     applyRendererPluginEnv(pluginRenderer, envMap);
                 } else {
                     Log.e("JREUtils", "Selected renderer plugin " + LOCAL_RENDERER + " is no longer installed");

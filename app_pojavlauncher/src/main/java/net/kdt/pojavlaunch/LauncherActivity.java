@@ -221,9 +221,15 @@ public class LauncherActivity extends BaseActivity
             } else {
                 Tools.backToMainMenu(this);
             }
+        } else if (fragment instanceof LauncherPreferenceFragment
+                && !fragment.getClass().equals(LauncherPreferenceFragment.class)) {
+            // Portrait settings sub-screen (Video/Controls/Java/Misc/Appearance/
+            // Experimental/Renderer): step back to the settings list instead of
+            // jumping straight past it to the main menu.
+            Tools.removeCurrentFragment(this);
         } else {
-            // Portrait (or any other fullscreen sub-fragment): settings button doubles
-            // as a home button when not on main menu
+            // Portrait (or any other fullscreen sub-fragment, including the settings
+            // list itself): settings button doubles as a home button when not on main menu
             Tools.backToMainMenu(this);
         }
     };
