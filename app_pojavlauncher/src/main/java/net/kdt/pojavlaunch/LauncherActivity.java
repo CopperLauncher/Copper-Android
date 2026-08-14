@@ -50,6 +50,7 @@ import net.kdt.pojavlaunch.modloaders.modpacks.api.ModLoader;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.ModpackInstaller;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.NotificationDownloadListener;
 import net.kdt.pojavlaunch.modloaders.modpacks.imagecache.IconCacheJanitor;
+import net.kdt.pojavlaunch.plugins.RendererPlugin;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceFragment;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
@@ -374,6 +375,10 @@ public class LauncherActivity extends BaseActivity
 
 
         IconCacheJanitor.runJanitor();
+        // Pre-warm the renderer plugin cache off the UI thread. Without this, the first
+        // Tools.getCompatibleRenderers() call (e.g. opening the Profile Editor) runs the
+        // device-wide PackageManager scan synchronously on the UI thread and janks the UI.
+        RendererPlugin.discoverAsync(this);
         mRequestNotificationPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isAllowed -> {

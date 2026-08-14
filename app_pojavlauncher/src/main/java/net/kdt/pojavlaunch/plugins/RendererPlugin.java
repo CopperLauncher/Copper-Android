@@ -73,7 +73,21 @@ public class RendererPlugin {
         }
     }
 
-    /** Re-scans installed packages for renderer plugins. Safe to call repeatedly. */
+    /**
+     * Kicks off {@link #discover(Context)} on a background thread so the (potentially slow,
+     * device-wide) package scan never blocks the caller. Safe to call multiple times; only
+     * actually re-scans once at a time thanks to the synchronized discover() below.
+     * Use this to pre-warm the cache long before {@link Tools#getCompatibleRenderers(Context)}
+     * is needed on the UI thread (e.g. opening the Profile Editor).
+     */
+    public static void discoverAsync(Context context) {
+        Context appContext = context.getApplicationContext();
+        net.kdt.pojavlaunch.PojavApplication.sExecutorService.execute(() -> discover(appContext));
+    }
+
+    /** Re-scans installed packages for renderer plugins. Safe to call repeatedly.
+     *  This performs a device-wide PackageManager query and must never be called
+     *  from the UI thread; use {@link #discoverAsync(Context)} instead when in doubt. */
     public static synchronized void discover(Context context) {
         List<PluginRenderer> discovered = new ArrayList<>();
         try {
