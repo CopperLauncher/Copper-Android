@@ -66,6 +66,7 @@ import net.kdt.pojavlaunch.customcontrols.mouse.GyroControl;
 import net.kdt.pojavlaunch.customcontrols.mouse.HotbarView;
 import net.kdt.pojavlaunch.customcontrols.mouse.Touchpad;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutor;
+import net.kdt.pojavlaunch.plugins.RendererPlugin;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.prefs.QuickSettingSideDialog;
 import net.kdt.pojavlaunch.services.GameService;
@@ -468,6 +469,18 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                "1.19".equals(assetVersion) ||
                 // Angelica gives us GL3.3core on 1.7.10, it's a unique case.
                 hasMods("angelica")) Tools.LOCAL_RENDERER = "opengles_mobileglues";
+        }
+        if (Tools.LOCAL_RENDERER != null && Tools.LOCAL_RENDERER.startsWith(RendererPlugin.ID_PREFIX)
+                && RendererPlugin.getById(Tools.LOCAL_RENDERER) == null) {
+            // Plugin discovery only runs when the user explicitly asks for it (see
+            // RendererPlugin#discoverAsync), so it may not have happened yet this session -
+            // e.g. right after the app was killed and relaunched. Run it now: this profile is
+            // explicitly configured to use a renderer plugin, and this method already runs off
+            // the UI thread (the "JVM Main thread" started from the surface-ready listener), so
+            // it's safe to do here without janking anything. Without this, a real, previously
+            // chosen plugin renderer would look "not installed" and get silently replaced.
+            RendererPlugin.discover(this);
+            Tools.releaseRenderersCache();
         }
         if(!Tools.checkRendererCompatible(this, Tools.LOCAL_RENDERER)) {
             Tools.RenderersList renderersList = Tools.getCompatibleRenderers(this);
