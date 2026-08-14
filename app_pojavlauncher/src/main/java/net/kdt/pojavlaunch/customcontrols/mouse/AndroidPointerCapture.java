@@ -57,9 +57,18 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
     public void onGrabState(boolean isGrabbing) {
         handleAutomaticCapture();
     }
-    // It's only here so the side-dialog changes it live
+    // It's only here so the side-dialog changes it live. This must be scoped to the
+    // "always_grab_mouse" key: onSharedPreferenceChanged fires for every preference
+    // committed on DEFAULT_PREF, not just this one. The Quick Settings side dialog batches
+    // ALL of its edits (resolution, mouse speed, gyro sensitivity, gesture delay, etc.) into
+    // a single SharedPreferences.Editor and applies them together when the user taps OK, so
+    // without this check, tweaking any of those unrelated settings and confirming would also
+    // re-run this handler and call mTouchpad.disable() whenever "always_grab_mouse" happens
+    // to be off (the default) - hiding the visible mouse cursor for no reason related to
+    // what was actually changed.
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, @Nullable String key) {
+        if (key != null && !key.equals("always_grab_mouse")) return;
         if (sharedPreferences.getBoolean("always_grab_mouse", true)){
             enableTouchpadIfNecessary();
         } else mTouchpad.disable();
