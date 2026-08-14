@@ -83,26 +83,6 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
         }
     }
 
-    /**
-     * Forcibly releases pointer capture, ignoring {@link LauncherPreferences#PREF_MOUSE_GRAB_FORCE}
-     * and {@link CallbackBridge#isGrabbing()}. Use this while showing a native launcher UI overlay
-     * (e.g. the in-game Quick Settings side dialog) on top of the game surface: without this, a
-     * physical mouse stays captured by the game surface and cannot interact with the overlay's
-     * widgets (sliders, switches, buttons) at all - it appears as if the mouse stopped working.
-     */
-    public void releaseCaptureForOverlay() {
-        mHostView.releasePointerCapture();
-    }
-
-    /**
-     * Re-evaluates capture state using the normal rules. Call this once a launcher UI overlay
-     * shown over the game surface (see {@link #releaseCaptureForOverlay()}) is dismissed, so
-     * capture resumes if it should.
-     */
-    public void restoreCaptureAfterOverlay() {
-        handleAutomaticCapture();
-    }
-
     @Override
     public boolean onCapturedPointer(View view, MotionEvent event) {
         checkSameDevice(event.getDevice());

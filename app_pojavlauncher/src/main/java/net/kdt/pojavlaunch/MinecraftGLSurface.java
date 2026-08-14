@@ -111,20 +111,6 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
         if(mPointerCapture != null) mPointerCapture.detach();
         mPointerCapture = new AndroidPointerCapture(touchpad, this);
     }
-
-    /** Release pointer capture while a native launcher overlay (e.g. the Quick Settings side
-     *  dialog) is shown on top of this surface, so a physical mouse can interact with it instead
-     *  of continuing to control the game camera. No-op if pointer capture isn't set up yet. */
-    public void releasePointerCaptureForOverlay() {
-        if(mPointerCapture != null) mPointerCapture.releaseCaptureForOverlay();
-    }
-
-    /** Restore normal pointer capture behavior after an overlay shown via
-     *  {@link #releasePointerCaptureForOverlay()} has been dismissed. */
-    public void restorePointerCaptureAfterOverlay() {
-        if(mPointerCapture != null) mPointerCapture.restoreCaptureAfterOverlay();
-    }
-
     protected static View.OnGenericMotionListener motionListener = (v, event) -> false;
     private static void setupSDL(Context ctx, Surface nativeSurface, ViewGroup layout){
         SDLSurface surface = new SDLSurface(ctx);
