@@ -547,6 +547,20 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                         mGyroControl.disable();
                     }
                 }
+
+                @Override
+                protected void onAppear() {
+                    // Otherwise a captured physical mouse keeps controlling the game camera
+                    // instead of the dialog's sliders/switches, which looks like "the mouse
+                    // stopped working" while trying to drag e.g. the resolution or mouse
+                    // speed sliders.
+                    minecraftGLView.releasePointerCaptureForOverlay();
+                }
+
+                @Override
+                protected void onDisappear() {
+                    minecraftGLView.restorePointerCaptureAfterOverlay();
+                }
             };
         }
         mQuickSettingSideDialog.appear(true);
