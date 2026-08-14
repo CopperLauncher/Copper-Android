@@ -241,6 +241,27 @@
                 app:layout_constraintBottom_toTopOf="@+id/vprof_editor_profile_renderer"
                 app:layout_constraintStart_toStartOf="@+id/vprof_editor_profile_renderer" />
 
+            <ProgressBar
+                android:id="@+id/vprof_editor_renderer_check_progress"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                android:visibility="gone"
+                app:layout_constraintBottom_toBottomOf="@id/textView3"
+                app:layout_constraintEnd_toEndOf="@+id/vprof_editor_profile_renderer"
+                app:layout_constraintTop_toTopOf="@id/textView3" />
+
+            <ImageButton
+                android:id="@+id/vprof_editor_renderer_check_button"
+                android:layout_width="@dimen/_20sdp"
+                android:layout_height="@dimen/_20sdp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_refresh"
+                android:contentDescription="@string/pedit_check_renderer_plugins"
+                app:layout_constraintBottom_toBottomOf="@id/textView3"
+                app:layout_constraintEnd_toEndOf="@+id/vprof_editor_profile_renderer"
+                app:layout_constraintTop_toTopOf="@id/textView3" />
+
             <Spinner
                 android:id="@+id/vprof_editor_profile_renderer"
                 android:layout_width="match_parent"

@@ -1830,7 +1830,11 @@ public final class Tools {
             rendererIds.add(rendererId);
             rendererNames.add(defaultRendererNames[i]);
         }
-        RendererPlugin.discover(context);
+        // Renderer plugin discovery is manual now (see RendererPlugin.discoverAsync()) - it's
+        // a device-wide PackageManager scan that's too heavy to run implicitly every time this
+        // is called (e.g. every time the Profile Editor is opened, or on every app launch).
+        // Whatever was found by the last explicit scan (if any) is included below; nothing is
+        // scanned here.
         for(RendererPlugin.PluginRenderer pluginRenderer : RendererPlugin.getPluginRenderers(context)) {
             rendererIds.add(pluginRenderer.id);
             rendererNames.add(pluginRenderer.displayName);

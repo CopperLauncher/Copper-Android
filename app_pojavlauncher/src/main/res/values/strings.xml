@@ -307,6 +307,8 @@
     <string name="global_delete">Delete</string>
     <string name="pedit_java_runtime">Java Runtime</string>
     <string name="pedit_renderer">Renderer</string>
+    <string name="pedit_check_renderer_plugins">Check for renderer plugins</string>
+    <string name="pedit_renderer_plugins_checked">Renderer plugin check complete</string>
     <string name="arc_capes_title">Cosmetica Capes</string>
     <string name="arc_capes_desc">Enables capes from Cosmetica (previously Arc). For more information please visit https://cosmetica.cc. Requires OptiFine.</string>
     <string name="color_default_hex" translatable="false">FFFF0000</string>

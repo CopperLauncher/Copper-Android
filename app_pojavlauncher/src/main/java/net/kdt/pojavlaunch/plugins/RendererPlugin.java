@@ -8,6 +8,8 @@ import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,17 +79,26 @@ public class RendererPlugin {
      * Kicks off {@link #discover(Context)} on a background thread so the (potentially slow,
      * device-wide) package scan never blocks the caller. Safe to call multiple times; only
      * actually re-scans once at a time thanks to the synchronized discover() below.
-     * Use this to pre-warm the cache long before {@link Tools#getCompatibleRenderers(Context)}
-     * is needed on the UI thread (e.g. opening the Profile Editor).
+     * {@code onDone} (optional) is invoked on the UI thread once the scan finishes - use it to
+     * refresh any UI built from {@link #getPluginRenderers(Context)}/
+     * {@link net.kdt.pojavlaunch.Tools#getCompatibleRenderers(Context)}.
+     * <p>
+     * This is meant to be triggered explicitly by the user (e.g. a "Check for renderer
+     * plugins" button), not automatically on every launch or screen open: the scan itself is
+     * unavoidably a bit heavy, so running it up front unconditionally just moves the jank
+     * around instead of removing it.
      */
-    public static void discoverAsync(Context context) {
+    public static void discoverAsync(Context context, @Nullable Runnable onDone) {
         Context appContext = context.getApplicationContext();
-        net.kdt.pojavlaunch.PojavApplication.sExecutorService.execute(() -> discover(appContext));
+        net.kdt.pojavlaunch.PojavApplication.sExecutorService.execute(() -> {
+            discover(appContext);
+            if (onDone != null) net.kdt.pojavlaunch.Tools.runOnUiThread(onDone);
+        });
     }
 
     /** Re-scans installed packages for renderer plugins. Safe to call repeatedly.
      *  This performs a device-wide PackageManager query and must never be called
-     *  from the UI thread; use {@link #discoverAsync(Context)} instead when in doubt. */
+     *  from the UI thread; use {@link #discoverAsync(Context, Runnable)} instead. */
     public static synchronized void discover(Context context) {
         List<PluginRenderer> discovered = new ArrayList<>();
         try {
@@ -155,12 +166,18 @@ public class RendererPlugin {
         list.add(renderer);
     }
 
-    /** Returns the currently discovered plugin renderers, discovering them first if necessary. */
+    /** Returns whichever plugin renderers were found by the most recent {@link #discover}/
+     *  {@link #discoverAsync} call. Empty (not an automatic scan) until discovery has actually
+     *  run at least once - see {@link #discoverAsync(Context, Runnable)}. */
     public static List<PluginRenderer> getPluginRenderers(Context context) {
-        if (!sDiscovered) discover(context);
         synchronized (sPluginRenderers) {
             return new ArrayList<>(sPluginRenderers);
         }
+    }
+
+    /** Whether {@link #discover}/{@link #discoverAsync} has completed at least once this process. */
+    public static boolean hasDiscovered() {
+        return sDiscovered;
     }
 
     /** Looks up a discovered plugin renderer by its full (prefixed) renderer id. */
