@@ -1643,12 +1643,24 @@ public final class Tools {
     /** Shows a dialog letting the user pick between uploading the log to mclo.gs or sharing
      *  the raw log file directly, like before this dialog existed. */
     public static void shareLog(Context context){
+        shareLog(context, null);
+    }
+
+    /** Same as {@link #shareLog(Context)}, but invokes {@code onDialogClosed} once this dialog
+     *  is dismissed for any reason (cancelled, or one of the two share options was picked).
+     *  Use this instead of tying cleanup/finish() logic to the dismissal of a dialog that
+     *  triggers this one, since that dialog dismisses (and may finish its host Activity)
+     *  before this one gets a chance to show. */
+    public static void shareLog(Context context, @Nullable Runnable onDialogClosed){
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_share_log, null);
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle(R.string.share_log_dialog_title)
                 .setView(dialogView)
                 .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener(d -> {
+                    if(onDialogClosed != null) onDialogClosed.run();
+                })
                 .create();
 
         dialogView.findViewById(R.id.share_log_mclogs_button).setOnClickListener(v -> {
