@@ -638,4 +638,10 @@
     <string name="mod_deps_title">Select dependencies to install</string>
     <string name="mod_deps_install_selected">Install selected</string>
     <string name="mod_deps_install_without">Install without deps</string>
+
+    <string name="game_loading_title">Waiting for a game window to appear…</string>
+    <string name="game_loading_subtitle">If you are stuck here, the game might have crashed</string>
+    <string name="game_loading_eta_estimating">Estimating time remaining…</string>
+    <string name="game_loading_eta_seconds">About %d seconds left</string>
+    <string name="game_loading_eta_almost_there">Almost there…</string>
 </resources>

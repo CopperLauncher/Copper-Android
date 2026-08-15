@@ -106,6 +106,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     private ControlLayout mControlLayout;
     private HotbarView mHotbarView;
     private FrameLayout contentFrame;
+    private GameLoadingOverlay mGameLoadingOverlay;
 
     @Nullable
     private RectF inputAreaRect;
@@ -286,8 +287,10 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                     // At this time, correct size is known
                     touchControllerInputView.setSize(minecraftGLView.getWidth(), minecraftGLView.getHeight());
 
+                    mGameLoadingOverlay.show();
                     runCraft(finalVersion, mVersionInfo);
                 }catch (Throwable e){
+                    mGameLoadingOverlay.hideImmediately();
                     Tools.showErrorRemote(e);
                 }
             });
@@ -341,6 +344,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         mDrawerPullButton = findViewById(R.id.drawer_button);
         mHotbarView = findViewById(R.id.hotbar_view);
         contentFrame = findViewById(R.id.content_frame);
+        mGameLoadingOverlay = new GameLoadingOverlay(findViewById(R.id.main_game_loading_overlay));
     }
 
     @Override
@@ -383,6 +387,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         super.onDestroy();
         CallbackBridge.removeGrabListener(touchpad);
         CallbackBridge.removeGrabListener(minecraftGLView);
+        mGameLoadingOverlay.hideImmediately();
         ContextExecutor.clearActivity();
     }
 
