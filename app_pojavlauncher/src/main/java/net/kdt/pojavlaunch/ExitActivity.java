@@ -29,10 +29,15 @@ public class ExitActivity extends AppCompatActivity {
 
         int message = isSignal ? R.string.mcn_signal_title : R.string.mcn_exit_title;
 
+        // Tapping "Share Log" dismisses this dialog and opens a second one (see Tools#shareLog).
+        // Finishing the Activity on every dismissal - including the one caused by that button -
+        // was tearing this Activity's window down before/while the second dialog tried to show,
+        // which made "Share Log" appear to silently do nothing. Only finish once the whole flow
+        // (including any nested share dialog) is actually done.
         new AlertDialog.Builder(this)
                 .setMessage(getString(message,code))
-                .setPositiveButton(R.string.main_share_logs, (dialog, which) -> shareLog(this))
-                .setOnDismissListener(dialog -> ExitActivity.this.finish())
+                .setPositiveButton(R.string.main_share_logs, (dialog, which) -> shareLog(this, ExitActivity.this::finish))
+                .setOnCancelListener(dialog -> ExitActivity.this.finish())
                 .show();
     }
 

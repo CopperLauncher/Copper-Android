@@ -65,6 +65,7 @@ import net.kdt.pojavlaunch.memory.SelfMapsParser;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.multirt.Runtime;
 import net.kdt.pojavlaunch.plugins.FFmpegPlugin;
+import net.kdt.pojavlaunch.plugins.RendererPlugin;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.tasks.AsyncAssetManager;
 import net.kdt.pojavlaunch.utils.DateUtils;
@@ -541,6 +542,7 @@ public final class Tools {
         String args = LauncherPreferences.PREF_CUSTOM_JAVA_ARGS;
         if(Tools.isValidString(minecraftProfile.javaArgs)) args = minecraftProfile.javaArgs;
         FFmpegPlugin.discover(activity);
+        RendererPlugin.discover(activity);
         JREUtils.launchJavaVM(activity, runtime, gamedir, javaArgList, args);
         // If we returned, this means that the JVM exit dialog has been shown and we don't need to be active anymore.
         // We never return otherwise. The process will be killed anyway, and thus we will become inactive
@@ -1641,12 +1643,24 @@ public final class Tools {
     /** Shows a dialog letting the user pick between uploading the log to mclo.gs or sharing
      *  the raw log file directly, like before this dialog existed. */
     public static void shareLog(Context context){
+        shareLog(context, null);
+    }
+
+    /** Same as {@link #shareLog(Context)}, but invokes {@code onDialogClosed} once this dialog
+     *  is dismissed for any reason (cancelled, or one of the two share options was picked).
+     *  Use this instead of tying cleanup/finish() logic to the dismissal of a dialog that
+     *  triggers this one, since that dialog dismisses (and may finish its host Activity)
+     *  before this one gets a chance to show. */
+    public static void shareLog(Context context, @Nullable Runnable onDialogClosed){
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_share_log, null);
 
         AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle(R.string.share_log_dialog_title)
                 .setView(dialogView)
                 .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener(d -> {
+                    if(onDialogClosed != null) onDialogClosed.run();
+                })
                 .create();
 
         dialogView.findViewById(R.id.share_log_mclogs_button).setOnClickListener(v -> {
@@ -1815,6 +1829,15 @@ public final class Tools {
             if(rendererId.contains("ltw") && (!deviceHasOpenGLES3 || !appHasLtw)) continue;
             rendererIds.add(rendererId);
             rendererNames.add(defaultRendererNames[i]);
+        }
+        // Renderer plugin discovery is manual now (see RendererPlugin.discoverAsync()) - it's
+        // a device-wide PackageManager scan that's too heavy to run implicitly every time this
+        // is called (e.g. every time the Profile Editor is opened, or on every app launch).
+        // Whatever was found by the last explicit scan (if any) is included below; nothing is
+        // scanned here.
+        for(RendererPlugin.PluginRenderer pluginRenderer : RendererPlugin.getPluginRenderers(context)) {
+            rendererIds.add(pluginRenderer.id);
+            rendererNames.add(pluginRenderer.displayName);
         }
         sCompatibleRenderers = new RenderersList(rendererIds,
                 rendererNames.toArray(new String[0]));
