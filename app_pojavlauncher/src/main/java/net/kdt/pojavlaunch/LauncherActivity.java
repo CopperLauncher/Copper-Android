@@ -119,11 +119,11 @@ public class LauncherActivity extends BaseActivity
                                 }
                             }
                             File modpackFile = new File(Tools.DIR_CACHE, "import_modpack_placeholdername.cf");
-                            try (InputStream inputStream = getContentResolver().openInputStream(data)){
-                                FileOutputStream output = new FileOutputStream(modpackFile);
+                            long readTotal = 0;
+                            try (InputStream inputStream = getContentResolver().openInputStream(data);
+                                 FileOutputStream output = new FileOutputStream(modpackFile)) {
                                 byte[] b = new byte[262144];
                                 int read;
-                                int readTotal = 0;
                                 while ((read = inputStream.read(b)) != -1) {
                                     output.write(b, 0, read);
                                     readTotal += read;
@@ -133,7 +133,15 @@ public class LauncherActivity extends BaseActivity
                                     ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, progress, R.string.import_modpack_copy, readMB, totalMB);
                                 }
                                 output.flush();
-                                output.close();
+                            }
+                            // Some content providers (notably cloud-backed ones) can end the
+                            // stream early on a hiccup without throwing, silently truncating the
+                            // copy. Catch that here instead of letting it surface later as a
+                            // confusing EOFException deep inside zip extraction.
+                            if (fileSize > 0 && readTotal != fileSize) {
+                                modpackFile.delete();
+                                throw new IOException("Modpack file copy was incomplete (got "
+                                        + readTotal + " of " + fileSize + " bytes) - try importing again");
                             }
                             ModLoader loaderInfo = new CommonApi(
                                     net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveCurseforgeApiKey(this))

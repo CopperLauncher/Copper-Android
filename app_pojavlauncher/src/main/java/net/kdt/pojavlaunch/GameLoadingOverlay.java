@@ -63,6 +63,10 @@ public class GameLoadingOverlay {
 
     /** Show the overlay and start estimating progress/ETA based on past launch times. */
     public void show() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            mHandler.post(this::show);
+            return;
+        }
         mEstimatedDurationMs = LauncherPreferences.DEFAULT_PREF.getLong(PREF_KEY_AVG_LOAD_MS, DEFAULT_ESTIMATE_MS);
         mStartTime = System.currentTimeMillis();
         mShowing = true;
@@ -80,6 +84,10 @@ public class GameLoadingOverlay {
 
     /** Hide the overlay, recording how long the launch actually took to improve future estimates. */
     public void hide() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            mHandler.post(this::hide);
+            return;
+        }
         if (!mShowing) return;
         mShowing = false;
         mHandler.removeCallbacks(mTickRunnable);
@@ -104,6 +112,10 @@ public class GameLoadingOverlay {
 
     /** Hide immediately, without animating and without recording a duration (used on error/exit). */
     public void hideImmediately() {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            mHandler.post(this::hideImmediately);
+            return;
+        }
         if (!mShowing && mRootView.getVisibility() == View.GONE) return;
         mShowing = false;
         mHandler.removeCallbacks(mTickRunnable);
