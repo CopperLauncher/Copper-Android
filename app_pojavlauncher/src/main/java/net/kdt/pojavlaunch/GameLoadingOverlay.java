@@ -43,6 +43,9 @@ public class GameLoadingOverlay {
     private long mStartTime = 0L;
     private long mEstimatedDurationMs = DEFAULT_ESTIMATE_MS;
     private boolean mShowing = false;
+    /** True while the log viewer is open - the overlay is kept logically running but hidden. */
+    private boolean mSuspended = false;
+    private View mLoggerView;
 
     private final Logger.eventLogListener mLogListener = this::onLogLine;
 
@@ -61,6 +64,34 @@ public class GameLoadingOverlay {
         mEtaText = overlayRoot.findViewById(R.id.game_loading_eta);
     }
 
+    /**
+     * Link this overlay to the in-game log viewer so it automatically gets out of the way
+     * while the log is open, instead of drawing on top of the log text.
+     */
+    public void attachLogViewer(View loggerView) {
+        mLoggerView = loggerView;
+        loggerView.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            boolean logOpen = mLoggerView.getVisibility() == View.VISIBLE;
+            if (logOpen != mSuspended) setSuspended(logOpen);
+        });
+    }
+
+    /**
+     * Hide/show the overlay without touching its logical state (elapsed time, log listener,
+     * saved estimate) - used to get out of the way of the log viewer and reappear afterwards.
+     */
+    private void setSuspended(boolean suspended) {
+        mSuspended = suspended;
+        if (!mShowing) return;
+        mRootView.animate().cancel();
+        if (suspended) {
+            mRootView.setVisibility(View.GONE);
+        } else {
+            mRootView.setAlpha(1f);
+            mRootView.setVisibility(View.VISIBLE);
+        }
+    }
+
     /** Show the overlay and start estimating progress/ETA based on past launch times. */
     public void show() {
         if (Looper.myLooper() != Looper.getMainLooper()) {
@@ -73,7 +104,7 @@ public class GameLoadingOverlay {
 
         mRootView.animate().cancel();
         mRootView.setAlpha(1f);
-        mRootView.setVisibility(View.VISIBLE);
+        mRootView.setVisibility(mSuspended ? View.GONE : View.VISIBLE);
         mProgressBar.setProgress(0);
         mEtaText.setText(R.string.game_loading_eta_estimating);
 
@@ -99,6 +130,10 @@ public class GameLoadingOverlay {
         if (elapsed > 1000) saveNewEstimate(elapsed);
 
         mProgressBar.setProgress(100);
+        if (mSuspended) {
+            mRootView.setVisibility(View.GONE);
+            return;
+        }
         mRootView.animate()
                 .alpha(0f)
                 .setDuration(200)

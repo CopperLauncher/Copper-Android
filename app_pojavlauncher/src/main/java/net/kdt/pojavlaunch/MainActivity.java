@@ -345,6 +345,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         mHotbarView = findViewById(R.id.hotbar_view);
         contentFrame = findViewById(R.id.content_frame);
         mGameLoadingOverlay = new GameLoadingOverlay(findViewById(R.id.main_game_loading_overlay));
+        mGameLoadingOverlay.attachLogViewer(loggerView);
     }
 
     @Override
@@ -517,7 +518,11 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         int requiredJavaVersion = 8;
         if(version.javaVersion != null) requiredJavaVersion = version.javaVersion.majorVersion;
         Tools.launchMinecraft(this, minecraftAccount, minecraftProfile, versionId, requiredJavaVersion);
-        //Note that we actually stall in the above function, even if the game crashes. But let's be safe.
+        // launchMinecraft() stalls until the JVM process exits for any reason, including a hard
+        // native crash that happens before the game window ever appears (no log line, no Java
+        // exception to catch). Make sure the loading overlay always comes down here so it can't
+        // get stuck showing "almost there" forever; a no-op if it's already hidden.
+        mGameLoadingOverlay.hideImmediately();
         Tools.runOnUiThread(()-> mServiceBinder.isActive = false);
     }
 
