@@ -45,6 +45,7 @@ static const char *redirect_dlopen_path(const char *filename) {
 }
 
 static void *sdl3_handle = NULL;
+
 static JNI_OnLoad_t orig_sdl3_JNI_OnLoad;
 
 static bool ifSdl(const char *filename) {
