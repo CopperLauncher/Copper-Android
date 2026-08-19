@@ -14,6 +14,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import net.kdt.pojavlaunch.Logger;
 import net.kdt.pojavlaunch.R;
+import net.kdt.pojavlaunch.Tools;
 
 /**
  * A class able to display logs to the user.
@@ -24,6 +25,7 @@ public class LoggerView extends ConstraintLayout {
     private ToggleButton mLogToggle;
     private DefocusableScrollView mScrollView;
     private TextView mLogTextView;
+    private TextView mEmptyStateView;
 
 
     public LoggerView(@NonNull Context context) {
@@ -54,11 +56,14 @@ public class LoggerView extends ConstraintLayout {
         mLogTextView.setEllipsize(null);
         mLogTextView.setVisibility(GONE);
 
+        mEmptyStateView = findViewById(R.id.content_log_empty);
+
         // Toggle log visibility
         mLogToggle = findViewById(R.id.content_log_toggle_log);
         mLogToggle.setOnCheckedChangeListener(
                 (compoundButton, isChecked) -> {
                     mLogTextView.setVisibility(isChecked ? VISIBLE : GONE);
+                    mEmptyStateView.setVisibility(isChecked ? GONE : VISIBLE);
                     if(isChecked) {
                         Logger.addLogListener(mLogListener);
                     }else{
@@ -71,6 +76,10 @@ public class LoggerView extends ConstraintLayout {
         // Remove the loggerView from the user View
         ImageButton cancelButton = findViewById(R.id.log_view_cancel);
         cancelButton.setOnClickListener(view -> LoggerView.this.setVisibility(GONE));
+
+        // Share the log file (mclo.gs upload or raw file share)
+        ImageButton shareButton = findViewById(R.id.content_log_share);
+        shareButton.setOnClickListener(view -> Tools.shareLog(getContext()));
 
         // Set the scroll view
         mScrollView = findViewById(R.id.content_log_scroll);

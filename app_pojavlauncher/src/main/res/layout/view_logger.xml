@@ -1,74 +1,150 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:background="?attr/colorBgApp">
 
+    <!-- Header bar -->
     <View
         android:id="@+id/top_log_view"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:background="#555555"
+        android:layout_height="56dp"
+        android:background="?attr/colorBgBottomBar"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/top_log_view_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/colorDivider"
+        app:layout_constraintTop_toBottomOf="@id/top_log_view" />
 
     <TextView
         android:id="@+id/log_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingHorizontal="25dp"
+        android:paddingHorizontal="16dp"
         android:text="@string/log_view_label_log_output"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
-        app:layout_constraintStart_toStartOf="@+id/top_log_view"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textAllCaps="true"
+        android:letterSpacing="0.05"
+        android:textStyle="bold"
+        android:textSize="13sp"
+        android:textColor="?attr/colorTextPrimary"
+        app:layout_constraintBottom_toBottomOf="@id/top_log_view"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/top_log_view" />
+
+    <!-- Toggle chips + action buttons, right-aligned in the header -->
+    <ToggleButton
+        android:id="@+id/content_log_toggle_log"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:minWidth="0dp"
+        android:paddingHorizontal="14dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_log_toggle_chip"
+        android:button="@null"
+        android:gravity="center"
+        android:textOff="@string/log_view_toggle_output_label"
+        android:textOn="@string/log_view_toggle_output_label"
+        android:textSize="12sp"
+        android:textAllCaps="false"
+        android:textColor="@color/log_toggle_chip_text"
+        app:layout_constraintBottom_toBottomOf="@id/top_log_view"
+        app:layout_constraintEnd_toStartOf="@id/content_log_toggle_autoscroll"
+        app:layout_constraintTop_toTopOf="@id/top_log_view" />
 
     <ToggleButton
         android:id="@+id/content_log_toggle_autoscroll"
         android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="10dp"
-        android:textOff="@string/log_view_button_scroll_off"
-        android:textOn="@string/log_view_button_scroll_on"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
-        app:layout_constraintEnd_toStartOf="@+id/content_log_toggle_log"
-        app:layout_constraintTop_toTopOf="parent"/>
+        android:layout_height="32dp"
+        android:minWidth="0dp"
+        android:paddingHorizontal="14dp"
+        android:layout_marginEnd="8dp"
+        android:background="@drawable/bg_log_toggle_chip"
+        android:button="@null"
+        android:gravity="center"
+        android:textOff="@string/log_view_toggle_autoscroll_label"
+        android:textOn="@string/log_view_toggle_autoscroll_label"
+        android:textSize="12sp"
+        android:textAllCaps="false"
+        android:textColor="@color/log_toggle_chip_text"
+        app:layout_constraintBottom_toBottomOf="@id/top_log_view"
+        app:layout_constraintEnd_toStartOf="@id/content_log_share"
+        app:layout_constraintTop_toTopOf="@id/top_log_view" />
 
-    <ToggleButton
-        android:id="@+id/content_log_toggle_log"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="10dp"
-        android:textOff="@string/log_view_button_output_off"
-        android:textOn="@string/log_view_button_output_on"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
-        app:layout_constraintEnd_toStartOf="@+id/log_view_cancel"
-        app:layout_constraintTop_toTopOf="parent" />
+    <ImageButton
+        android:id="@+id/content_log_share"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:padding="9dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/share_log_dialog_title"
+        android:src="@drawable/ic_menu_share"
+        app:layout_constraintBottom_toBottomOf="@id/top_log_view"
+        app:layout_constraintEnd_toStartOf="@id/log_view_cancel"
+        app:layout_constraintTop_toTopOf="@id/top_log_view" />
 
     <ImageButton
         android:id="@+id/log_view_cancel"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:scaleType="centerCrop"
-        android:src="@android:drawable/ic_delete"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="8dp"
+        android:padding="9dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/log_view_close_description"
+        android:src="@drawable/ic_close"
+        app:layout_constraintBottom_toBottomOf="@id/top_log_view"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="@id/top_log_view" />
 
-    <com.kdt.DefocusableScrollView
-        android:id="@+id/content_log_scroll"
+    <!-- Content panel: rounded-top console area -->
+    <FrameLayout
+        android:id="@+id/content_log_panel"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:alpha="0.8"
-        android:background="#000000"
+        android:background="@drawable/bg_log_content"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/top_log_view">
+        app:layout_constraintTop_toBottomOf="@id/top_log_view_divider">
 
-        <TextView
-            android:id="@+id/content_log_view"
+        <com.kdt.DefocusableScrollView
+            android:id="@+id/content_log_scroll"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textIsSelectable="true"/>
+            android:layout_height="match_parent">
 
-    </com.kdt.DefocusableScrollView>
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fillViewport="true">
+
+                <TextView
+                    android:id="@+id/content_log_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="12dp"
+                    android:lineSpacingExtra="2dp"
+                    android:textColor="?attr/colorTextPrimary"
+                    android:textSize="11sp"
+                    android:textIsSelectable="true" />
+
+            </HorizontalScrollView>
+
+        </com.kdt.DefocusableScrollView>
+
+        <!-- Shown until the first log line arrives / while output is toggled off -->
+        <TextView
+            android:id="@+id/content_log_empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="24dp"
+            android:gravity="center"
+            android:text="@string/log_view_empty_state"
+            android:textColor="?attr/colorTextSecondary"
+            android:textStyle="italic"
+            android:textSize="13sp" />
+
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
