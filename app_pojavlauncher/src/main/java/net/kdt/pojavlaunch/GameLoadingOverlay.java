@@ -2,8 +2,12 @@ package net.kdt.pojavlaunch;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.PixelCopy;
+import android.view.Surface;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -15,10 +19,13 @@ import net.kdt.pojavlaunch.prefs.LauncherPreferences;
  * that's shown while the game's JVM process is starting up, loading assets/mods, and creating
  * its render window.
  *
- * There's no native signal for "the window is now visible", so this estimates progress and ETA
- * from a rolling average of how long previous launches took (persisted in SharedPreferences),
- * and additionally listens to the game log for a line that reliably shows up right around when
- * the window comes up, dismissing itself early if one is seen.
+ * The real signal for "the window is now visible" is the render surface itself no longer being
+ * solid black - this periodically samples a tiny downscaled copy of the actual native Surface
+ * the game renders into via PixelCopy, and dismisses the instant anything is actually being
+ * drawn there. That's immune to log noise from mods that keep logging during normal gameplay,
+ * unlike trying to infer readiness from log content. A couple of fallbacks exist for older
+ * devices / edge cases: known log lines that reliably show up right as the window appears, and
+ * an absolute last-resort timeout.
  */
 public class GameLoadingOverlay {
     private static final String PREF_KEY_AVG_LOAD_MS = "gameLoadingAvgDurationMs";
@@ -27,12 +34,28 @@ public class GameLoadingOverlay {
     private static final long TICK_INTERVAL_MS = 200L;
     /** Never show 100% from the estimate alone; only an actual "ready" signal should complete it. */
     private static final int MAX_ESTIMATED_PROGRESS = 92;
+    /** How often to sample the render surface for non-black content. */
+    private static final long PIXEL_CHECK_INTERVAL_MS = 500L;
+    /** Side length of the downscaled sample bitmap - small on purpose, this only needs to answer "is anything drawn here at all". */
+    private static final int SAMPLE_SIZE = 12;
+    /** Average per-channel value above which the sampled surface is considered "not black anymore". Small tolerance for copy/compression noise near zero. */
+    private static final int NON_BLACK_THRESHOLD = 6;
+    /**
+     * Absolute last-resort safety net, for devices where pixel sampling isn't available (pre-API
+     * 24) and no marker ever shows up either. Whichever is bigger of this flat floor or 2x the
+     * current estimate is used, so slower devices with genuinely longer launches still get a
+     * reasonable window before being forced closed.
+     */
+    private static final long MAX_WAIT_MS = 60_000L;
 
-    /** Log lines that reliably show up right around when the game window becomes visible. */
+    /** Log lines that reliably show up right around when the game window becomes visible - a fast path, in case a match arrives before the next pixel sample. */
     private static final String[] WINDOW_READY_MARKERS = {
             "openal initialized",
             "sound engine started",
-            "reloading resourcemanager"
+            "reloading resourcemanager",
+            "lwjgl version",
+            "starting up soundsystem",
+            "sound system loaded"
     };
 
     private final View mRootView;
@@ -46,6 +69,8 @@ public class GameLoadingOverlay {
     /** True while the log viewer is open - the overlay is kept logically running but hidden. */
     private boolean mSuspended = false;
     private View mLoggerView;
+    private MinecraftGLSurface mGameSurface;
+    private boolean mPixelCheckInFlight = false;
 
     private final Logger.eventLogListener mLogListener = this::onLogLine;
 
@@ -56,6 +81,21 @@ public class GameLoadingOverlay {
             tick();
             mHandler.postDelayed(this, TICK_INTERVAL_MS);
         }
+    };
+
+    private final Runnable mPixelCheckRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (!mShowing) return;
+            checkSurfaceContent();
+            mHandler.postDelayed(this, PIXEL_CHECK_INTERVAL_MS);
+        }
+    };
+
+    /** Force-dismisses the overlay if it's been showing far longer than expected. */
+    private final Runnable mTimeoutRunnable = () -> {
+        if (!mShowing) return;
+        hideImmediately();
     };
 
     public GameLoadingOverlay(View overlayRoot) {
@@ -74,6 +114,11 @@ public class GameLoadingOverlay {
             boolean logOpen = mLoggerView.getVisibility() == View.VISIBLE;
             if (logOpen != mSuspended) setSuspended(logOpen);
         });
+    }
+
+    /** Link this overlay to the game's render surface so it can tell when actual content is being drawn. */
+    public void attachGameSurface(MinecraftGLSurface gameSurface) {
+        mGameSurface = gameSurface;
     }
 
     /**
@@ -101,6 +146,7 @@ public class GameLoadingOverlay {
         mEstimatedDurationMs = LauncherPreferences.DEFAULT_PREF.getLong(PREF_KEY_AVG_LOAD_MS, DEFAULT_ESTIMATE_MS);
         mStartTime = System.currentTimeMillis();
         mShowing = true;
+        mPixelCheckInFlight = false;
 
         mRootView.animate().cancel();
         mRootView.setAlpha(1f);
@@ -111,6 +157,10 @@ public class GameLoadingOverlay {
         Logger.addLogListener(mLogListener);
         mHandler.removeCallbacks(mTickRunnable);
         mHandler.post(mTickRunnable);
+        mHandler.removeCallbacks(mPixelCheckRunnable);
+        mHandler.postDelayed(mPixelCheckRunnable, PIXEL_CHECK_INTERVAL_MS);
+        mHandler.removeCallbacks(mTimeoutRunnable);
+        mHandler.postDelayed(mTimeoutRunnable, Math.max(MAX_WAIT_MS, mEstimatedDurationMs * 2));
     }
 
     /** Hide the overlay, recording how long the launch actually took to improve future estimates. */
@@ -122,6 +172,8 @@ public class GameLoadingOverlay {
         if (!mShowing) return;
         mShowing = false;
         mHandler.removeCallbacks(mTickRunnable);
+        mHandler.removeCallbacks(mPixelCheckRunnable);
+        mHandler.removeCallbacks(mTimeoutRunnable);
         Logger.removeLogListener(mLogListener);
 
         long elapsed = System.currentTimeMillis() - mStartTime;
@@ -154,6 +206,8 @@ public class GameLoadingOverlay {
         if (!mShowing && mRootView.getVisibility() == View.GONE) return;
         mShowing = false;
         mHandler.removeCallbacks(mTickRunnable);
+        mHandler.removeCallbacks(mPixelCheckRunnable);
+        mHandler.removeCallbacks(mTimeoutRunnable);
         Logger.removeLogListener(mLogListener);
         mRootView.animate().cancel();
         mRootView.setVisibility(View.GONE);
@@ -171,6 +225,44 @@ public class GameLoadingOverlay {
             long remainingSec = Math.max(1, remainingMs / 1000);
             mEtaText.setText(mRootView.getContext().getString(R.string.game_loading_eta_seconds, remainingSec));
         }
+    }
+
+    /** Samples a tiny downscaled copy of the game's actual render surface; dismisses if it's no longer solid black. */
+    private void checkSurfaceContent() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return;
+        if (mGameSurface == null || mPixelCheckInFlight) return;
+        Surface surface = mGameSurface.getNativeSurface();
+        if (surface == null || !surface.isValid()) return;
+
+        Bitmap sample = Bitmap.createBitmap(SAMPLE_SIZE, SAMPLE_SIZE, Bitmap.Config.ARGB_8888);
+        mPixelCheckInFlight = true;
+        try {
+            PixelCopy.request(surface, sample, copyResult -> {
+                mPixelCheckInFlight = false;
+                if (copyResult == PixelCopy.SUCCESS && !isSolidBlack(sample)) {
+                    hide();
+                }
+                sample.recycle();
+            }, mHandler);
+        } catch (Exception e) {
+            // Surface briefly not copyable (mid-recreation, etc.) - just skip this cycle.
+            mPixelCheckInFlight = false;
+            sample.recycle();
+        }
+    }
+
+    private static boolean isSolidBlack(Bitmap bitmap) {
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int[] pixels = new int[width * height];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+        for (int pixel : pixels) {
+            int r = (pixel >> 16) & 0xFF;
+            int g = (pixel >> 8) & 0xFF;
+            int b = pixel & 0xFF;
+            if (Math.max(r, Math.max(g, b)) > NON_BLACK_THRESHOLD) return false;
+        }
+        return true;
     }
 
     private void onLogLine(String line) {

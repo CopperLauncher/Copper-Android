@@ -346,6 +346,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         contentFrame = findViewById(R.id.content_frame);
         mGameLoadingOverlay = new GameLoadingOverlay(findViewById(R.id.main_game_loading_overlay));
         mGameLoadingOverlay.attachLogViewer(loggerView);
+        mGameLoadingOverlay.attachGameSurface(minecraftGLView);
     }
 
     @Override
