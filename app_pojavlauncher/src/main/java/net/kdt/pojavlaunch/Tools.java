@@ -882,14 +882,8 @@ public final class Tools {
     }
 
     private static String getLibClasspath(JMinecraftVersionList.Version info){
-        StringBuilder libClasspath = new StringBuilder();
         String[] classpath = generateLibClasspath(info);
-        for (String jarFile : classpath) {
-            libClasspath.append(jarFile).append(":");
-        }
-        // Remove the ':' at the end
-        libClasspath.setLength(libClasspath.length() - 1);
-        return libClasspath.toString();
+        return String.join(":", classpath);
     }
 
     public static String getClientClasspath(String version) {

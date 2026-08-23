@@ -89,6 +89,12 @@
 			android:visibility="gone"
 			/>
 
+		<include
+			android:id="@+id/main_game_loading_overlay"
+			layout="@layout/view_game_loading_overlay"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent" />
+
 	</FrameLayout>
 
 	<ListView

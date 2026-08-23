@@ -7,7 +7,7 @@ static def getDate() { return new Date().format('yyyyMMdd') }
 def getVersionName = {
     // Get the last version tag, as well as the short head of the last commit
     String TAG = ""
-    String semVer = "1.3.2"
+    String semVer = "1.3.3"
     // Used by the fallback for github actions
     String TAG_PART_COMMIT = ""
     String TAG_STRING
@@ -199,7 +199,7 @@ afterEvaluate {
     def componentJars = [
             ":forge_installer:jar",
             ":arc_dns_injector:jar",
-            ":methods_injector_agent:jar",
+            ":MioLibPatcher:jar",
             ":jre_lwjgl3glfw:jar"
     ]
 

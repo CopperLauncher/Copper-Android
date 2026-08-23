@@ -88,6 +88,11 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
     Surface mNativeSurface;
     String TAG = "MinecraftGLSurface";
 
+    /** The native Surface the game renders into, once created; null before that. */
+    public Surface getNativeSurface() {
+        return mNativeSurface;
+    }
+
     private final InGameEventProcessor mIngameProcessor = new InGameEventProcessor(mSensitivityFactor);
     private final InGUIEventProcessor mInGUIProcessor = new InGUIEventProcessor();
     private TouchEventProcessor mCurrentTouchProcessor = mInGUIProcessor;
