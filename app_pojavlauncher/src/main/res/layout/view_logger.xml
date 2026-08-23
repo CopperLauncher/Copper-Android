@@ -1,103 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <!-- Header bar -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="?attr/colorBgBottomBar"
-        android:paddingStart="16dp"
-        android:paddingEnd="4dp">
-
-        <TextView
-            android:id="@+id/log_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/log_view_label_log_output"
-            android:textAllCaps="true"
-            android:letterSpacing="0.05"
-            android:textStyle="bold"
-            android:textSize="13sp"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:textColor="?attr/colorTextPrimary" />
-
-        <ToggleButton
-            android:id="@+id/content_log_toggle_log"
-            android:layout_width="wrap_content"
-            android:layout_height="30dp"
-            android:minWidth="0dp"
-            android:paddingHorizontal="12dp"
-            android:layout_marginEnd="6dp"
-            android:background="@drawable/bg_log_toggle_chip"
-            android:button="@null"
-            android:gravity="center"
-            android:textOff="@string/log_view_toggle_output_label"
-            android:textOn="@string/log_view_toggle_output_label"
-            android:textSize="12sp"
-            android:textAllCaps="false"
-            android:textColor="@color/log_toggle_chip_text" />
-
-        <ToggleButton
-            android:id="@+id/content_log_toggle_autoscroll"
-            android:layout_width="wrap_content"
-            android:layout_height="30dp"
-            android:minWidth="0dp"
-            android:paddingHorizontal="12dp"
-            android:layout_marginEnd="2dp"
-            android:background="@drawable/bg_log_toggle_chip"
-            android:button="@null"
-            android:gravity="center"
-            android:textOff="@string/log_view_toggle_autoscroll_label"
-            android:textOn="@string/log_view_toggle_autoscroll_label"
-            android:textSize="12sp"
-            android:textAllCaps="false"
-            android:textColor="@color/log_toggle_chip_text" />
-
-        <ImageButton
-            android:id="@+id/content_log_share"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/share_log_dialog_title"
-            android:src="@drawable/ic_menu_share" />
-
-        <ImageButton
-            android:id="@+id/log_view_cancel"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:padding="8dp"
-            android:scaleType="fitCenter"
-            android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:contentDescription="@string/log_view_close_description"
-            android:src="@drawable/ic_close" />
-
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="?attr/colorDivider" />
-
-    <!-- Content panel: rounded-top console area -->
+    <!-- Content panel: rounded-top console area. Fills the entire view,
+         starting from y=0, so its rounded top corners sit directly
+         underneath the header below. The header (53dp incl. divider) is
+         taller than the corner radius (14dp), so the curve is always
+         fully hidden behind it - no gap/cutout can ever show through. -->
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="match_parent"
         android:background="@drawable/bg_log_content">
 
         <com.kdt.DefocusableScrollView
             android:id="@+id/content_log_scroll"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:overScrollMode="never">
 
             <TextView
                 android:id="@+id/content_log_view"
@@ -126,4 +46,97 @@
 
     </FrameLayout>
 
-</LinearLayout>
+    <!-- Header + divider, overlaid on top of the content panel above
+         (declared after it, so it draws above and occludes the panel's
+         rounded corners underneath it). -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="?attr/colorBgBottomBar"
+            android:paddingStart="16dp"
+            android:paddingEnd="4dp">
+
+            <TextView
+                android:id="@+id/log_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/log_view_label_log_output"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05"
+                android:textStyle="bold"
+                android:textSize="13sp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:textColor="?attr/colorTextPrimary" />
+
+            <ToggleButton
+                android:id="@+id/content_log_toggle_log"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="12dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_log_toggle_chip"
+                android:button="@null"
+                android:gravity="center"
+                android:textOff="@string/log_view_toggle_output_label"
+                android:textOn="@string/log_view_toggle_output_label"
+                android:textSize="12sp"
+                android:textAllCaps="false"
+                android:textColor="@color/log_toggle_chip_text" />
+
+            <ToggleButton
+                android:id="@+id/content_log_toggle_autoscroll"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="12dp"
+                android:layout_marginEnd="2dp"
+                android:background="@drawable/bg_log_toggle_chip"
+                android:button="@null"
+                android:gravity="center"
+                android:textOff="@string/log_view_toggle_autoscroll_label"
+                android:textOn="@string/log_view_toggle_autoscroll_label"
+                android:textSize="12sp"
+                android:textAllCaps="false"
+                android:textColor="@color/log_toggle_chip_text" />
+
+            <ImageButton
+                android:id="@+id/content_log_share"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/share_log_dialog_title"
+                android:src="@drawable/ic_menu_share" />
+
+            <ImageButton
+                android:id="@+id/log_view_cancel"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/log_view_close_description"
+                android:src="@drawable/ic_close" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/colorDivider" />
+
+    </LinearLayout>
+
+</FrameLayout>
