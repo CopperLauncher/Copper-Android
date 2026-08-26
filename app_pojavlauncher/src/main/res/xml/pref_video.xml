@@ -5,12 +5,22 @@
     <net.kdt.pojavlaunch.prefs.BackButtonPreference/>
 
     <PreferenceCategory android:title="@string/preference_category_video" >
+        <androidx.preference.ListPreference
+            android:title="@string/mcl_setting_category_renderer"
+            android:key="renderer"
+            android:defaultValue="opengles2"
+            android:icon="@drawable/ic_setting_engine"
+            app2:useSimpleSummaryProvider="true"
+        />
+
         <Preference
+            android:key="renderer_settings"
             android:title="@string/mcl_setting_title_renderer_settings"
             android:summary="@string/mcl_setting_title_renderer_subtitle"
-            android:icon="@drawable/ic_setting_engine"
+            android:icon="@drawable/ic_mg_renderer"
             android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceRendererSettingsFragment"
-            />
+            android:visible="false"
+        />
 
         <androidx.preference.SwitchPreferenceCompat
             android:defaultValue="false"

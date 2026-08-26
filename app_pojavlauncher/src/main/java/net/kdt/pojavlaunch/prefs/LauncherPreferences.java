@@ -30,6 +30,7 @@ public class LauncherPreferences {
 
 	public static boolean PREF_IGNORE_NOTCH = false;
 	public static int PREF_NOTCH_SIZE = 0;
+	public static String PREF_RENDERER = "opengles2";
 	public static float PREF_BUTTONSIZE = 100f;
 	public static float PREF_MOUSESCALE = 1f;
 	public static int PREF_LONGPRESS_TRIGGER = 300;
@@ -89,6 +90,7 @@ public class LauncherPreferences {
         Tools.initStorageConstants(ctx);
         boolean isDevicePowerful = isDevicePowerful(ctx);
 
+        PREF_RENDERER = DEFAULT_PREF.getString("renderer", "opengles2");
         PREF_BUTTONSIZE = DEFAULT_PREF.getInt("buttonscale", 100);
         PREF_MOUSESCALE = DEFAULT_PREF.getInt("mousescale", 100)/100f;
         PREF_MOUSESPEED = ((float)DEFAULT_PREF.getInt("mousespeed",100))/100f;
