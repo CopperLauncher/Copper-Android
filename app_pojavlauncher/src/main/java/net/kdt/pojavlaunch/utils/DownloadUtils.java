@@ -90,9 +90,21 @@ public class DownloadUtils {
                 fos.write(buffer, 0, current);
                 monitor.updateProgress(overall, length);
             }
-            conn.disconnect();
+            fos.flush();
+            // The connection can be closed early by a flaky network, a proxy, or the server
+            // itself. When that happens read() just returns -1 like a normal EOF, so without
+            // this check a truncated file is silently treated as a successful download. That
+            // truncated file later fails with a confusing "Unexpected end of ZLIB input stream"
+            // when it's opened as a ZIP (e.g. a .mrpack), instead of being retried here.
+            if (length > 0 && overall != length) {
+                throw new IOException("Truncated download from " + urlInput + ": expected "
+                        + length + " bytes but got " + overall);
+            }
         } catch (IOException e) {
             throw new IOException("Unable to download from " + urlInput, e);
+        } finally {
+            readStr.close();
+            conn.disconnect();
         }
     }
 
@@ -151,18 +163,42 @@ public class DownloadUtils {
         if(sha1 == null) {
             // If the file exists and we don't know it's SHA1, don't try to redownload it.
             if(outputFile.exists()) return null;
-            else return downloadFile(downloadFunction);
+            // We have no hash to verify against, so at least retry on transient/truncated
+            // download failures instead of handing a possibly-corrupt file to the caller.
+            return retryDownload(outputFile, downloadFunction, null);
         }
 
-        int attempts = 0;
         boolean fileOkay = verifyFile(outputFile, sha1);
+        if (fileOkay) return null;
+        return retryDownload(outputFile, downloadFunction, sha1);
+    }
+
+    private static <T> T retryDownload(File outputFile, Callable<T> downloadFunction, @Nullable String sha1) throws IOException {
+        int attempts = 0;
         T result = null;
-        while (attempts < 5 && !fileOkay){
+        IOException lastException = null;
+        boolean fileOkay = false;
+        while (attempts < 5 && !fileOkay) {
             attempts++;
-            downloadFile(downloadFunction);
-            fileOkay = verifyFile(outputFile, sha1);
+            // A previous failed/truncated attempt may have left a broken file behind;
+            // don't let it be mistaken for a valid download on the next check.
+            //noinspection ResultOfMethodCallIgnored
+            outputFile.delete();
+            try {
+                result = downloadFile(downloadFunction);
+                lastException = null;
+            } catch (IOException e) {
+                lastException = e;
+                continue;
+            }
+            fileOkay = (sha1 == null) ? outputFile.exists() : verifyFile(outputFile, sha1);
         }
-        if(!fileOkay) throw new SHA1VerificationException("SHA1 verifcation failed after 5 download attempts");
+        if (!fileOkay) {
+            if (lastException != null) {
+                throw new IOException("Download failed after " + attempts + " attempts", lastException);
+            }
+            throw new SHA1VerificationException("SHA1 verifcation failed after " + attempts + " download attempts");
+        }
         return result;
     }
 

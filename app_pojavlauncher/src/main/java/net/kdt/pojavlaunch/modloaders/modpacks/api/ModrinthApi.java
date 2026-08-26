@@ -20,6 +20,7 @@ import net.kdt.pojavlaunch.progresskeeper.DownloaderProgressWrapper;
 import net.kdt.pojavlaunch.utils.GsonJsonUtils;
 import net.kdt.pojavlaunch.utils.ZipUtils;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 public class ModrinthApi implements ModpackApi{
@@ -240,6 +242,12 @@ public class ModrinthApi implements ModpackApi{
             ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 50, R.string.modpack_download_applying_overrides, 2, 2);
             ZipUtils.zipExtract(modpackZipFile, "client-overrides/", instanceDestination);
             return createInfo(modrinthIndex);
+        } catch (EOFException | ZipException e) {
+            // The .mrpack was downloaded incompletely/corrupted (e.g. a dropped connection) and
+            // its deflate streams can't be fully read back. Surface a clear, actionable error
+            // instead of a raw ZLIB stack trace; DownloadUtils.ensureSha1 already deletes and
+            // retries the cache file on the next install attempt.
+            throw new IOException("The modpack file is corrupted or was not fully downloaded. Please try installing it again.", e);
         }
     }
 
