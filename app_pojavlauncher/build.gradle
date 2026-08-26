@@ -86,7 +86,7 @@ android {
             keyPassword "android"
         }
         customRelease {
-            storeFile file("aamc_upload.jks")
+            storeFile file("copper_upload.jks")
             storePassword System.getenv("GPLAY_KEYSTORE_PASSWORD")
             keyAlias "android_github_release"
             keyPassword System.getenv("GPLAY_KEYSTORE_PASSWORD")
