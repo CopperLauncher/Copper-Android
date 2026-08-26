@@ -2,16 +2,15 @@
 
 <img src="https://raw.githubusercontent.com/CopperLauncher/Copper-Android/refs/heads/v3_openjdk/app_pojavlauncher/src/main/assets/amethyst.png" align="left" width="130" height="130" alt="Copper logo">
 
-<p align="center">
-  <img src="https://img.shields.io/github/commit-activity/m/CopperLauncher/Copper-Android" alt="GitHub commit activity"/>
-  <img src="https://img.shields.io/badge/platform-Android-green" alt="Platform"/>
-  <img src="https://img.shields.io/badge/minSdk-26-blue" alt="Min SDK"/>
-  <img src="https://github.com/CopperLauncher/Copper-Android/workflows/Android%20CI/badge.svg" alt="Android CI"/>
-  <img src="https://badges.crowdin.net/pojavlauncher/localized.svg" alt="Crowdin"/>
-  <a href="https://discord.gg/j8GTQv3YvY"><img src="https://img.shields.io/discord/1355213558631366897?color=5865F2&logo=discord&logoColor=white&label=&style=flat" alt="Discord"></a>
-  <a href="https://www.curseforge.com/members/maxjubayeryt/projects"><img src="https://img.shields.io/badge/curseforge-maxjubayeryt-orange?logo=curseforge" alt="CurseForge"></a>
-  <a href="https://modrinth.com/user/maxjubayeryt"><img src="https://img.shields.io/badge/modrinth-maxjubayeryt-green?logo=modrinth" alt="Modrinth User"></a>
-</p>
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/CopperLauncher/Copper-Android)
+![GitHub Downloads](https://img.shields.io/github/downloads/CopperLauncher/Copper-Android/total)
+![Platform](https://img.shields.io/badge/platform-Android-green)
+![Min SDK](https://img.shields.io/badge/minSdk-26-blue)
+![Android CI](https://github.com/CopperLauncher/Copper-Android/workflows/Android%20CI/badge.svg)
+![Crowdin](https://badges.crowdin.net/pojavlauncher/localized.svg)
+[![Discord](https://img.shields.io/discord/1355213558631366897?color=5865F2&logo=discord&logoColor=white&label=&style=flat)](https://discord.gg/j8GTQv3YvY)
+[![CurseForge](https://img.shields.io/badge/curseforge-maxjubayeryt-orange?logo=curseforge)](https://www.curseforge.com/members/maxjubayeryt/projects)
+[![Modrinth](https://img.shields.io/badge/modrinth-maxjubayeryt-green?logo=modrinth)](https://modrinth.com/user/maxjubayeryt)
 
 Copper is a fork of [Amethyst](https://github.com/AngelAuraMC/Amethyst-Android) that allows you to play Minecraft: Java Edition on your Android devices.
 
@@ -93,7 +92,7 @@ If you need more control over the build process, follow these steps:
 * [x] Add Shader pack manager
 * [x] Fix Krypton wrapper in 1.21.6 and up
 * [x] Bump Mobile Glues
-* [ ] Add More Renerers
+* [x] Add More Renderers (By adding FCL custom renderer plugin support)
 
 
 ## Known Issues
@@ -114,6 +113,7 @@ Copper is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-A
 * [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher): [GLGPL](https://github.com/PojavLauncherTeam/PojavLauncher/blob/v3_openjdk/LICENSE)
 * [Amethyst Launcher](https://github.com/AngelAuraMC/Amethyst-Android/): [LGPL-3.0 license](https://github.com/AngelAuraMC/Amethyst-Android/blob/v3_openjdk/LICENSE)
 * [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher/): [LGPL-3.0 license](https://github.com/AngelAuraMC/Amethyst-Android/blob/v3_openjdk/LICENSE)
+* [FCL-team](https://github.com/FCL-Team/FoldCraftLauncher/): [GPL-3.0 license](https://github.com/FCL-Team/FoldCraftLauncher/blob/main/LICENSE)
 * Android Support Libraries: [Apache License 2.0](https://android.googlesource.com/platform/prebuilts/maven_repo/android/+/master/NOTICE.txt).
 * [GL4ES](https://github.com/AngelAuraMC/gl4es): [MIT License](https://github.com/ptitSeb/gl4es/blob/master/LICENSE).
 * [Krypton Wrapper](https://github.com/BZLZHH/NG-GL4ES): [MIT License](https://github.com/BZLZHH/NG-GL4ES/blob/main/LICENSE).
@@ -133,6 +133,10 @@ Copper is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-A
 * [sdl2-compat](https://github.com/libsdl-org/sdl2-compat): [zlib License](https://github.com/libsdl-org/sdl2-compat/blob/main/LICENSE.txt)
 * Thanks to [MCHeads](https://mc-heads.net) for providing Minecraft avatars.
 * Thanks to [Modrinth](https://api.modrinth.com/), [CurseForge](https://docs.curseforge.com/rest-api/) and [McLo.gs](https://api.mclo.gs) for providing us the free API's.
+
+## Special thanks
+* Thanks to [FCL-team](https://github.com/FCL-Team/FoldCraftLauncher/) for the custom renderer plugin support that I took some codes from :D
+* Thanks to "whynelo" on Discord for the new copper icons.
 
 ## Roadmap
 
