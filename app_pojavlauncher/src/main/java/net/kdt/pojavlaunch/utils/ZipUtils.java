@@ -56,6 +56,35 @@ public class ZipUtils {
     }
 
     /**
+     * Fully reads every entry in a ZIP file to confirm its compressed data is intact.
+     * Opening a ZipFile only parses the central directory at the end of the file, so a
+     * truncated/corrupted download can still "open" successfully while individual entries
+     * fail with an EOFException/ZipException once their deflate stream is actually read
+     * (e.g. during extraction). Use this right after downloading an archive, before relying
+     * on its contents, so a bad download can be retried instead of crashing later.
+     * @param zipFile The file on disk to check
+     * @return true if every entry's data could be fully read, false if the archive is corrupt
+     */
+    public static boolean verifyIntegrity(File zipFile) {
+        byte[] buffer = new byte[65536];
+        try (ZipFile zip = new ZipFile(zipFile)) {
+            Enumeration<? extends ZipEntry> zipEntries = zip.entries();
+            while (zipEntries.hasMoreElements()) {
+                ZipEntry zipEntry = zipEntries.nextElement();
+                if (zipEntry.isDirectory()) continue;
+                try (InputStream inputStream = zip.getInputStream(zipEntry)) {
+                    while (inputStream.read(buffer) != -1) {
+                        // Just drain the entry to force its deflate stream to be fully decoded.
+                    }
+                }
+            }
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
      * Writes a raw byte array as a new entry in an open ZipOutputStream.
      * Used to write modrinth.index.json into a .mrpack being built.
      * @param zipOutputStream the open ZipOutputStream to write into

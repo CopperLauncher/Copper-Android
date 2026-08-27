@@ -46,12 +46,17 @@ public class ModpackInstaller {
         ModLoader modLoaderInfo;
         try {
             byte[] downloadBuffer = new byte[8192];
+            // A .mrpack's central directory can parse fine even when the download was
+            // truncated or corrupted (SHA1 alone doesn't catch this when versionHash is
+            // unavailable, or if the file is already broken server-side); verify every entry
+            // actually decompresses before accepting the download, retrying like a hash
+            // mismatch would.
             DownloadUtils.ensureSha1(modpackFile, versionHash, (Callable<Void>) () -> {
                 DownloadUtils.downloadFileMonitored(versionUrl, modpackFile, downloadBuffer,
                         new DownloaderProgressWrapper(R.string.modpack_download_downloading_metadata,
                                 ProgressLayout.INSTALL_MODPACK));
                 return null;
-            });
+            }, ZipUtils::verifyIntegrity);
 
             // Install the modpack
             modLoaderInfo = installFunction.installModpack(modpackFile, new File(Tools.DIR_GAME_HOME, "custom_instances/"+modpackName));

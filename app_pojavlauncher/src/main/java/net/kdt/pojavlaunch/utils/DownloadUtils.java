@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.*;
 import java.util.concurrent.Callable;
+import java.util.function.Predicate;
 
 import net.kdt.pojavlaunch.*;
 import org.apache.commons.io.*;
@@ -159,21 +160,37 @@ public class DownloadUtils {
     }
 
     public static <T> T ensureSha1(File outputFile, @Nullable String sha1, Callable<T> downloadFunction) throws IOException {
+        return ensureSha1(outputFile, sha1, downloadFunction, null);
+    }
+
+    /**
+     * Same as {@link #ensureSha1(File, String, Callable)}, but also requires the downloaded
+     * file to pass an extra structural check (e.g. {@link ZipUtils#verifyIntegrity(File)}) before
+     * it's accepted. This matters for archives like .mrpack files: their central directory can
+     * still parse successfully even when the download was truncated or corrupted, and a hash
+     * match alone doesn't rule that out if the hash wasn't available in the first place, or if
+     * the server-side copy of the file is itself already broken. Failing the check triggers the
+     * same retry-up-to-5-times behavior as a SHA1 mismatch.
+     * @param extraValidator additional check the downloaded file must pass, or null to skip it
+     */
+    public static <T> T ensureSha1(File outputFile, @Nullable String sha1, Callable<T> downloadFunction,
+                                    @Nullable Predicate<File> extraValidator) throws IOException {
         // Skip if needed
         if(sha1 == null) {
             // If the file exists and we don't know it's SHA1, don't try to redownload it.
             if(outputFile.exists()) return null;
             // We have no hash to verify against, so at least retry on transient/truncated
             // download failures instead of handing a possibly-corrupt file to the caller.
-            return retryDownload(outputFile, downloadFunction, null);
+            return retryDownload(outputFile, downloadFunction, null, extraValidator);
         }
 
-        boolean fileOkay = verifyFile(outputFile, sha1);
+        boolean fileOkay = verifyFile(outputFile, sha1) && (extraValidator == null || extraValidator.test(outputFile));
         if (fileOkay) return null;
-        return retryDownload(outputFile, downloadFunction, sha1);
+        return retryDownload(outputFile, downloadFunction, sha1, extraValidator);
     }
 
-    private static <T> T retryDownload(File outputFile, Callable<T> downloadFunction, @Nullable String sha1) throws IOException {
+    private static <T> T retryDownload(File outputFile, Callable<T> downloadFunction, @Nullable String sha1,
+                                        @Nullable Predicate<File> extraValidator) throws IOException {
         int attempts = 0;
         T result = null;
         IOException lastException = null;
@@ -192,6 +209,7 @@ public class DownloadUtils {
                 continue;
             }
             fileOkay = (sha1 == null) ? outputFile.exists() : verifyFile(outputFile, sha1);
+            if (fileOkay && extraValidator != null) fileOkay = extraValidator.test(outputFile);
         }
         if (!fileOkay) {
             if (lastException != null) {
