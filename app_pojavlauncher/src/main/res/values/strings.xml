@@ -309,6 +309,8 @@
     <string name="pedit_renderer">Renderer</string>
     <string name="pedit_check_renderer_plugins">Check for renderer plugins</string>
     <string name="pedit_renderer_plugins_checked">Renderer plugin check complete</string>
+    <string name="renderer_refresh_button">Refresh</string>
+    <string name="renderer_refreshing">Refreshing…</string>
     <string name="arc_capes_title">Cosmetica Capes</string>
     <string name="arc_capes_desc">Enables capes from Cosmetica (previously Arc). For more information please visit https://cosmetica.cc. Requires OptiFine.</string>
     <string name="color_default_hex" translatable="false">FFFF0000</string>

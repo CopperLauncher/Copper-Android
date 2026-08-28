@@ -13,12 +13,9 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
@@ -34,7 +31,6 @@ import net.kdt.pojavlaunch.modloaders.modpacks.ExportMrpackDialog;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.multirt.RTSpinnerAdapter;
 import net.kdt.pojavlaunch.multirt.Runtime;
-import net.kdt.pojavlaunch.plugins.RendererPlugin;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.profiles.ProfileIconCache;
 import net.kdt.pojavlaunch.profiles.VersionSelectorDialog;
@@ -60,8 +56,6 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
     private String mValueToConsume = "";
     private Button mSaveButton, mDeleteButton, mControlSelectButton, mGameDirButton, mVersionSelectButton, mExportButton;
     private Spinner mDefaultRuntime, mDefaultRenderer;
-    private ImageButton mRendererCheckButton;
-    private ProgressBar mRendererCheckProgress;
     private EditText mDefaultName, mDefaultJvmArgument;
     private TextView mDefaultPath, mDefaultVersion, mDefaultControl;
     private ImageView mProfileIcon;
@@ -93,7 +87,6 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
         bindViews(view);
 
         refreshRendererList();
-        mRendererCheckButton.setOnClickListener(v -> checkForRendererPlugins());
 
         // Set up behaviors
         mSaveButton.setOnClickListener(v -> {
@@ -255,8 +248,6 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
         mDefaultControl = view.findViewById(R.id.vprof_editor_ctrl_spinner);
         mDefaultRuntime = view.findViewById(R.id.vprof_editor_spinner_runtime);
         mDefaultRenderer = view.findViewById(R.id.vprof_editor_profile_renderer);
-        mRendererCheckButton = view.findViewById(R.id.vprof_editor_renderer_check_button);
-        mRendererCheckProgress = view.findViewById(R.id.vprof_editor_renderer_check_progress);
         mDefaultVersion = view.findViewById(R.id.vprof_editor_version_spinner);
 
         mDefaultPath = view.findViewById(R.id.vprof_editor_path);
@@ -280,39 +271,6 @@ public class ProfileEditorFragment extends Fragment implements CropperUtils.Crop
         renderList.addAll(Arrays.asList(renderersList.rendererDisplayNames));
         renderList.add(requireContext().getString(R.string.global_default));
         mDefaultRenderer.setAdapter(new ArrayAdapter<>(getContext(), R.layout.item_simple_list_1, renderList));
-    }
-
-    /** Explicitly re-scans installed renderer plugin APKs and refreshes the renderer list.
-     *  This is user-triggered on purpose: the underlying scan is a device-wide PackageManager
-     *  query, too slow to run implicitly every time this screen opens or the app launches. */
-    private void checkForRendererPlugins() {
-        // Remember the current selection by renderer id (not spinner position), since the
-        // refreshed adapter may insert plugin entries at different positions.
-        int selectedPosition = mDefaultRenderer.getSelectedItemPosition();
-        String selectedRendererId = (selectedPosition >= 0 && selectedPosition < mRenderNames.size())
-                ? mRenderNames.get(selectedPosition) : null;
-
-        mRendererCheckButton.setEnabled(false);
-        mRendererCheckButton.setVisibility(View.GONE);
-        mRendererCheckProgress.setVisibility(View.VISIBLE);
-
-        RendererPlugin.discoverAsync(requireContext(), () -> {
-            if (!isAdded()) return; // Fragment may have been closed while the scan was running
-            Tools.releaseRenderersCache();
-            refreshRendererList();
-
-            int newIndex = mDefaultRenderer.getAdapter().getCount() - 1; // fall back to "Default"
-            if (selectedRendererId != null) {
-                int nindex = mRenderNames.indexOf(selectedRendererId);
-                if (nindex != -1) newIndex = nindex;
-            }
-            mDefaultRenderer.setSelection(newIndex);
-
-            mRendererCheckButton.setEnabled(true);
-            mRendererCheckButton.setVisibility(View.VISIBLE);
-            mRendererCheckProgress.setVisibility(View.GONE);
-            Toast.makeText(requireContext(), R.string.pedit_renderer_plugins_checked, Toast.LENGTH_SHORT).show();
-        });
     }
 
     private void save(){
