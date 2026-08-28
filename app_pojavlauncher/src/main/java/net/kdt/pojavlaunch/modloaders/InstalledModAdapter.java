@@ -150,6 +150,23 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         mFilterLoader    = loader    != null ? loader    : "";
     }
 
+    /**
+     * Inserts a freshly-imported file (already copied into the content directory
+     * by the caller) into the list, keeping the existing name sort order, and
+     * refreshes the empty-state. Must be called on the main thread.
+     */
+    public void addContentFile(File f) {
+        ModEntry entry = new ModEntry(f);
+        int index = 0;
+        while (index < mMods.size() &&
+                mMods.get(index).file.getName().compareToIgnoreCase(f.getName()) < 0) {
+            index++;
+        }
+        mMods.add(index, entry);
+        notifyItemInserted(index);
+        notifyEmptyState();
+    }
+
     // ── Update checking ───────────────────────────────────────────────────
 
     /**
