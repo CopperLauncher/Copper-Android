@@ -60,7 +60,7 @@
                 android:id="@+id/custom_control_button"
                 style="@style/LauncherMenuButton.Universal"
                 android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_menu_custom_controls"
+                android:drawableStart="@drawable/ic_px_gamepad"
                 android:text="@string/mcl_option_customcontrol" />
 
             <View
@@ -93,21 +93,21 @@
                 android:id="@+id/open_directory_button"
                 style="@style/LauncherMenuButton.Universal"
                 android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_folder"
+                android:drawableStart="@drawable/ic_px_folder"
                 android:text="@string/mcl_button_open_directory" />
 
             <com.kdt.mcgui.LauncherMenuButton
                 android:id="@+id/install_jar_button"
                 style="@style/LauncherMenuButton.Universal"
                 android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_menu_install_jar"
+                android:drawableStart="@drawable/ic_px_java_run"
                 android:text="@string/main_install_jar_file" />
 
             <com.kdt.mcgui.LauncherMenuButton
                 android:id="@+id/share_logs_button"
                 style="@style/LauncherMenuButton.Universal"
                 android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_menu_share"
+                android:drawableStart="@drawable/ic_px_sharelog"
                 android:text="@string/main_share_logs" />
 
             <!-- Hidden: kept for back-compat -->
@@ -220,7 +220,7 @@
             android:layout_height="match_parent"
             android:layout_marginEnd="@dimen/_8sdp"
             android:background="?android:attr/selectableItemBackground"
-            android:src="@drawable/ic_edit_profile" />
+            android:src="@drawable/ic_px_edit" />
 
         <com.kdt.mcgui.MineButton
             android:id="@+id/play_button"
