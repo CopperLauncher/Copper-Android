@@ -18,7 +18,7 @@
             android:title="@string/preference_video_title"
             android:summary="@string/preference_video_description"
             android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceVideoFragment"
-            android:icon="@drawable/ic_setting_video"
+            android:icon="@drawable/ic_px_image"
             />
 
 
@@ -27,7 +27,7 @@
             android:title="@string/preference_control_title"
             android:summary="@string/preference_control_description"
             android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceControlFragment"
-            android:icon="@drawable/ic_menu_custom_controls"
+            android:icon="@drawable/ic_px_gamepad"
             />
 
         <Preference
@@ -35,7 +35,7 @@
             android:title="@string/preference_java_title"
             android:summary="@string/preference_java_description"
             android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceJavaFragment"
-            android:icon="@drawable/ic_setting_java_runtime"
+            android:icon="@drawable/ic_px_java"
             />
 
         <Preference
@@ -43,7 +43,7 @@
             android:title="@string/preference_misc_title"
             android:summary="@string/preference_misc_description"
             android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceMiscellaneousFragment"
-            android:icon="@drawable/ic_setting_misc"
+            android:icon="@drawable/ic_px_alt_sliders"
             />
 
         <Preference
@@ -60,6 +60,7 @@
             android:title="@string/preference_experimental_title"
             android:summary="@string/preference_experimental_description"
             android:fragment="net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceExperimentalFragment"
+            android:icon="@drawable/ic_px_experiment"
             />
     </PreferenceCategory>
 
@@ -67,12 +68,14 @@
         android:title="@string/preference_force_english_title"
         android:key="force_english"
         android:summary="@string/preference_force_english_description"
+        android:icon="@drawable/ic_px_translate"
         />
 
     <Preference
         android:title="@string/preference_ask_for_notification_title"
         android:summary="@string/preference_ask_for_notification_description"
         android:key="notification_permission_request"
+        android:icon="@drawable/ic_px_bell"
         />
     <Preference
         android:title="@string/preference_ask_for_microphone_title"
