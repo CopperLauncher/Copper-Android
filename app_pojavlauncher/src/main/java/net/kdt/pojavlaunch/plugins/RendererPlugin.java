@@ -2,6 +2,7 @@ package net.kdt.pojavlaunch.plugins;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -10,7 +11,11 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import net.kdt.pojavlaunch.Tools;
+import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,7 +39,14 @@ public class RendererPlugin {
     /** Prefix applied to every discovered plugin's renderer id to avoid clashing with built-in renderers. */
     public static final String ID_PREFIX = "plugin:";
 
+    /** SharedPreferences key the last successful scan's results are cached under, so they
+     *  survive the app's process being killed and restarted (see {@link #loadCacheIfNeeded}). */
+    private static final String CACHE_PREF_KEY = "renderer_plugin_cache";
+
     private static boolean sDiscovered = false;
+    /** Whether the on-disk cache has already been consulted this process (successfully or
+     *  not) - separate from {@link #sDiscovered}, which only tracks an actual, explicit scan. */
+    private static boolean sCacheLoadAttempted = false;
     private static final List<PluginRenderer> sPluginRenderers = new ArrayList<>();
 
     public static class PluginRenderer {
@@ -121,7 +133,51 @@ public class RendererPlugin {
             sPluginRenderers.addAll(discovered);
         }
         sDiscovered = true;
+        sCacheLoadAttempted = true; // a fresh scan supersedes whatever was on disk
+        persistCache();
         Log.i(TAG, "Discovered " + discovered.size() + " renderer plugin(s)");
+    }
+
+    /** Saves the current {@link #sPluginRenderers} to disk so a future process (after this one
+     *  is killed and restarted) can restore them without forcing the user to re-scan - see
+     *  {@link #loadCacheIfNeeded}. */
+    private static void persistCache() {
+        SharedPreferences prefs = LauncherPreferences.DEFAULT_PREF;
+        if (prefs == null) return; // Not initialized yet; nothing sensible to do here.
+        try {
+            String json;
+            synchronized (sPluginRenderers) {
+                json = Tools.GLOBAL_GSON.toJson(sPluginRenderers);
+            }
+            prefs.edit().putString(CACHE_PREF_KEY, json).apply();
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to persist discovered renderer plugins", e);
+        }
+    }
+
+    /** Restores whatever plugin renderers were found by the last scan of a previous process,
+     *  once per process. Without this, {@link #sPluginRenderers} - which only ever lives in
+     *  memory - silently reverts to empty every time Android kills and restarts the app's
+     *  process, making previously-discovered renderers disappear until the user explicitly
+     *  re-scans again. This does NOT perform a new scan and does NOT set {@link #sDiscovered};
+     *  it only seeds the in-memory list from the last known-good result. */
+    private static synchronized void loadCacheIfNeeded() {
+        if (sDiscovered || sCacheLoadAttempted) return;
+        sCacheLoadAttempted = true;
+        SharedPreferences prefs = LauncherPreferences.DEFAULT_PREF;
+        if (prefs == null) return; // Not initialized yet; try again next call.
+        try {
+            String json = prefs.getString(CACHE_PREF_KEY, null);
+            if (json == null) return;
+            PluginRenderer[] cached = Tools.GLOBAL_GSON.fromJson(json, PluginRenderer[].class);
+            if (cached == null) return;
+            synchronized (sPluginRenderers) {
+                sPluginRenderers.clear();
+                sPluginRenderers.addAll(Arrays.asList(cached));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to load cached renderer plugins", e);
+        }
     }
 
     private static PluginRenderer parse(ApplicationInfo info) {
@@ -167,9 +223,11 @@ public class RendererPlugin {
     }
 
     /** Returns whichever plugin renderers were found by the most recent {@link #discover}/
-     *  {@link #discoverAsync} call. Empty (not an automatic scan) until discovery has actually
-     *  run at least once - see {@link #discoverAsync(Context, Runnable)}. */
+     *  {@link #discoverAsync} call, restoring the last scan's results from disk first if this
+     *  process hasn't scanned or loaded them yet (see {@link #loadCacheIfNeeded}). Empty until
+     *  a scan has actually happened at least once, ever - see {@link #discoverAsync(Context, Runnable)}. */
     public static List<PluginRenderer> getPluginRenderers(Context context) {
+        loadCacheIfNeeded();
         synchronized (sPluginRenderers) {
             return new ArrayList<>(sPluginRenderers);
         }
@@ -177,12 +235,14 @@ public class RendererPlugin {
 
     /** Whether {@link #discover}/{@link #discoverAsync} has completed at least once this process. */
     public static boolean hasDiscovered() {
+        loadCacheIfNeeded();
         return sDiscovered;
     }
 
     /** Looks up a discovered plugin renderer by its full (prefixed) renderer id. */
     public static PluginRenderer getById(String rendererId) {
         if (rendererId == null) return null;
+        loadCacheIfNeeded();
         synchronized (sPluginRenderers) {
             for (PluginRenderer renderer : sPluginRenderers) {
                 if (renderer.id.equals(rendererId)) return renderer;

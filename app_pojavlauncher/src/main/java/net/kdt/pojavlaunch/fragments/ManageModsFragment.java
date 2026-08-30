@@ -1,21 +1,27 @@
 package net.kdt.pojavlaunch.fragments;
 
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
 import android.view.View;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import net.kdt.pojavlaunch.PojavApplication;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
+import net.kdt.pojavlaunch.contracts.OpenDocumentWithExtension;
 import net.kdt.pojavlaunch.modloaders.InstalledModAdapter;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
@@ -23,6 +29,9 @@ import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Manages installed content (mods, resource packs, or shader packs — see
@@ -54,6 +63,14 @@ public class ManageModsFragment extends Fragment {
     private InstalledModAdapter mAdapter;
     private ContentType mContentType = ContentType.MOD;
 
+    // Registered unconditionally as a field initializer (must happen before the
+    // fragment reaches STARTED) — mContentType isn't resolved from arguments yet
+    // at construction time, so this accepts either supported extension and
+    // onImportFilePicked() checks the picked file against mContentType itself.
+    private final ActivityResultLauncher<Object> mImportLauncher =
+            registerForActivityResult(new OpenDocumentWithExtension(new String[]{"jar", "zip"}),
+                    this::onImportFilePicked);
+
     public ManageModsFragment() {
         super(R.layout.fragment_manage_mods);
     }
@@ -68,6 +85,7 @@ public class ManageModsFragment extends Fragment {
         mRefreshButton         = view.findViewById(R.id.manage_mods_refresh);
         mUpdateProgress        = view.findViewById(R.id.manage_mods_update_progress);
         ImageButton addButton  = view.findViewById(R.id.manage_mods_add);
+        ImageButton importButton = view.findViewById(R.id.manage_mods_import);
         TextView    title      = view.findViewById(R.id.manage_mods_title);
         RecyclerView recycler  = view.findViewById(R.id.manage_mods_recycler);
         View        emptyState = view.findViewById(R.id.manage_mods_empty);
@@ -83,6 +101,7 @@ public class ManageModsFragment extends Fragment {
         }
         mRefreshButton.setOnClickListener(v -> runUpdateCheck(false));
         addButton.setOnClickListener(v -> openModSearch());
+        importButton.setOnClickListener(v -> mImportLauncher.launch(null));
 
         String profileName = getCurrentProfileName();
         String typeLabel = getString(contentTypeLabelRes());
@@ -172,6 +191,95 @@ public class ManageModsFragment extends Fragment {
         ModsSearchFragment fragment = new ModsSearchFragment();
         fragment.setArguments(args);
         navigateToFragment(fragment, ModsSearchFragment.TAG + ":" + mContentType.name());
+    }
+
+    /**
+     * Handles a file picked via {@link #mImportLauncher} (e.g. from Downloads):
+     * validates its extension against the content type this screen manages,
+     * copies it into that content type's folder for the current instance, and
+     * inserts it into the list. Runs the copy off the main thread since the
+     * source may be a slow content provider (cloud storage, etc.).
+     */
+    private void onImportFilePicked(Uri uri) {
+        if (uri == null || mAdapter == null) return;
+
+        String requiredExtension = mContentType.fileExtension;
+        String pickedName = queryDisplayName(uri);
+        if (pickedName == null || !pickedName.toLowerCase().endsWith(requiredExtension)) {
+            Toast.makeText(requireContext(),
+                    getString(R.string.content_import_wrong_type, requiredExtension),
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        File contentDir = getContentDir();
+        File destination = uniqueDestination(contentDir, pickedName);
+
+        PojavApplication.sExecutorService.execute(() -> {
+            boolean success = copyToFile(uri, contentDir, destination);
+            if (getActivity() == null) return;
+            requireActivity().runOnUiThread(() -> {
+                if (success) {
+                    mAdapter.addContentFile(destination);
+                    Toast.makeText(requireContext(),
+                            getString(R.string.content_import_success, destination.getName()),
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(requireContext(),
+                            R.string.content_import_failed, Toast.LENGTH_LONG).show();
+                }
+            });
+        });
+    }
+
+    @Nullable
+    private String queryDisplayName(Uri uri) {
+        try (Cursor cursor = requireContext().getContentResolver()
+                .query(uri, new String[]{OpenableColumns.DISPLAY_NAME}, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                return cursor.getString(0);
+            }
+        } catch (Exception ignored) {}
+        String path = uri.getLastPathSegment();
+        return path != null ? path.substring(path.lastIndexOf('/') + 1) : null;
+    }
+
+    /** Appends " (1)", " (2)", etc. before the extension if a file of that name already exists. */
+    private File uniqueDestination(File dir, String name) {
+        File candidate = new File(dir, name);
+        if (!candidate.exists()) return candidate;
+
+        String base = name;
+        String ext = "";
+        int dot = name.lastIndexOf('.');
+        if (dot >= 0) {
+            base = name.substring(0, dot);
+            ext = name.substring(dot);
+        }
+        int count = 1;
+        do {
+            candidate = new File(dir, base + " (" + count + ")" + ext);
+            count++;
+        } while (candidate.exists());
+        return candidate;
+    }
+
+    private boolean copyToFile(Uri source, File contentDir, File destination) {
+        if (!contentDir.isDirectory() && !contentDir.mkdirs()) return false;
+        try (InputStream input = requireContext().getContentResolver().openInputStream(source);
+             FileOutputStream output = new FileOutputStream(destination)) {
+            if (input == null) return false;
+            byte[] buffer = new byte[262144];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            output.flush();
+            return true;
+        } catch (IOException e) {
+            destination.delete();
+            return false;
+        }
     }
 
     /**

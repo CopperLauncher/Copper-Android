@@ -56,6 +56,15 @@
             android:contentDescription="@string/mod_check_updates" />
 
         <ImageButton
+            android:id="@+id/manage_mods_import"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:layout_marginEnd="@dimen/padding_small"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_folder"
+            android:contentDescription="@string/content_import_from_storage" />
+
+        <ImageButton
             android:id="@+id/manage_mods_add"
             android:layout_width="@dimen/_38sdp"
             android:layout_height="@dimen/_38sdp"

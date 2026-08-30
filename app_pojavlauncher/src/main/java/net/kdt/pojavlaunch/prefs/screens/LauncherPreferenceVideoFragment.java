@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.SwitchPreference;
@@ -13,6 +14,7 @@ import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.prefs.CustomSeekBarPreference;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+import net.kdt.pojavlaunch.prefs.RendererListPreferenceDialogFragment;
 
 /**
  * Fragment for any settings video related
@@ -80,6 +82,20 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
     public void onSharedPreferenceChanged(SharedPreferences p, String s) {
         super.onSharedPreferenceChanged(p, s);
         computeVisibility();
+    }
+
+    @Override
+    public void onDisplayPreferenceDialog(@NonNull Preference preference) {
+        // The renderer list needs a "Refresh" button to re-scan for renderer plugins, so it
+        // gets a custom dialog instead of the default ListPreference one.
+        if ("renderer".equals(preference.getKey())) {
+            RendererListPreferenceDialogFragment fragment =
+                    RendererListPreferenceDialogFragment.newInstance(preference.getKey());
+            fragment.setTargetFragment(this, 0);
+            fragment.show(getParentFragmentManager(), "androidx.preference.PreferenceFragment.DIALOG");
+            return;
+        }
+        super.onDisplayPreferenceDialog(preference);
     }
 
     private void computeVisibility() {

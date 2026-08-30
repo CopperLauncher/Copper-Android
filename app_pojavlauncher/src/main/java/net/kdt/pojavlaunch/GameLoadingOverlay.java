@@ -47,6 +47,15 @@ public class GameLoadingOverlay {
      * reasonable window before being forced closed.
      */
     private static final long MAX_WAIT_MS = 60_000L;
+    /**
+     * Backstop used instead of {@link #MAX_WAIT_MS} when pixel sampling IS available (API 24+ with
+     * a game surface attached). Since {@link #checkSurfaceContent()} already reliably catches the
+     * real "window is up" moment every {@link #PIXEL_CHECK_INTERVAL_MS}, this only needs to guard
+     * against pixel sampling itself never firing a valid result (e.g. a surface stuck invalid the
+     * whole launch) - not against genuinely slow (e.g. heavily modded) launches, which can easily
+     * run past a minute or two. Deliberately much larger than MAX_WAIT_MS for that reason.
+     */
+    private static final long MAX_WAIT_MS_WITH_PIXEL_SAMPLING = 10 * 60_000L;
 
     /** Log lines that reliably show up right around when the game window becomes visible - a fast path, in case a match arrives before the next pixel sample. */
     private static final String[] WINDOW_READY_MARKERS = {
@@ -160,7 +169,15 @@ public class GameLoadingOverlay {
         mHandler.removeCallbacks(mPixelCheckRunnable);
         mHandler.postDelayed(mPixelCheckRunnable, PIXEL_CHECK_INTERVAL_MS);
         mHandler.removeCallbacks(mTimeoutRunnable);
-        mHandler.postDelayed(mTimeoutRunnable, Math.max(MAX_WAIT_MS, mEstimatedDurationMs * 2));
+        // The doc comments on MAX_WAIT_MS/MAX_WAIT_MS_WITH_PIXEL_SAMPLING explain why these
+        // differ so much: MAX_WAIT_MS is only meant to bound devices that can't pixel-sample at
+        // all, but until now it was used unconditionally here - so any launch slower than ~1-2
+        // minutes (very common for a modded/heavy instance, or just a slower device) got its
+        // loading overlay silently force-closed by hideImmediately() well before the game window
+        // had actually appeared.
+        boolean canSamplePixels = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && mGameSurface != null;
+        long maxWaitMs = canSamplePixels ? MAX_WAIT_MS_WITH_PIXEL_SAMPLING : MAX_WAIT_MS;
+        mHandler.postDelayed(mTimeoutRunnable, Math.max(maxWaitMs, mEstimatedDurationMs * 2));
     }
 
     /** Hide the overlay, recording how long the launch actually took to improve future estimates. */

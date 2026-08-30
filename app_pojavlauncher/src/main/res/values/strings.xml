@@ -92,6 +92,10 @@
     <string name="global_retry">Retry</string>
     <string name="global_back">Back</string>
     <string name="global_add">Add</string>
+    <string name="content_import_from_storage">Import from storage</string>
+    <string name="content_import_wrong_type">Please pick a %s file</string>
+    <string name="content_import_success">%s imported</string>
+    <string name="content_import_failed">Failed to import file</string>
     <string name="manage_mods_empty">No mods installed for this profile.</string>
     <string name="manage_resourcepacks_empty">No resource packs installed for this profile.</string>
     <string name="manage_shaderpacks_empty">No shader packs installed for this profile.</string>
@@ -309,6 +313,8 @@
     <string name="pedit_renderer">Renderer</string>
     <string name="pedit_check_renderer_plugins">Check for renderer plugins</string>
     <string name="pedit_renderer_plugins_checked">Renderer plugin check complete</string>
+    <string name="renderer_refresh_button">Refresh</string>
+    <string name="renderer_refreshing">Refreshing…</string>
     <string name="arc_capes_title">Cosmetica Capes</string>
     <string name="arc_capes_desc">Enables capes from Cosmetica (previously Arc). For more information please visit https://cosmetica.cc. Requires OptiFine.</string>
     <string name="color_default_hex" translatable="false">FFFF0000</string>
