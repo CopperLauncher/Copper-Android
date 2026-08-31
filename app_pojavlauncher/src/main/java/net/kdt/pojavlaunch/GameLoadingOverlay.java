@@ -23,9 +23,11 @@ import net.kdt.pojavlaunch.prefs.LauncherPreferences;
  * solid black - this periodically samples a tiny downscaled copy of the actual native Surface
  * the game renders into via PixelCopy, and dismisses the instant anything is actually being
  * drawn there. That's immune to log noise from mods that keep logging during normal gameplay,
- * unlike trying to infer readiness from log content. A couple of fallbacks exist for older
- * devices / edge cases: known log lines that reliably show up right as the window appears, and
- * an absolute last-resort timeout.
+ * unlike trying to infer readiness from log content. A fallback exists for older devices / edge
+ * cases where pixel sampling isn't available: known log lines that reliably show up right as the
+ * window appears. There is no forced timeout - the overlay stays up until one of those real
+ * "ready" signals fires (or the caller explicitly calls {@link #hideImmediately()}), so it will
+ * never disappear on a launch that just happens to be slow.
  */
 public class GameLoadingOverlay {
     private static final String PREF_KEY_AVG_LOAD_MS = "gameLoadingAvgDurationMs";
@@ -40,22 +42,6 @@ public class GameLoadingOverlay {
     private static final int SAMPLE_SIZE = 12;
     /** Average per-channel value above which the sampled surface is considered "not black anymore". Small tolerance for copy/compression noise near zero. */
     private static final int NON_BLACK_THRESHOLD = 6;
-    /**
-     * Absolute last-resort safety net, for devices where pixel sampling isn't available (pre-API
-     * 24) and no marker ever shows up either. Whichever is bigger of this flat floor or 2x the
-     * current estimate is used, so slower devices with genuinely longer launches still get a
-     * reasonable window before being forced closed.
-     */
-    private static final long MAX_WAIT_MS = 60_000L;
-    /**
-     * Backstop used instead of {@link #MAX_WAIT_MS} when pixel sampling IS available (API 24+ with
-     * a game surface attached). Since {@link #checkSurfaceContent()} already reliably catches the
-     * real "window is up" moment every {@link #PIXEL_CHECK_INTERVAL_MS}, this only needs to guard
-     * against pixel sampling itself never firing a valid result (e.g. a surface stuck invalid the
-     * whole launch) - not against genuinely slow (e.g. heavily modded) launches, which can easily
-     * run past a minute or two. Deliberately much larger than MAX_WAIT_MS for that reason.
-     */
-    private static final long MAX_WAIT_MS_WITH_PIXEL_SAMPLING = 10 * 60_000L;
 
     /** Log lines that reliably show up right around when the game window becomes visible - a fast path, in case a match arrives before the next pixel sample. */
     private static final String[] WINDOW_READY_MARKERS = {
@@ -99,12 +85,6 @@ public class GameLoadingOverlay {
             checkSurfaceContent();
             mHandler.postDelayed(this, PIXEL_CHECK_INTERVAL_MS);
         }
-    };
-
-    /** Force-dismisses the overlay if it's been showing far longer than expected. */
-    private final Runnable mTimeoutRunnable = () -> {
-        if (!mShowing) return;
-        hideImmediately();
     };
 
     public GameLoadingOverlay(View overlayRoot) {
@@ -168,16 +148,6 @@ public class GameLoadingOverlay {
         mHandler.post(mTickRunnable);
         mHandler.removeCallbacks(mPixelCheckRunnable);
         mHandler.postDelayed(mPixelCheckRunnable, PIXEL_CHECK_INTERVAL_MS);
-        mHandler.removeCallbacks(mTimeoutRunnable);
-        // The doc comments on MAX_WAIT_MS/MAX_WAIT_MS_WITH_PIXEL_SAMPLING explain why these
-        // differ so much: MAX_WAIT_MS is only meant to bound devices that can't pixel-sample at
-        // all, but until now it was used unconditionally here - so any launch slower than ~1-2
-        // minutes (very common for a modded/heavy instance, or just a slower device) got its
-        // loading overlay silently force-closed by hideImmediately() well before the game window
-        // had actually appeared.
-        boolean canSamplePixels = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && mGameSurface != null;
-        long maxWaitMs = canSamplePixels ? MAX_WAIT_MS_WITH_PIXEL_SAMPLING : MAX_WAIT_MS;
-        mHandler.postDelayed(mTimeoutRunnable, Math.max(maxWaitMs, mEstimatedDurationMs * 2));
     }
 
     /** Hide the overlay, recording how long the launch actually took to improve future estimates. */
@@ -190,7 +160,6 @@ public class GameLoadingOverlay {
         mShowing = false;
         mHandler.removeCallbacks(mTickRunnable);
         mHandler.removeCallbacks(mPixelCheckRunnable);
-        mHandler.removeCallbacks(mTimeoutRunnable);
         Logger.removeLogListener(mLogListener);
 
         long elapsed = System.currentTimeMillis() - mStartTime;
@@ -224,7 +193,6 @@ public class GameLoadingOverlay {
         mShowing = false;
         mHandler.removeCallbacks(mTickRunnable);
         mHandler.removeCallbacks(mPixelCheckRunnable);
-        mHandler.removeCallbacks(mTimeoutRunnable);
         Logger.removeLogListener(mLogListener);
         mRootView.animate().cancel();
         mRootView.setVisibility(View.GONE);
