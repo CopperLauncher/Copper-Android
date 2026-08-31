@@ -1,3 +1,6 @@
-1. This app (while idle) does NOT collect any sensitive information, and uses network for downloading Minecraft resources.
-2. While running Minecraft, app also does NOT collect any sensitive information about your device. Snooper by Mojang does.
-3. Some sensitive data is stored in crash reports after the game crashes, but it's not being shared to anyone except the current user.
+# CopperLauncher Privacy Policy
+1. This app does not send any sensitive data, and uses network only for downloading game resources, mods or other content.
+2. This app does not collect any sensitive data while you are running the game.
+3. Some sensitive data is stored in crash reports after the game crashes, but it's not shared to the developer or any third parties.
+4. CopperLauncher has an option to share your logs to a third-party service (https://mclo.gs/) at your request. Once shared, we have no control over that data.
+5. CopperLauncher developers reserve the right to update this privacy policy without prior notification.
