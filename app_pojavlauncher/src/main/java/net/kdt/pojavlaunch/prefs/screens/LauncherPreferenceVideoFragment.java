@@ -16,6 +16,9 @@ import net.kdt.pojavlaunch.prefs.CustomSeekBarPreference;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.prefs.RendererListPreferenceDialogFragment;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Fragment for any settings video related
  */
@@ -70,10 +73,24 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
         Tools.RenderersList renderersList = Tools.getCompatibleRenderers(
             getContext()
         );
-        rendererListPreference.setEntries(renderersList.rendererDisplayNames);
-        rendererListPreference.setEntryValues(
-            renderersList.rendererIds.toArray(new String[0])
+        // Copy rendererIds before appending the "download more" entry - the source list is
+        // cached by Tools and reused elsewhere (Profile Editor, MainActivity), so it must not be
+        // mutated here.
+        List<String> entryValues = new ArrayList<>(renderersList.rendererIds);
+        String[] entries = RendererListPreferenceDialogFragment.withDownloadEntry(
+            renderersList.rendererDisplayNames, entryValues, requireContext()
         );
+        rendererListPreference.setEntries(entries);
+        rendererListPreference.setEntryValues(entryValues.toArray(new String[0]));
+        // Selecting the "download more" entry should open the renderer plugin download page
+        // instead of actually being saved as the renderer preference value.
+        rendererListPreference.setOnPreferenceChangeListener((preference, newValue) -> {
+            if (RendererListPreferenceDialogFragment.DOWNLOAD_MORE_RENDERERS_VALUE.equals(newValue)) {
+                Tools.openURL(requireActivity(), getString(R.string.renderer_plugin_download_url));
+                return false;
+            }
+            return true;
+        });
 
         computeVisibility();
     }
