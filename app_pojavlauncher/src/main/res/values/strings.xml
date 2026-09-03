@@ -66,8 +66,10 @@
     <string name="mcl_setting_title_renderer_subtitle">Renderer specific settings</string>
     <string name="mcl_setting_category_renderer">Renderer</string>
     <string name="mcl_setting_renderer_gles2_4">Holy GL4ES - (1.21.4&lt; only, fast)</string>
-    <string name="mcl_setting_renderer_vulkan_zink">Zink (Vulkan) - (all versions, mid)</string>
-    <string name="mcl_setting_renderer_mobileglues">MobileGlues (OpenGL ES) - (1.17+ only, fast)</string>
+    <string name="mcl_setting_renderer_ng_gl4es">Krypton Wrapper - (all versions, fast)</string>
+    <string name="mcl_setting_renderer_vulkan_kopper_zink">Kopper Zink (Vulkan) - (all versions, mid)</string>
+    <string name="mcl_setting_renderer_vulkan_zink">Zink (Vulkan) - (all versions, slow)</string>
+    <string name="mcl_setting_renderer_mobileglues">SFPEW/MobileGlues (OpenGL ES) - (all versions, fast)</string>
     <string name="mcl_setting_renderer_ltw">LTW (OpenGL ES 3) - 1.17+ only</string>
     <string name="mcl_setting_renderer_KW">Krypton Wrapper - (all versions, fast)</string>
     <string name="mcl_setting_veroption_release">Release</string>
@@ -573,7 +575,6 @@
     <string name="preference_renderer_mobileglues_settings">MobileGlues Renderer Settings</string>
     <string name="mg_renderer_glsl_cache">Max GLSL cache size</string>
     <string name="mg_renderer_angle">Use ANGLE as driver</string>
-    <string name="mg_renderer_multidraw">Multidraw emulation mode</string>
     <string name="mg_renderer_title_errorSetting">Error Filtering</string>
     <string name="mg_renderer_title_timerQueryExt">Disable GPU Utilization in F3 menu</string>
     <string name="mg_renderer_summary_timerQueryExt">Fixes random crashes when F3 is open on some Mali devices</string>
@@ -585,8 +586,6 @@
     <string name="mg_renderer_summary_gl43exts">May help with mod crashes. Disable if not needed, can cause crashes.</string>
     <string name="mg_renderer_title_computeShaderext">Advertise Experimental Compute Shader extension</string>
     <string name="mg_renderer_summary_computeShaderext">May help with shaderpack glitches. Disable if not needed, can cause crashes.</string>
-    <string name="mg_renderer_title_multidrawCompute">Use Compute Multidraw Emulation</string>
-    <string name="mg_renderer_summary_multidrawCompute">Uses compute shaders for multidraw emulation</string>
     <string name="app_short_name" translatable="false">Copper</string>
     <string name="demo_versions_supported">Only Vanilla 1.3.1 and above are supported on demo accounts</string>
     <string name="demo_unsupported">Demo Profile not supported</string>
@@ -646,6 +645,8 @@
     <string name="import_modpack_hash">Hashing modpack file… (%s MB/ %s MB)</string>
     <string name="import_modpack_json">Reading modpack info…</string>
     <string name="import_modpack_copy">Copying modpack file to cache… (%s MB/ %s MB)</string>
+    <string name="angelica_found_sfpew_notice">Angelica mod found, Simple FPE Wrapper not needed</string>
+    <string name="use_angle_checkbox">Use ANGLE (might help FPS)</string>
 
     <string name="mod_deps_title">Select dependencies to install</string>
     <string name="mod_deps_install_selected">Install selected</string>
