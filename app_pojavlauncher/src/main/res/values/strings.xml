@@ -315,6 +315,8 @@
     <string name="pedit_renderer_plugins_checked">Renderer plugin check complete</string>
     <string name="renderer_refresh_button">Refresh</string>
     <string name="renderer_refreshing">Refreshing…</string>
+    <string name="renderer_download_more">Download More Renderers...</string>
+    <string name="renderer_plugin_download_url" translatable="false">https://github.com/ShirosakiMio/FCLRendererPlugin/releases</string>
     <string name="arc_capes_title">Cosmetica Capes</string>
     <string name="arc_capes_desc">Enables capes from Cosmetica (previously Arc). For more information please visit https://cosmetica.cc. Requires OptiFine.</string>
     <string name="color_default_hex" translatable="false">FFFF0000</string>

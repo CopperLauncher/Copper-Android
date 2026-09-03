@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.prefs;
 
 import android.app.Dialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.widget.Button;
@@ -16,6 +17,10 @@ import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.plugins.RendererPlugin;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * A {@link ListPreferenceDialogFragmentCompat} for the "renderer" preference.
  * <p>
@@ -24,6 +29,28 @@ import net.kdt.pojavlaunch.plugins.RendererPlugin;
  * dialog with the updated list, without needing to leave this settings screen.
  */
 public class RendererListPreferenceDialogFragment extends ListPreferenceDialogFragmentCompat {
+
+    /**
+     * Sentinel entry value appended to the renderer list by {@link #withDownloadEntry}. Never
+     * actually persisted as the "renderer" preference value - the "renderer" ListPreference's
+     * {@code OnPreferenceChangeListener} (see {@code LauncherPreferenceVideoFragment}) intercepts
+     * it, opens {@link R.string#renderer_plugin_download_url}, and returns {@code false} so the
+     * change is rejected.
+     */
+    public static final String DOWNLOAD_MORE_RENDERERS_VALUE = "download_more_renderers";
+
+    /**
+     * Appends a "Download More Renderers..." entry to a renderer list, so it shows up as a normal
+     * selectable item at the bottom of the renderer list dialog. {@code ids} is mutated in place
+     * (a mutable copy should be passed in, never {@link Tools.RenderersList#rendererIds} directly,
+     * since that list is cached and reused elsewhere in the app).
+     */
+    public static String[] withDownloadEntry(String[] displayNames, List<String> ids, Context context) {
+        String[] entries = Arrays.copyOf(displayNames, displayNames.length + 1);
+        entries[displayNames.length] = context.getString(R.string.renderer_download_more);
+        ids.add(DOWNLOAD_MORE_RENDERERS_VALUE);
+        return entries;
+    }
 
     public static RendererListPreferenceDialogFragment newInstance(String key) {
         RendererListPreferenceDialogFragment fragment = new RendererListPreferenceDialogFragment();
@@ -72,8 +99,10 @@ public class RendererListPreferenceDialogFragment extends ListPreferenceDialogFr
             Tools.RenderersList renderersList = Tools.getCompatibleRenderers(requireContext());
 
             ListPreference preference = (ListPreference) getPreference();
-            preference.setEntries(renderersList.rendererDisplayNames);
-            preference.setEntryValues(renderersList.rendererIds.toArray(new String[0]));
+            List<String> entryValues = new ArrayList<>(renderersList.rendererIds);
+            String[] entries = withDownloadEntry(renderersList.rendererDisplayNames, entryValues, requireContext());
+            preference.setEntries(entries);
+            preference.setEntryValues(entryValues.toArray(new String[0]));
 
             Toast.makeText(requireContext(), R.string.pedit_renderer_plugins_checked, Toast.LENGTH_SHORT).show();
 

@@ -135,8 +135,9 @@ Copper is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-A
 * Thanks to [Modrinth](https://api.modrinth.com/), [CurseForge](https://docs.curseforge.com/rest-api/) and [McLo.gs](https://api.mclo.gs) for providing us the free API's.
 
 ## Special thanks
-* Thanks to [FCL-team](https://github.com/FCL-Team/FoldCraftLauncher/) for the custom renderer plugin support that I took some codes from :D
-* Thanks to "whynelo" on Discord for the new copper icons.
+* Thanks to [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher/) for the android icons, Made by [Yarpopcat08](https://github.com/Yarpopcat08).
+* Thanks to [FCL-team](https://github.com/FCL-Team/FoldCraftLauncher/) for the custom renderer plugin support that I took some codes from.
+* Thanks to [whynelo](https://github.com/whynelo) for the new copper icons.
 
 ## Roadmap
 
