@@ -1816,7 +1816,8 @@ public final class Tools {
         boolean deviceHasOpenGLES3 = JREUtils.getDetectedVersion() >= 3;
         // LTW is an optional proprietary dependency
         boolean appHasLtw = new File(Tools.NATIVE_LIB_DIR, "libltw.so").exists();
-        boolean appHasKw = new File(Tools.NATIVE_LIB_DIR, "libng_gl4es.so").exists();
+        boolean appHasKw = new File(Tools.NATIVE_LIB_DIR, "libgl4es_115.so").exists() ||
+                new File(Tools.NATIVE_LIB_DIR, "libng_gl4es.so").exists();
         List<String> rendererIds = new ArrayList<>(defaultRenderers.length);
         List<String> rendererNames = new ArrayList<>(defaultRendererNames.length);
         for(int i = 0; i < defaultRenderers.length; i++) {

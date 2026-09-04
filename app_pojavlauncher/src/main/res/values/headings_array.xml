@@ -37,7 +37,7 @@
     </string-array>
     
     <string-array name="renderer_values">
-        <item>opengles2</item> <!-- BZLZHH/NG-GL4ES (Krypton Wrapper) -->
+        <item>opengles2</item> <!-- GL4ES (libgl4es_115.so / HolyGL4ES) -->
         <item>opengles_mobileglues</item>
         <item>opengles3_desktopgl_zink_kopper</item> <!-- Swung's Kopper Zink backport to 23.0.4 -->
         <item>vulkan_zink</item> <!-- osmesa 23.0.4 -->
