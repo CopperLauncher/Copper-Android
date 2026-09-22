@@ -24,10 +24,6 @@ public class PresentableException extends Exception implements ContextExecutorTa
         this(cause, R.string.global_error, mCauseSubtitle);
     }
 
-    public PresentableException(int mCauseSubtitle, Object... causeVa) {
-        this(R.string.global_error, mCauseSubtitle, causeVa);
-    }
-
     public PresentableException(Throwable cause, int mCauseSubtitle, Object... causeVa) {
         this(cause, R.string.global_error, mCauseSubtitle, causeVa);
     }

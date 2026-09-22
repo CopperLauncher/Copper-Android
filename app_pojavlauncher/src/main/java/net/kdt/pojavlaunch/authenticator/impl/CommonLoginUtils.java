@@ -64,6 +64,6 @@ public class CommonLoginUtils {
         if(conn.getResponseCode() == 429) {
             return new PresentableException(R.string.microsoft_login_retry_later);
         }
-        return new PresentableException(R.string.microsoft_login_generic, conn.getResponseMessage());
+        return new PresentableException(R.string.global_error, R.string.microsoft_login_generic, conn.getResponseMessage());
     }
 }
