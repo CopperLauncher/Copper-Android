@@ -15,6 +15,7 @@
         <item name="android:switchStyle">@style/MojoLauncher.Switch</item>
         <item name="switchStyle">@style/MojoLauncher.Switch</item>
         <item name="buttonStyle">@style/MojoLauncher.Button</item>
+        <item name="android:buttonStyleToggle">@style/MojoLauncher.Button.Toggle</item>
     </style>
 
     <style name="MojoLauncher.AppTheme" parent="MojoLauncher"/>
@@ -37,6 +38,10 @@
 
     <style name="MojoLauncher.Button" parent="Widget.AppCompat.Button">
         <item name="android:background">@drawable/button_flat</item>
+    </style>
+
+    <style name="MojoLauncher.Button.Toggle" parent="MojoLauncher.Button">
+        <item name="android:background">@drawable/button_flat_toggle</item>
     </style>
 
 
