@@ -6,5 +6,11 @@
         <item name="android:enforceNavigationBarContrast">false</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:enforceStatusBarContrast">false</item>
+
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
+        <item name="android:textSize">@dimen/_14ssp</item>
     </style>
 </resources>
