@@ -332,7 +332,7 @@ public class MoJsonDownloader extends Downloader {
 
     private void scheduleDownload(File targetFile, int downloadClass, String url, String sha1,
                                   long size) throws PresentableException {
-
+        checkedCreateDirectory(targetFile);
 
         if(!Tools.isValidString(sha1)) sha1 = null;
         URL urlObject = null;
