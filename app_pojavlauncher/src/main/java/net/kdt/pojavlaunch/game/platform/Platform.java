@@ -42,8 +42,6 @@ import git.mojo.sdl.SDLControllerManager;
  * Launcher Platform frontend used to manage different window system & input implementations. Currently supports SDL&GLFW
  */
 public class Platform {
-    // Always reset cursor on grab lost - makes it move to the center as should if the game didn't move it
-    private static final boolean RESET_CURSOR_UNGRAB = true;
     public static PlatformBackend PLATFORM = new DummyBackend();
     public static double cursorX;
     public static double cursorY;
@@ -114,7 +112,6 @@ public class Platform {
         boolean wasGrabbing = isGrabbing;
         isGrabbing = grabbing;
         Tools.runOnUiThread(() -> {
-            if (RESET_CURSOR_UNGRAB && wasGrabbing && !isGrabbing) resetCursorPosition();
             if (mCursorImplementor != null) mCursorImplementor.onGrabState(grabbing);
             for (PlatformGrabListener listener : grabListeners) {
                 listener.onGrabState(grabbing);
@@ -217,25 +214,25 @@ public class Platform {
         cursorY = (double) GameView.getWindowHeight() / 2;
     }
 
-    /**
-     * Floor current cursor position to stop anticheats from triggering for no reason
-     *
-     */
-    public static void floorCursorPosition(){
-        cursorX = Math.floor(cursorX);
-        cursorY = Math.floor(cursorY);
-    }
 
     /**
      * Send current cursor position to the implementation after clamping and updating its view position.
-     * Prefer using this over {@link PlatformBackend#sendMousePosition()}
+     * Prefer using this over {@link PlatformBackend#sendMousePosition(double, double, boolean)}
      *
      */
     public static void sendCursorPosition() {
         if(mCursorImplementor != null) mCursorImplementor.onCursorPosition();
         if (!isGrabbing) clampCursorPosition();
-        else floorCursorPosition();
-        PLATFORM.sendMousePosition();
+        PLATFORM.sendMousePosition(Math.floor(Platform.cursorX), Math.floor(Platform.cursorY), isGrabbing);
+    }
+
+    /**
+     * Send mouse event (click) to the platform implementation
+     * Prefer using this over {@link PlatformBackend#sendMouseEvent(int, int, int, double, double, boolean)}
+     *
+     */
+    public static void sendMouseEvent(int button, int state, int mods) {
+        PLATFORM.sendMouseEvent(button, state, mods, Platform.cursorX, Platform.cursorY, isGrabbing);
     }
 
     /**

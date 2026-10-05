@@ -24,16 +24,10 @@ public class SDLBackend implements PlatformBackend {
                 Platform.setCursor(cursor.getBitmap(), cursor.getXhot(), cursor.getYhot());
             else Platform.setCursor(null, 0, 0);
         });
+        SDLActivity.setCursorWarpCallback(Platform::setCursorPosition);
     }
 
     private static void handleGrabStateChange(boolean isGrabbing) {
-        if (isGrabbing) {
-            // SDL really expects cursor to be at 0x0 position when relative mode (grabbing = true) is enabled
-            // This caused weird jumps when gaining grab because Platform cursor position values contain stale non-zero values at that point.
-            // Reset position to 0x0 when gaining grab state
-            Platform.cursorX = 0;
-            Platform.cursorY = 0;
-        }
         Platform.grabStateChanged(isGrabbing);
     }
 
@@ -69,20 +63,34 @@ public class SDLBackend implements PlatformBackend {
         SDLActivity.onNativeSurfaceDestroyed();
     }
 
+    private double prevX;
+    private double prevY;
+
     @Override
-    public void sendMousePosition() {
-        SDLActivity.onNativeMouse(0, MotionEvent.ACTION_MOVE, (float) Platform.cursorX, (float) Platform.cursorY, Platform.isGrabbing());
-        if (Platform.isGrabbing()) {
-            // SDL in relative mode expects these to be reset to 0 or it will freak out (classic:tm: way)
-            Platform.cursorX = 0;
-            Platform.cursorY = 0;
+    public void sendMousePosition(double x, double y, boolean relative) {
+        // In grabbing (relative) mode SDL expects relative cursor coordinates with center located at 0,0
+        // We need to accumulate a delta between mouse positions to correctly handle such position changes
+        double deltaX, deltaY;
+        if(relative) {
+            deltaX = x - prevX;
+            deltaY = y - prevY;
+        } else {
+            deltaX = x;
+            deltaY = y;
         }
+        SDLActivity.onNativeMouse(0, MotionEvent.ACTION_MOVE, (float) deltaX, (float) deltaY, relative);
+        prevX = x;
+        prevY = y;
     }
 
 
     @Override
-    public void sendMouseEvent(int button, int state, int mods) {
-        SDLActivity.onNativeMouseButton(button, state, (float) Platform.cursorX, (float) Platform.cursorY, Platform.isGrabbing());
+    public void sendMouseEvent(int button, int state, int mods, double x, double y, boolean relative) {
+        if(relative)
+            // In relative mode we need to send mouse clicks at zero position to not accidentally trigger a motion event
+            SDLActivity.onNativeMouseButton(button, state, 0, 0, true);
+        else
+            SDLActivity.onNativeMouseButton(button, state, (float) x, (float) y, false);
     }
 
     @Override

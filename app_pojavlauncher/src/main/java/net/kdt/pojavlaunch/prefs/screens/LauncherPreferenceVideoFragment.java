@@ -2,24 +2,30 @@ package net.kdt.pojavlaunch.prefs.screens;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import androidx.preference.ListPreference;
+import androidx.preference.Preference;
 import androidx.preference.SwitchPreference;
 import androidx.preference.SwitchPreferenceCompat;
 
 import git.artdeell.mojo.R;
 
 import net.kdt.pojavlaunch.Architecture;
+import net.kdt.pojavlaunch.game.renderer.RendererCache;
+import net.kdt.pojavlaunch.game.renderer.extra.GLESProvider;
 import net.kdt.pojavlaunch.plugins.LibraryPlugin;
 import net.kdt.pojavlaunch.prefs.CustomSeekBarPreference;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
-import net.kdt.pojavlaunch.utils.RendererCompatUtil;
+import net.kdt.pojavlaunch.game.renderer.GameRenderer;
+import net.kdt.pojavlaunch.utils.GpuUtils;
 
 /**
  * Fragment for any settings video related
  */
 public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment {
+    private Boolean hasAngle = null;
     @Override
     public void onCreatePreferences(Bundle b, String str) {
         addPreferencesFromResource(R.xml.pref_video);
@@ -37,36 +43,33 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
         }
 
         // Sustained performance is only available since Nougat
-        SwitchPreference sustainedPerfSwitch = requirePreference("sustainedPerformance",
-                SwitchPreference.class);
+        SwitchPreferenceCompat sustainedPerfSwitch = requirePreference("sustainedPerformance",
+                SwitchPreferenceCompat.class);
         sustainedPerfSwitch.setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N);
         sustainedPerfSwitch.setChecked(LauncherPreferences.PREF_SUSTAINED_PERFORMANCE);
 
         requirePreference("alternate_surface", SwitchPreferenceCompat.class).setChecked(LauncherPreferences.PREF_USE_ALTERNATE_SURFACE);
         requirePreference("force_vsync", SwitchPreferenceCompat.class).setChecked(LauncherPreferences.PREF_FORCE_VSYNC);
 
-        // Show ANGLE switch only if AnglePlugin is available
-        LibraryPlugin angle = LibraryPlugin.discoverPlugin(getContext(), LibraryPlugin.ID_ANGLE_PLUGIN);
-        SwitchPreferenceCompat angleSwitch = requirePreference("use_angle", SwitchPreferenceCompat.class);
-        angleSwitch.setVisible(angle != null);
-        angleSwitch.setChecked(LauncherPreferences.PREF_USE_ANGLE);
+        Preference driverPreference = requirePreference("zinkPreferSystemDriver");
+        PackageManager packageManager = driverPreference.getContext().getPackageManager();
+        boolean supportsTurnip = GpuUtils.checkVulkanSupport(packageManager) && GpuUtils.getGlInfo().isAdreno();
+        driverPreference.setVisible(supportsTurnip);
 
-        // Same but for ZINK plugin
-        SwitchPreference legacyZink = requirePreference("zinkForceLegacy", SwitchPreference.class);
-        legacyZink.setChecked(LauncherPreferences.PREF_ZINK_FORCE_LEGACY);
-        if(!Architecture.isx86Device()) {
-            LibraryPlugin zink = LibraryPlugin.discoverPlugin(getContext(), LibraryPlugin.ID_ZINK_PLUGIN);
-            legacyZink.setVisible(zink != null);
+        // Show ANGLE switch only if AnglePlugin is available
+        if(hasAngle == null) {
+            GLESProvider provider = GLESProvider.getGlesProvider(getContext(), true);
+            hasAngle = provider instanceof GLESProvider.ExternalAngleProvider || provider instanceof GLESProvider.SystemAngleProvider;
         }
-        else {
-            legacyZink.setVisible(false);
-        }
+        SwitchPreferenceCompat angleSwitch = requirePreference("use_angle", SwitchPreferenceCompat.class);
+        angleSwitch.setVisible(hasAngle);
+        angleSwitch.setChecked(LauncherPreferences.PREF_USE_ANGLE);
 
         ListPreference rendererListPreference = requirePreference("renderer",
                 ListPreference.class);
-        RendererCompatUtil.RenderersList renderersList = RendererCompatUtil.getCompatibleRenderers(getContext());
-        rendererListPreference.setEntries(renderersList.rendererDisplayNames);
-        rendererListPreference.setEntryValues(renderersList.rendererIds.toArray(new String[0]));
+        RendererCache list = RendererCache.getCompatibleRenderers(getContext());
+        rendererListPreference.setEntries(list.rendererDisplayNames);
+        rendererListPreference.setEntryValues(list.rendererIds.toArray(new String[0]));
 
         computeVisibility();
     }
