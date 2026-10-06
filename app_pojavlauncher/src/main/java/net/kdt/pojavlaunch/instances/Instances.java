@@ -183,6 +183,28 @@ public class Instances {
     }
 
     /**
+     * @return the key (directory name) of the currently selected instance, or an empty string
+     */
+    public static String getSelectedInstanceKey() {
+        return LauncherPreferences.DEFAULT_PREF.getString(LauncherPreferences.PREF_KEY_CURRENT_INSTANCE, "");
+    }
+
+    /**
+     * Load a single instance by its key (see {@link DisplayInstance#getKey()}).
+     * @param key the directory name of the instance
+     * @return the instance, or null if it doesn't exist or can't be read
+     */
+    public static Instance loadInstance(String key) {
+        if(key == null || key.isEmpty()) return null;
+        File instanceRoot = new File(sInstancePath, key);
+        if(!metadataLocation(instanceRoot).exists()) return null;
+        Instance instance = read(instanceRoot, Instance.class);
+        if(instance == null) return null;
+        instance.sanitize();
+        return instance;
+    }
+
+    /**
      * Load the currently selected instance. Note that this method must not be used along with any code
      * which uses getImmutableInstanceList()
      * @return currently selected instance

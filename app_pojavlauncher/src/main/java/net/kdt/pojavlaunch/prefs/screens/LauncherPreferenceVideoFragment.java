@@ -7,7 +7,6 @@ import android.os.Build;
 import android.os.Bundle;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
-import androidx.preference.SwitchPreference;
 import androidx.preference.SwitchPreferenceCompat;
 
 import git.artdeell.mojo.R;
@@ -44,8 +43,8 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
         }
 
         // Sustained performance is only available since Nougat
-        SwitchPreference sustainedPerfSwitch = requirePreference("sustainedPerformance",
-                SwitchPreference.class);
+        SwitchPreferenceCompat sustainedPerfSwitch = requirePreference("sustainedPerformance",
+                SwitchPreferenceCompat.class);
         sustainedPerfSwitch.setVisible(Build.VERSION.SDK_INT >= Build.VERSION_CODES.N);
         sustainedPerfSwitch.setChecked(LauncherPreferences.PREF_SUSTAINED_PERFORMANCE);
 

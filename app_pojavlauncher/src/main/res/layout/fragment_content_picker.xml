@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_back"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_arrow_back_white"
+        android:text="@string/preference_back_title" />
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Header: title + filter. Horizontal padding matches LauncherMenuButton so the title lines up with the buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="@dimen/_22sdp"
+        android:paddingEnd="@dimen/_12sdp"
+        android:paddingTop="@dimen/padding_medium"
+        android:paddingBottom="@dimen/padding_medium">
+
+        <TextView
+            android:id="@+id/content_picker_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:includeFontPadding="false"
+            android:text="@string/content_picker_title_browse"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textColor="?attr/colorOnSurface" />
+
+        <ImageButton
+            android:id="@+id/content_picker_filter"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:padding="@dimen/_8sdp"
+            android:scaleType="fitCenter"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/content_picker_filter"
+            android:src="@drawable/ic_filter"
+            android:tint="?attr/colorOnSurfaceVariant" />
+
+    </LinearLayout>
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_mods"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_menu_install_jar"
+        android:text="@string/mcl_content_mods" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_resourcepacks"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_setting_video"
+        android:text="@string/mcl_content_resourcepacks" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_shaderpacks"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_setting_screen_resolution"
+        android:text="@string/mcl_content_shaderpacks" />
+
+</LinearLayout>

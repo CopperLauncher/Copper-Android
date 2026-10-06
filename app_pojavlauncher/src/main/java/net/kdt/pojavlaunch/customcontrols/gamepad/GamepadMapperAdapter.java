@@ -12,7 +12,7 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.widget.SwitchCompat;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import androidx.recyclerview.widget.RecyclerView;
 
 import net.kdt.pojavlaunch.utils.KeycodeUtils;
@@ -161,7 +161,7 @@ public class GamepadMapperAdapter extends RecyclerView.Adapter<GamepadMapperAdap
         private final ImageView mExpansionIndicator;
         private final Spinner[] mKeySpinners;
         private final View mExpandedView;
-        private final SwitchCompat mToggleableSwitch;
+        private final MaterialSwitch mToggleableSwitch;
         private final TextView mKeycodeLabel;
         private int mAttachedPosition = -1;
         private GamepadEmulatedButton mAttachedButton;

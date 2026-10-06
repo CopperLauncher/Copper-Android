@@ -6,21 +6,25 @@ import static net.kdt.pojavlaunch.Tools.shareLog;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.kdt.mcgui.mcVersionSpinner;
 
 import net.kdt.pojavlaunch.CustomControlsActivity;
@@ -32,6 +36,7 @@ import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
 import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.instances.Instances;
+import net.kdt.pojavlaunch.modloaders.modpacks.models.ContentType;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.utils.FileUtils;
 
@@ -49,6 +54,9 @@ public class MainMenuFragment extends Fragment {
     /* The two-pane views, null in portrait */
     private FrameLayout mRightPane;
     private View mBottomBar;
+    /* The sidebar and the pane that replaces it while the content picker is open, null in portrait */
+    private View mLeftSidebar;
+    private FrameLayout mLeftPaneContainer;
     /* Intercepts back when the right pane shows something above the home screen */
     private OnBackPressedCallback mRightPaneBackCallback;
 
@@ -60,6 +68,7 @@ public class MainMenuFragment extends Fragment {
     private final FragmentManager.OnBackStackChangedListener mBackStackListener = () -> {
         mRightPaneBackCallback.setEnabled(isRightPaneActive());
         updateBottomBar();
+        updateLeftPaneVisibility();
     };
 
     public MainMenuFragment(){
@@ -117,6 +126,172 @@ public class MainMenuFragment extends Fragment {
         mBottomBar.setVisibility(atHome ? View.VISIBLE : View.GONE);
     }
 
+    // ─── Browse / Manage Content ─────────────────────────────────────────────
+
+    /** Opens a screen in the right pane, or full screen in portrait */
+    private void openPane(@NonNull Class<? extends Fragment> fragmentClass, @NonNull String tag,
+                          @Nullable Bundle args) {
+        if (!openInPane(fragmentClass, tag, args)) {
+            Tools.swapFragment(requireActivity(), fragmentClass, tag, args);
+        }
+    }
+
+    /**
+     * Shows the Browse Content / Manage Content picker: mods, resource packs or shader packs.
+     * The manage variant also exposes the per-instance version/loader filter.
+     * Landscape docks it in the left pane, portrait shows it as a dialog.
+     */
+    private void showContentPicker(boolean manage) {
+        if (isTwoPane()) openContentPickerPane(manage);
+        else showContentPickerDialog(manage);
+    }
+
+    /**
+     * Landscape: replaces the sidebar with ContentPickerFragment inside left_pane_container and
+     * loads the Mods section into the right pane, all in a single back stack entry, so one Back
+     * press undoes the whole action.
+     */
+    private void openContentPickerPane(boolean manage) {
+        if (isTagAlreadyOnTop(ContentPickerFragment.TAG)) return;
+
+        Bundle pickerArgs = new Bundle();
+        pickerArgs.putBoolean(ContentPickerFragment.ARG_MANAGE, manage);
+
+        Class<? extends Fragment> defaultFragmentClass;
+        Bundle defaultArgs = new Bundle();
+        String defaultTag;
+        if (manage) {
+            defaultFragmentClass = ManageModsFragment.class;
+            defaultArgs.putString(ManageModsFragment.ARG_CONTENT_TYPE, ContentType.MOD.name());
+            defaultTag = ManageModsFragment.TAG + ":" + ContentType.MOD.name();
+        } else {
+            defaultFragmentClass = ModsSearchFragment.class;
+            populateModStoreArgs(defaultArgs, ContentType.MOD);
+            defaultTag = ModsSearchFragment.TAG + ":" + ContentType.MOD.name();
+        }
+
+        getChildFragmentManager()
+                .beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(R.id.left_pane_container, ContentPickerFragment.class, pickerArgs, ContentPickerFragment.TAG)
+                .replace(R.id.right_pane_container, defaultFragmentClass, defaultArgs, defaultTag)
+                .addToBackStack(ContentPickerFragment.TAG)
+                .commit();
+        // Visibility is updated by mBackStackListener once the transaction lands
+    }
+
+    /**
+     * Called by {@link ContentPickerFragment} when one of its mods / resource packs / shader packs
+     * buttons is tapped. The picker itself stays in the left pane.
+     */
+    public void selectContentType(boolean manage, ContentType contentType) {
+        onContentTypeChosen(manage, contentType);
+    }
+
+    /** Shows the sidebar or the content picker in the left pane, depending on which is active */
+    private void updateLeftPaneVisibility() {
+        if (!isTwoPane() || mLeftSidebar == null || mLeftPaneContainer == null) return;
+        Fragment leftFragment = getChildFragmentManager().findFragmentById(R.id.left_pane_container);
+        boolean pickerActive = leftFragment instanceof ContentPickerFragment;
+        mLeftSidebar.setVisibility(pickerActive ? View.GONE : View.VISIBLE);
+        mLeftPaneContainer.setVisibility(pickerActive ? View.VISIBLE : View.GONE);
+    }
+
+    private void showContentPickerDialog(boolean manage) {
+        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setView(R.layout.dialog_content_picker)
+                .create();
+
+        dialog.setOnShowListener(di -> {
+            TextView title = dialog.findViewById(R.id.content_picker_title);
+            ImageButton filterButton = dialog.findViewById(R.id.content_picker_filter);
+            View modsButton = dialog.findViewById(R.id.content_picker_mods);
+            View resourcepacksButton = dialog.findViewById(R.id.content_picker_resourcepacks);
+            View shaderpacksButton = dialog.findViewById(R.id.content_picker_shaderpacks);
+
+            if (title != null) {
+                title.setText(manage ? R.string.content_picker_title_manage
+                                     : R.string.content_picker_title_browse);
+            }
+
+            if (filterButton != null) {
+                if (manage) {
+                    filterButton.setVisibility(View.VISIBLE);
+                    filterButton.setOnClickListener(v ->
+                            ContentFilterDialog.show(requireContext(), Instances.getSelectedInstanceKey(),
+                                    (version, loader) -> Toast.makeText(requireContext(),
+                                            getString(R.string.manage_mods_filter_active, version, loader),
+                                            Toast.LENGTH_SHORT).show()));
+                } else {
+                    filterButton.setVisibility(View.GONE);
+                }
+            }
+
+            if (modsButton != null) modsButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, ContentType.MOD);
+            });
+            if (resourcepacksButton != null) resourcepacksButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, ContentType.RESOURCE_PACK);
+            });
+            if (shaderpacksButton != null) shaderpacksButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, ContentType.SHADER_PACK);
+            });
+        });
+
+        dialog.show();
+    }
+
+    private void onContentTypeChosen(boolean manage, ContentType contentType) {
+        if (manage) {
+            Bundle args = new Bundle();
+            args.putString(ManageModsFragment.ARG_CONTENT_TYPE, contentType.name());
+            openPane(ManageModsFragment.class, ManageModsFragment.TAG + ":" + contentType.name(), args);
+        } else {
+            Bundle args = new Bundle();
+            populateModStoreArgs(args, contentType);
+            openPane(ModsSearchFragment.class, ModsSearchFragment.TAG + ":" + contentType.name(), args);
+        }
+    }
+
+    /**
+     * Builds the arguments for ModsSearchFragment with the saved per-instance filter pre-seeded.
+     * The loader filter is only passed for MOD, resource packs and shader packs aren't loader specific.
+     */
+    private void populateModStoreArgs(Bundle args, ContentType contentType) {
+        String instanceKey = Instances.getSelectedInstanceKey();
+        SharedPreferences prefs = requireContext()
+                .getSharedPreferences("mod_filters", Context.MODE_PRIVATE);
+
+        String version = prefs.getString("mc_version_" + instanceKey, "");
+        String loader  = prefs.getString("loader_" + instanceKey, "");
+
+        // Nothing saved for this instance yet: default to the version/loader it runs, so the
+        // results are already relevant without a filter-then-apply step
+        if (version.isEmpty() && loader.isEmpty()) {
+            InstanceVersionResolver.Info info = InstanceVersionResolver.resolve(instanceKey);
+            if (info.mcVersion != null) version = info.mcVersion;
+            loader = info.loader;
+        }
+
+        args.putString(ModsSearchFragment.ARG_CONTENT_TYPE, contentType.name());
+        if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
+        if (contentType == ContentType.MOD && !loader.isEmpty()) {
+            args.putString(ModsSearchFragment.ARG_PRESET_LOADER, loader);
+        }
+    }
+
+    /** @return whether the tag is the top entry of the right pane back stack, ie already showing */
+    private boolean isTagAlreadyOnTop(String tag) {
+        if (!isTwoPane()) return false;
+        FragmentManager manager = getChildFragmentManager();
+        int count = manager.getBackStackEntryCount();
+        if (count == 0) return false;
+        return tag.equals(manager.getBackStackEntryAt(count - 1).getName());
+    }
+
     // ─── Lifecycle ───────────────────────────────────────────────────────────
 
     @Override
@@ -141,7 +316,9 @@ public class MainMenuFragment extends Fragment {
         Button mCustomControlButton = view.findViewById(R.id.custom_control_button);
         Button mInstallJarButton = view.findViewById(R.id.install_jar_button);
         Button mShareLogsButton = view.findViewById(R.id.share_logs_button);
-        Button mOpenDirectoryButton = view.findViewById(R.id.open_files_button);
+        Button mManageContentButton = view.findViewById(R.id.open_files_button);
+        Button mOpenDirectoryButton = view.findViewById(R.id.open_directory_button);
+        Button mModStoreButton = view.findViewById(R.id.mod_store_button);
 
         ImageButton mEditProfileButton = view.findViewById(R.id.edit_profile_button);
         Button mPlayButton = view.findViewById(R.id.play_button);
@@ -149,6 +326,8 @@ public class MainMenuFragment extends Fragment {
 
         mRightPane = view.findViewById(R.id.right_pane_container);
         mBottomBar = view.findViewById(R.id.bottom_bar);
+        mLeftSidebar = view.findViewById(R.id.left_sidebar);
+        mLeftPaneContainer = view.findViewById(R.id.left_pane_container);
         getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
 
         FragmentManager childManager = getChildFragmentManager();
@@ -191,6 +370,8 @@ public class MainMenuFragment extends Fragment {
 
         mShareLogsButton.setOnClickListener((v) -> shareLog(requireContext()));
 
+        mModStoreButton.setOnClickListener(v -> showContentPicker(false));
+        mManageContentButton.setOnClickListener(v -> showContentPicker(true));
         mOpenDirectoryButton.setOnClickListener((v)-> openGameDirectory(v.getContext()));
     }
 
@@ -200,6 +381,8 @@ public class MainMenuFragment extends Fragment {
         getChildFragmentManager().removeOnBackStackChangedListener(mBackStackListener);
         mRightPane = null;
         mBottomBar = null;
+        mLeftSidebar = null;
+        mLeftPaneContainer = null;
         mVersionSpinner = null;
     }
 

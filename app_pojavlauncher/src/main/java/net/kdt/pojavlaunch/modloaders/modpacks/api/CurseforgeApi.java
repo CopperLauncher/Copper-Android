@@ -1,15 +1,21 @@
 package net.kdt.pojavlaunch.modloaders.modpacks.api;
 
 import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.kdt.mcgui.ProgressLayout;
-
+import git.artdeell.mojo.R;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.regex.Pattern;
+import java.util.zip.ZipFile;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.downloader.AcquireableTaskMetadata;
 import net.kdt.pojavlaunch.downloader.Downloader;
@@ -25,25 +31,17 @@ import net.kdt.pojavlaunch.modloaders.modpacks.models.ModDetail;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.ModItem;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchFilters;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchResult;
+import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.utils.GsonJsonUtils;
 import net.kdt.pojavlaunch.utils.ZipUtils;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLDecoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.regex.Pattern;
-import java.util.zip.ZipFile;
 
 public class CurseforgeApi implements ModpackApi{
     private static final Pattern sMcVersionPattern = Pattern.compile("([0-9]+)\\.([0-9]+)\\.?([0-9]+)?");
     private static final int ALGO_SHA_1 = 1;
     // Stolen from
     // https://github.com/AnzhiZhang/CurseForgeModpackDownloader/blob/6cb3f428459f0cc8f444d16e54aea4cd1186fd7b/utils/requester.py#L93
-    private static final int CURSEFORGE_MC_GAME_ID = 432;
+    private static final int CURSEFORGE_MINECRAFT_GAME_ID = 432;
     private static final int CURSEFORGE_MODPACK_CLASS_ID = 4471;
     // https://api.curseforge.com/v1/categories?gameId=432 and search for "Mods" (case-sensitive)
     private static final int CURSEFORGE_MOD_CLASS_ID = 6;
@@ -62,20 +60,25 @@ public class CurseforgeApi implements ModpackApi{
         CurseforgeSearchResult curseforgeSearchResult = (CurseforgeSearchResult) previousPageResult;
 
         HashMap<String, Object> params = new HashMap<>();
-        params.put("gameId", CURSEFORGE_MC_GAME_ID);
-        params.put("classId", searchFilters.isModpack ? CURSEFORGE_MODPACK_CLASS_ID : CURSEFORGE_MOD_CLASS_ID);
+        params.put("gameId", CURSEFORGE_MINECRAFT_GAME_ID);
+        params.put("classId", searchFilters.isModpack
+                ? CURSEFORGE_MODPACK_CLASS_ID : searchFilters.contentType.curseforgeClassId);
         params.put("searchFilter", searchFilters.name);
         params.put("sortField", CURSEFORGE_SORT_RELEVANCY);
         params.put("sortOrder", "desc");
-        int loaderType = getLoaderType(searchFilters.loader);
-        boolean hasMcVersion = searchFilters.mcVersion != null && !searchFilters.mcVersion.isEmpty();
-        if(hasMcVersion) {
+        if(searchFilters.mcVersion != null && !searchFilters.mcVersion.isEmpty())
             params.put("gameVersion", searchFilters.mcVersion);
-            // CurseForge only accepts the mod loader together with a game version
-            if(loaderType != 0) params.put("modLoaderType", loaderType);
+        if(searchFilters.modLoader != null && !searchFilters.modLoader.isEmpty()) {
+            // CF modLoaderType: 1=Forge, 4=Fabric, 5=Quilt, 6=NeoForge
+            int modLoaderType = 0;
+            switch(searchFilters.modLoader.toLowerCase()) {
+                case "forge":    modLoaderType = 1; break;
+                case "fabric":   modLoaderType = 4; break;
+                case "quilt":    modLoaderType = 5; break;
+                case "neoforge": modLoaderType = 6; break;
+            }
+            if(modLoaderType != 0) params.put("modLoaderType", modLoaderType);
         }
-        // Without a game version the loader has to be filtered from the results
-        boolean filterLoaderLocally = loaderType != 0 && !hasMcVersion;
         if(previousPageResult != null)
             params.put("index", curseforgeSearchResult.previousOffset);
 
@@ -90,17 +93,33 @@ public class CurseforgeApi implements ModpackApi{
             JsonElement allowModDistribution = dataElement.get("allowModDistribution");
             // Gson automatically casts null to false, which leans to issues
             // So, only check the distribution flag if it is non-null
-            if(!allowModDistribution.isJsonNull() && !allowModDistribution.getAsBoolean()) {
+            boolean restricted = !allowModDistribution.isJsonNull() && !allowModDistribution.getAsBoolean();
+            // For modpacks, skip restricted entries entirely (same as before)
+            // For individual mods, keep them so we can show the CF website dialog
+            if (restricted && searchFilters.isModpack) {
                 Log.i("CurseforgeApi", "Skipping modpack "+dataElement.get("name").getAsString() + " because curseforge sucks");
                 continue;
             }
-            if(filterLoaderLocally && !supportsLoader(dataElement, loaderType)) continue;
+            JsonObject logo = dataElement.getAsJsonObject("logo");
+            String thumbnailUrl = (logo != null && logo.has("thumbnailUrl") && !logo.get("thumbnailUrl").isJsonNull())
+                    ? logo.get("thumbnailUrl").getAsString() : "";
             ModItem modItem = new ModItem(Constants.SOURCE_CURSEFORGE,
                     searchFilters.isModpack,
                     dataElement.get("id").getAsString(),
                     dataElement.get("name").getAsString(),
                     dataElement.get("summary").getAsString(),
-                    dataElement.getAsJsonObject("logo").get("thumbnailUrl").getAsString());
+                    thumbnailUrl);
+            modItem.isRestricted = restricted;
+            // Capture the mod page URL from CF API for use in restriction dialog
+            JsonObject links = dataElement.getAsJsonObject("links");
+            if (links != null && links.has("websiteUrl") && !links.get("websiteUrl").isJsonNull()) {
+                modItem.websiteUrl = links.get("websiteUrl").getAsString();
+            } else {
+                // Fallback using slug if available, otherwise numeric id
+                String slug = dataElement.has("slug") && !dataElement.get("slug").isJsonNull()
+                        ? dataElement.get("slug").getAsString() : modItem.id;
+                modItem.websiteUrl = "https://www.curseforge.com/minecraft/mc-mods/" + slug;
+            }
             modItemList.add(modItem);
         }
         if(curseforgeSearchResult == null) curseforgeSearchResult = new CurseforgeSearchResult();
@@ -111,32 +130,34 @@ public class CurseforgeApi implements ModpackApi{
 
     }
 
-    /** @return the CurseForge ModLoaderType for a loader filter, 0 for any */
-    private static int getLoaderType(String loader) {
-        if(loader == null) return 0;
-        switch (loader) {
-            case Constants.LOADER_FORGE: return 1;
-            case Constants.LOADER_FABRIC: return 4;
-            case Constants.LOADER_QUILT: return 5;
-            case Constants.LOADER_NEOFORGE: return 6;
-            default: return 0;
-        }
-    }
-
-    /** Checks the latest files of a search result for the mod loader. Keeps the result if it has no such data */
-    private static boolean supportsLoader(JsonObject searchResult, int loaderType) {
-        JsonArray fileIndexes = GsonJsonUtils.getJsonArraySafe(searchResult, "latestFilesIndexes");
-        if(fileIndexes == null || fileIndexes.size() == 0) return true;
-        for(JsonElement element : fileIndexes) {
-            if(!element.isJsonObject()) continue;
-            JsonElement modLoader = element.getAsJsonObject().get("modLoader");
-            if(modLoader != null && modLoader.isJsonPrimitive() && modLoader.getAsInt() == loaderType) return true;
-        }
-        return false;
-    }
-
     @Override
     public ModDetail getModDetails(ModItem item) {
+        return getModDetails(item, null, null);
+    }
+
+    public ModDetail getModDetails(ModItem item, String filterMcVersion) {
+        return getModDetails(item, filterMcVersion, null);
+    }
+
+    /**
+     * @param filterMcVersion only return files tagged with this MC version (e.g. "1.20.1")
+     * @param filterLoader    only return files tagged with this loader (e.g. "fabric",
+     *                        "forge", "quilt", "neoforge"). CurseForge doesn't split loader
+     *                        into its own field on the file object — it's just another
+     *                        string mixed into the same "gameVersions" array as the MC
+     *                        version tags (e.g. ["1.20.1", "Fabric", "Client"]) — so without
+     *                        this filter, files built for every loader are shown together.
+     */
+    public ModDetail getModDetails(ModItem item, String filterMcVersion, String filterLoader) {
+        fillInMissingModItemData(item);
+        // Short-circuit for restricted mods — no point fetching versions
+        if (item.isRestricted) {
+            return new ModDetail(item,
+                    new String[]{"Blocked by the author!"},
+                    new String[]{null},
+                    new String[]{null},
+                    new String[]{null});
+        }
         ArrayList<JsonObject> allModDetails = new ArrayList<>();
         int index = 0;
         while(index != CURSEFORGE_PAGINATION_END_REACHED &&
@@ -144,43 +165,121 @@ public class CurseforgeApi implements ModpackApi{
             index = getPaginatedDetails(allModDetails, index, item.id);
         }
         if(index == CURSEFORGE_PAGINATION_ERROR) return null;
+
+        // Filter by MC version if specified
+        if (filterMcVersion != null && !filterMcVersion.isEmpty()) {
+            ArrayList<JsonObject> filtered = new ArrayList<>();
+            for (JsonObject v : allModDetails) {
+                JsonArray gameVersions = v.getAsJsonArray("gameVersions");
+                for (JsonElement el : gameVersions) {
+                    if (filterMcVersion.equals(el.getAsString())) {
+                        filtered.add(v);
+                        break;
+                    }
+                }
+            }
+            allModDetails = filtered;
+        }
+
+        // Filter by loader if specified. Same "gameVersions" array, just matched
+        // case-insensitively against the loader name instead of an MC version.
+        if (filterLoader != null && !filterLoader.isEmpty()) {
+            ArrayList<JsonObject> filtered = new ArrayList<>();
+            for (JsonObject v : allModDetails) {
+                JsonArray gameVersions = v.getAsJsonArray("gameVersions");
+                for (JsonElement el : gameVersions) {
+                    if (filterLoader.equalsIgnoreCase(el.getAsString())) {
+                        filtered.add(v);
+                        break;
+                    }
+                }
+            }
+            allModDetails = filtered;
+        }
+
         int length = allModDetails.size();
+
+        // Check if ALL versions have null downloadUrl (fully restricted mod)
+        boolean allRestricted = length > 0;
+        for (int i = 0; i < length; i++) {
+            JsonElement url = allModDetails.get(i).get("downloadUrl");
+            if (url != null && !url.isJsonNull()) {
+                allRestricted = false;
+                break;
+            }
+        }
+        if (allRestricted || length == 0) {
+            // All versions restricted - return a ModDetail with one entry that signals this.
+            // The version name shown in spinner makes it clear, tapping Install shows CF dialog.
+            return new ModDetail(item,
+                    new String[]{"Blocked by the author! By clicking the install button it will open the CurseForge page."},
+                    new String[]{null},
+                    new String[]{null},
+                    new String[]{null});
+        }
+
         String[] versionNames = new String[length];
+        String[] versionIds = new String[length];
         String[] mcVersionNames = new String[length];
         String[] versionUrls = new String[length];
         String[] hashes = new String[length];
-        String[][] allGameVersions = new String[length][];
-        String[][] allLoaders = new String[length][];
+        ModDetail.Dependencies[][] dependencies = new ModDetail.Dependencies[length][];
         for(int i = 0; i < allModDetails.size(); i++) {
             JsonObject modDetail = allModDetails.get(i);
             versionNames[i] = modDetail.get("displayName").getAsString();
-
+            versionIds[i] = modDetail.get("id").getAsString();
             JsonElement downloadUrl = modDetail.get("downloadUrl");
-            versionUrls[i] = downloadUrl.getAsString();
+            if (downloadUrl == null || downloadUrl.isJsonNull()) {
+                versionUrls[i] = null;
+            } else {
+                versionUrls[i] = downloadUrl.getAsString();
+            }
 
             JsonArray gameVersions = modDetail.getAsJsonArray("gameVersions");
-            ArrayList<String> mcVersions = new ArrayList<>();
-            ArrayList<String> loaders = new ArrayList<>();
+            try {
+                JsonArray dependenciesJsonArray = modDetail.getAsJsonArray("dependencies");
+                dependencies[i] = new ModDetail.Dependencies[dependenciesJsonArray.size()];
+                for (int i1 = 0; i1 < dependenciesJsonArray.size(); ++i1) {
+                    JsonObject obj = dependenciesJsonArray.get(i1).getAsJsonObject();
+                    dependencies[i][i1] = new ModDetail.Dependencies(
+                            GsonJsonUtils.getStringSafe(obj, "modId"),
+                            null,
+                            null, // These two are only present on modrinth
+                            GsonJsonUtils.getStringSafe(obj, "relationType")
+                    );
+                }
+            } catch (Exception ignored) {}
             for(JsonElement jsonElement : gameVersions) {
                 String gameVersion = jsonElement.getAsString();
                 if(!sMcVersionPattern.matcher(gameVersion).matches()) {
-                    // CurseForge lists the mod loaders next to the game versions
-                    String lowerCase = gameVersion.toLowerCase(java.util.Locale.ROOT);
-                    if(lowerCase.equals(Constants.LOADER_FABRIC) || lowerCase.equals(Constants.LOADER_FORGE)
-                            || lowerCase.equals(Constants.LOADER_NEOFORGE) || lowerCase.equals(Constants.LOADER_QUILT)) {
-                        loaders.add(lowerCase);
-                    }
                     continue;
                 }
-                mcVersions.add(gameVersion);
+                mcVersionNames[i] = gameVersion;
+                break;
             }
-            if(!mcVersions.isEmpty()) mcVersionNames[i] = mcVersions.get(0);
-            allGameVersions[i] = mcVersions.toArray(new String[0]);
-            allLoaders[i] = loaders.toArray(new String[0]);
 
             hashes[i] = getSha1FromModData(modDetail);
         }
-        return new ModDetail(item, versionNames, mcVersionNames, versionUrls, hashes, allGameVersions, allLoaders);
+        return new ModDetail(item, versionNames, versionIds, mcVersionNames, versionUrls, hashes, dependencies);
+    }
+
+    private void fillInMissingModItemData(ModItem item) {
+        if (!(item.title == null || item.description == null || item.imageUrl == null)) return;
+        JsonObject response = mApiHandler.get(String.format("mods/%s", item.id), JsonObject.class);
+        JsonObject data = GsonJsonUtils.getJsonObjectSafe(response, "data");
+        if (data == null) return;
+        if (item.title == null) {
+            JsonElement title = data.get("name");
+            item.title = title != null ? title.getAsString() : "";
+        }
+        if (item.description == null) {
+            JsonElement description = data.get("summary");
+            item.description = description != null ? description.getAsString() : "";
+        }
+        if (item.imageUrl == null) {
+            JsonElement imageUrl = data.getAsJsonObject("logo").get("thumbnailUrl");
+            item.imageUrl = imageUrl != null ? imageUrl.getAsString() : null;
+        }
     }
 
     @Override

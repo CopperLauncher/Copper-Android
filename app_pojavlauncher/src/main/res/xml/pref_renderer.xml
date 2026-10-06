@@ -38,30 +38,35 @@
             android:entries="@array/mg_renderer_names_errorSetting"
             android:entryValues="@array/mg_renderer_values_errorSetting"
             app2:useSimpleSummaryProvider="true"/>
-        <SwitchPreference
+        <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:title="@string/mg_renderer_title_timerQueryExt"
             android:summary="@string/mg_renderer_summary_timerQueryExt"
             android:key="mg_renderer_setting_timerQueryExt"
             android:defaultValue="false" />
         <PreferenceCategory android:title="@string/preference_ANGLE_only">
-            <SwitchPreference
+            <SwitchPreferenceCompat
+                android:widgetLayout="@layout/preference_widget_material_switch"
                 android:title="@string/mg_renderer_title_angleDepthClearFixMode"
                 android:summary="@string/mg_renderer_summary_angleDepthClearFixMode"
                 android:key="mg_renderer_setting_angleDepthClearFixMode"
                 android:defaultValue="false" />
         </PreferenceCategory>
         <PreferenceCategory android:title="@string/preference_experimental_title">
-            <SwitchPreference
+            <SwitchPreferenceCompat
+                android:widgetLayout="@layout/preference_widget_material_switch"
                 android:title="@string/mg_renderer_title_computeShaderext"
                 android:summary="@string/mg_renderer_summary_computeShaderext"
                 android:key="mg_renderer_computeShaderext"
                 android:defaultValue="false" />
-            <SwitchPreference
+            <SwitchPreferenceCompat
+                android:widgetLayout="@layout/preference_widget_material_switch"
                 android:title="@string/mg_renderer_title_dsaExt"
                 android:summary="@string/mg_renderer_summary_dsaExt"
                 android:key="mg_renderer_dsaExt"
                 android:defaultValue="false" />
-            <SwitchPreference
+            <SwitchPreferenceCompat
+                android:widgetLayout="@layout/preference_widget_material_switch"
                 android:title="@string/mg_renderer_title_multidrawCompute"
                 android:summary="@string/mg_renderer_summary_multidrawCompute"
                 android:key="mg_renderer_multidrawCompute"

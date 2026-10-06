@@ -12,6 +12,7 @@ import androidx.annotation.Nullable;
 
 import net.kdt.pojavlaunch.PojavApplication;
 
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -19,6 +20,8 @@ import java.util.concurrent.Future;
 // you to specify practically anything. So i made this instead.
 public class OpenDocumentWithExtension extends ActivityResultContract<Object, Uri> {
     private final Future<String> extensionMimeTypeFuture;
+    /** Non-null when the contract was created with several extensions, see {@link #OpenDocumentWithExtension(String[])} */
+    private final String[] mMimeTypes;
 
     /**
      * Create a new OpenDocumentWithExtension contract.
@@ -27,12 +30,35 @@ public class OpenDocumentWithExtension extends ActivityResultContract<Object, Ur
      * @param extension the extension to filter by
      */
     public OpenDocumentWithExtension(String extension) {
+        mMimeTypes = null;
         // Who would have thought that loading the MIME map takes a significant amount of time?
         extensionMimeTypeFuture = PojavApplication.sExecutorService.submit(()->{
             String extensionMimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
             if(extensionMimeType == null) extensionMimeType = "*/*";
             return extensionMimeType;
         });
+    }
+
+    /**
+     * Create a new OpenDocumentWithExtension contract that accepts several extensions at once.
+     * Extensions that are not present in the device's MIME type database are skipped.
+     * @param extensions the extensions to filter by
+     */
+    public OpenDocumentWithExtension(String[] extensions) {
+        ArrayList<String> mimeTypes = new ArrayList<>();
+        for(String extension : extensions) {
+            if("mrpack".equals(extension)) {
+                // Depending on whether the ROM knows x-modrinth-modpack+zip, mrpack files are
+                // reported either as that or as octet-stream, so both have to be allowed.
+                mimeTypes.add("application/octet-stream");
+                mimeTypes.add("application/x-modrinth-modpack+zip");
+                continue;
+            }
+            String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
+            if(mimeType != null) mimeTypes.add(mimeType);
+        }
+        mMimeTypes = mimeTypes.toArray(new String[0]);
+        extensionMimeTypeFuture = PojavApplication.sExecutorService.submit(()-> "*/*");
     }
 
     @NonNull
@@ -45,6 +71,7 @@ public class OpenDocumentWithExtension extends ActivityResultContract<Object, Ur
         }catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }
+        if(mMimeTypes != null && mMimeTypes.length > 0) intent.putExtra(Intent.EXTRA_MIME_TYPES, mMimeTypes);
         return intent;
     }
 
