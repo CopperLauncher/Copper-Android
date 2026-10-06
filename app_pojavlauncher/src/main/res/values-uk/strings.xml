@@ -426,4 +426,5 @@
     <string name="modloader_dl_install_legacy_fabric_instance">"Створити версію Legacy Fabric"</string>
     <string name="instance_delete">Видалити версію</string>
     <string name="instance_delete_confirmation">Ви впенені що хочете видалити цю версію? Це НАЗАВЖДИ видалить всі світи, моди, ресурси та інші данні в папці версії. Ця дія НЕ може відмінена в майбутньому</string>
+
 </resources>

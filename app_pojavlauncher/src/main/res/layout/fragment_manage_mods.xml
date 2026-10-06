@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <!-- Header bar: back | title | update check | import | add -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/_52sdp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="@dimen/padding_medium">
+
+        <ImageButton
+            android:id="@+id/manage_mods_back"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back_white"
+            android:tint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/global_back" />
+
+        <TextView
+            android:id="@+id/manage_mods_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="@dimen/padding_moderate"
+            android:textAppearance="?attr/textAppearanceTitleLarge"
+            android:textColor="?attr/colorOnSurface"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="@string/mcl_button_manage_mods" />
+
+        <!-- Shown in place of the refresh button while an update check is running -->
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/manage_mods_update_progress"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:layout_marginEnd="@dimen/padding_small"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:indicatorSize="@dimen/_20sdp"
+            app:trackThickness="2dp" />
+
+        <ImageButton
+            android:id="@+id/manage_mods_refresh"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:layout_marginEnd="@dimen/padding_small"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_refresh"
+            android:tint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/mod_check_updates" />
+
+        <ImageButton
+            android:id="@+id/manage_mods_import"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:layout_marginEnd="@dimen/padding_small"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_folder"
+            android:tint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/content_import_from_storage" />
+
+        <ImageButton
+            android:id="@+id/manage_mods_add"
+            android:layout_width="@dimen/_38sdp"
+            android:layout_height="@dimen/_38sdp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_add"
+            android:tint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="@string/global_add" />
+
+    </LinearLayout>
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <!-- Mod list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/manage_mods_recycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="@dimen/fragment_padding_medium"
+        android:paddingVertical="@dimen/padding_medium"
+        android:clipToPadding="false" />
+
+    <!-- Empty state -->
+    <TextView
+        android:id="@+id/manage_mods_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        android:visibility="gone"
+        android:text="@string/manage_mods_empty" />
+
+</LinearLayout>

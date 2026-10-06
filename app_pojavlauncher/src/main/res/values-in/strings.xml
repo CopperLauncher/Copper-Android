@@ -369,4 +369,5 @@
     <string name="local_login_bad_username_title">Username tidak cocok</string>
     <string name="local_login_bad_username_text">Panjang username harus diantara 3–16 karakter, dan harus hanya berisi huruf latin, nomor 0–9 dan mengaris bawahi.</string>
     <string name="quick_setting_title">Pengaturan cepat</string>
+
 </resources>

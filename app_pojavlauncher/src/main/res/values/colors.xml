@@ -39,4 +39,7 @@
     <color name="md_shadow">#000000</color>
     <color name="control_button_color">#4CC4C4C4</color>
     <color name="control_button_pressed_color">#4D000000</color>
+
+    <!-- Mod manager / content browser -->
+    <color name="mod_version_incompatible">#F7A325</color>
 </resources>

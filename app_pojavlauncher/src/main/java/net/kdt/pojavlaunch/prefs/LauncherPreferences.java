@@ -78,12 +78,21 @@ public class LauncherPreferences {
     public static boolean PREF_ALSOFT_FORCE_OPENSL = false;
     public static boolean PREF_SHOW_MEMORY_WARNING_DIALOG = true;
     public static short PREF_BUTTON_TRANSPARENCY = 100;
+    public static boolean PREF_UBWC_WORKAROUND = false;
+
+    /** Experimental: when true, CurseForge is left out of content searches and Modrinth is used alone,
+     *  since its API can be noticeably slower than Modrinth's. */
+    public static boolean PREF_DISABLE_CURSEFORGE_API = false;
+    /** Experimental: user-supplied CurseForge API key, used instead of the bundled one when non-empty. */
+    public static String PREF_CURSEFORGE_API_KEY_OVERRIDE = "";
 
     public static void loadPreferences(Context ctx) {
         //Required for CTRLDEF_FILE and MultiRT
         Tools.initStorageConstants(ctx);
         boolean isDevicePowerful = isDevicePowerful(ctx);
 
+        PREF_DISABLE_CURSEFORGE_API = DEFAULT_PREF.getBoolean("disableCurseforgeApi", false);
+        PREF_CURSEFORGE_API_KEY_OVERRIDE = DEFAULT_PREF.getString("curseforgeApiKeyOverride", "");
         PREF_RENDERER = DEFAULT_PREF.getString("renderer", "opengles2");
         PREF_BUTTONSIZE = DEFAULT_PREF.getInt("buttonscale", 100);
         PREF_MOUSESCALE = DEFAULT_PREF.getInt("mousescale", 100)/100f;
@@ -125,6 +134,7 @@ public class LauncherPreferences {
         PREF_ALSOFT_FORCE_OPENSL = DEFAULT_PREF.getBoolean("alsoftForceOpenSL", false);
         PREF_SHOW_MEMORY_WARNING_DIALOG = DEFAULT_PREF.getBoolean("showMemoryWarning", true);
         PREF_BUTTON_TRANSPARENCY = (short) DEFAULT_PREF.getInt("buttonTransparency", 100);
+        PREF_UBWC_WORKAROUND = DEFAULT_PREF.getBoolean("ubwcWorkaround", false);
 
         String argLwjglLibname = "-Dorg.lwjgl.opengl.libname=";
         for (String arg : JREUtils.parseJavaArguments(PREF_CUSTOM_JAVA_ARGS)) {
@@ -250,5 +260,17 @@ public class LauncherPreferences {
         FileUtils.ensureParentDirectory(configFile);
         Tools.write(configFile.getAbsolutePath(), Tools.GLOBAL_GSON.toJson(MGConfigJson));
         Logger.appendToLog("Writing MG-ES config to " + configFile.getAbsolutePath());
+    }
+
+    /**
+     * Resolves the CurseForge API key to use: the one the user entered in the experimental
+     * settings if they've set one, otherwise the bundled default. Callers that can skip
+     * CurseForge entirely should check PREF_DISABLE_CURSEFORGE_API before resolving a key.
+     */
+    public static String resolveCurseforgeApiKey(Context ctx) {
+        if (PREF_CURSEFORGE_API_KEY_OVERRIDE != null && !PREF_CURSEFORGE_API_KEY_OVERRIDE.trim().isEmpty()) {
+            return PREF_CURSEFORGE_API_KEY_OVERRIDE.trim();
+        }
+        return ctx.getString(R.string.curseforge_api_key);
     }
 }

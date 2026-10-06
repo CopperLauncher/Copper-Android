@@ -137,7 +137,7 @@
             android:orientation="vertical"
             app:layout_constraintGuide_percent="0.5" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/controller_mapper_toggleable_switch"
             android:layout_width="0dp"
             android:layout_height="48dp"

@@ -1,25 +1,24 @@
 package net.kdt.pojavlaunch.fragments;
 
-import net.kdt.pojavlaunch.utils.AnimationManager;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import net.kdt.pojavlaunch.utils.ThemeColors;
 import static net.kdt.pojavlaunch.Tools.runOnUiThread;
-
-import android.content.ContentResolver;
+import net.kdt.pojavlaunch.modloaders.modpacks.api.LocalModpackImporter;
+import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.activity.result.ActivityResultLauncher;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
 import android.widget.TextView;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -28,30 +27,17 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.chip.ChipGroup;
-import com.kdt.mcgui.ProgressLayout;
-
 import git.artdeell.mojo.R;
-
-import net.kdt.pojavlaunch.PojavApplication;
-import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.modloaders.modpacks.ModItemAdapter;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.CommonApi;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.ModpackApi;
+import net.kdt.pojavlaunch.modloaders.modpacks.api.ModrinthApi;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.Constants;
+import net.kdt.pojavlaunch.modloaders.modpacks.models.ModDetail;
+import net.kdt.pojavlaunch.modloaders.modpacks.models.ModItem;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchFilters;
 import net.kdt.pojavlaunch.profiles.VersionSelectorDialog;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
-import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
-
-import org.apache.commons.io.IOUtils;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
 
 public class SearchModFragment extends Fragment implements ModItemAdapter.SearchResultCallback {
 
@@ -73,47 +59,19 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
     private ProgressBar mSearchProgressBar;
     private TextView mStatusTextView;
     private ColorStateList mDefaultTextColor;
-    private ModpackApi modpackApi;
 
-    private final SearchFilters mSearchFilters;
+    private ModpackApi modpackApi;
 
     private Button mImportButton;
     private TaskCountListener mTaskCountListener;
 
-    ActivityResultLauncher<String> mImportLauncher = registerForActivityResult(new ActivityResultContracts.GetContent(),
-            uri -> {
+    private final ActivityResultLauncher<String> mImportLauncher = registerForActivityResult(
+            new ActivityResultContracts.GetContent(), uri -> {
                 if (uri == null) return;
-                Context context = getContext();
-                ContentResolver contentResolver = getContext().getContentResolver();
-                PojavApplication.sExecutorService.execute(() -> {
-                    performLocalInstall(uri, context, contentResolver);
-                });
+                LocalModpackImporter.importAsync(requireContext(), uri, modpackApi);
             });
 
-    public void performLocalInstall(Uri uri, Context context, ContentResolver contentResolver) {
-            String fileName = Tools.getFileName(context, uri);
-            if (fileName == null) return;
-            File outFile = new File(Tools.DIR_CACHE, fileName + ".cf");
-            ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, R.string.multirt_progress_caching);
-            try (InputStream inputStream = contentResolver.openInputStream(uri);
-                 OutputStream outputStream = new FileOutputStream(outFile)) {
-                if (inputStream == null) return;
-                IOUtils.copy(inputStream, outputStream);
-                outputStream.flush();
-            } catch (IOException e) {
-                Tools.showErrorRemote("Error", e);
-                ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
-                return;
-            }
-            try {
-                modpackApi.installLocalModpack(fileName, outFile, null);
-            } catch (IOException e) {
-                Tools.showErrorRemote("Error", e);
-            } finally {
-                outFile.delete();
-                ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
-            }
-    }
+    private final SearchFilters mSearchFilters;
 
     public SearchModFragment(){
         super(R.layout.fragment_mod_search);
@@ -124,7 +82,10 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        modpackApi = new CommonApi(context.getString(R.string.curseforge_api_key));
+        boolean disableCurseforge = net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_DISABLE_CURSEFORGE_API;
+        String curseforgeApiKey = disableCurseforge
+                ? "" : net.kdt.pojavlaunch.prefs.LauncherPreferences.resolveCurseforgeApiKey(context);
+        modpackApi = new ModpackSearchApi(curseforgeApiKey, disableCurseforge, mSearchFilters);
     }
 
     @Override
@@ -140,12 +101,18 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         mRecyclerview = view.findViewById(R.id.search_mod_list);
         mStatusTextView = view.findViewById(R.id.search_mod_status_text);
         mFilterButton = view.findViewById(R.id.search_mod_filter);
+        // layout-land/fragment_mod_search.xml sets this button's visibility to
+        // GONE by default — that's meant for ModsSearchFragment (mod/resource/
+        // /shader search), which is hosted inside ContentPickerFragment's two-pane
+        // picker and has its own left-pane filter button in landscape instead.
+        // This fragment (the standalone modpack search/installer) has no such
+        // host or alternate filter entry point, so force it back on here.
+        mFilterButton.setVisibility(View.VISIBLE);
 
         mDefaultTextColor = mStatusTextView.getTextColors();
 
         mRecyclerview.setLayoutManager(new LinearLayoutManager(getContext()));
         mRecyclerview.setAdapter(mModItemAdapter);
-        AnimationManager.applyListAnimation(mRecyclerview);
 
         mRecyclerview.addOnScrollListener(mOverlayPositionListener);
 
@@ -163,10 +130,11 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
                    mRecyclerview.getPaddingBottom());
         });
         mFilterButton.setOnClickListener(v -> displayFilterDialog());
+
+        // Installing a modpack the user already has on their device
         mImportButton = view.findViewById(R.id.mineButton_import_local_modpack);
-        mImportButton.setOnClickListener(v -> {
-            mImportLauncher.launch("*/*");
-        });
+        mImportButton.setVisibility(View.VISIBLE);
+        mImportButton.setOnClickListener(v -> mImportLauncher.launch("*/*"));
         mTaskCountListener = taskCount -> {
             runOnUiThread(() -> mImportButton.setEnabled(taskCount == 0));
             return false;
@@ -181,7 +149,7 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         super.onDestroyView();
         ProgressKeeper.removeTaskCountListener(mModItemAdapter);
         mRecyclerview.removeOnScrollListener(mOverlayPositionListener);
-        if (mTaskCountListener != null) { ProgressKeeper.removeTaskCountListener(mTaskCountListener); }
+        if (mTaskCountListener != null) ProgressKeeper.removeTaskCountListener(mTaskCountListener);
     }
 
     @Override
@@ -196,7 +164,7 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         mStatusTextView.setVisibility(View.VISIBLE);
         switch (error) {
             case ERROR_INTERNAL:
-                mStatusTextView.setTextColor(ThemeColors.error(mStatusTextView.getContext()));
+                mStatusTextView.setTextColor(Color.RED);
                 mStatusTextView.setText(R.string.search_modpack_error);
                 break;
             case ERROR_NO_RESULTS:
@@ -212,35 +180,6 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         mModItemAdapter.performSearchQuery(mSearchFilters);
     }
 
-    private static int getLoaderChipId(@Nullable String loader) {
-        if (Constants.LOADER_FABRIC.equals(loader)) return R.id.search_mod_loader_fabric;
-        if (Constants.LOADER_FORGE.equals(loader)) return R.id.search_mod_loader_forge;
-        if (Constants.LOADER_NEOFORGE.equals(loader)) return R.id.search_mod_loader_neoforge;
-        if (Constants.LOADER_QUILT.equals(loader)) return R.id.search_mod_loader_quilt;
-        return R.id.search_mod_loader_any;
-    }
-
-    @Nullable
-    private static String getLoaderForChip(int chipId) {
-        if (chipId == R.id.search_mod_loader_fabric) return Constants.LOADER_FABRIC;
-        if (chipId == R.id.search_mod_loader_forge) return Constants.LOADER_FORGE;
-        if (chipId == R.id.search_mod_loader_neoforge) return Constants.LOADER_NEOFORGE;
-        if (chipId == R.id.search_mod_loader_quilt) return Constants.LOADER_QUILT;
-        return null;
-    }
-
-    private static int getSourceChipId(int source) {
-        if (source == SearchFilters.SOURCE_CURSEFORGE) return R.id.search_mod_source_curseforge;
-        if (source == SearchFilters.SOURCE_BOTH) return R.id.search_mod_source_both;
-        return R.id.search_mod_source_modrinth;
-    }
-
-    private static int getSourceForChip(int chipId) {
-        if (chipId == R.id.search_mod_source_curseforge) return SearchFilters.SOURCE_CURSEFORGE;
-        if (chipId == R.id.search_mod_source_both) return SearchFilters.SOURCE_BOTH;
-        return SearchFilters.SOURCE_MODRINTH;
-    }
-
     private void displayFilterDialog() {
         AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
                 .setView(R.layout.dialog_mod_filters)
@@ -251,45 +190,114 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
             TextView mSelectedVersion = dialog.findViewById(R.id.search_mod_selected_mc_version_textview);
             Button mSelectVersionButton = dialog.findViewById(R.id.search_mod_mc_version_button);
             Button mApplyButton = dialog.findViewById(R.id.search_mod_apply_filters);
-            ChipGroup loaderGroup = dialog.findViewById(R.id.search_mod_loader_group);
-            ChipGroup sourceGroup = dialog.findViewById(R.id.search_mod_source_group);
-            View sourceTitle = dialog.findViewById(R.id.search_mod_source_title);
+            Spinner mLoaderSpinner = dialog.findViewById(R.id.search_mod_loader_spinner);
+            Spinner mEngineSpinner = dialog.findViewById(R.id.search_mod_engine_spinner);
 
             assert mSelectVersionButton != null;
             assert mSelectedVersion != null;
             assert mApplyButton != null;
-            assert loaderGroup != null;
-            assert sourceGroup != null;
-            assert sourceTitle != null;
 
-            // Without a CurseForge key, Modrinth is the only source
-            boolean curseforgeAvailable = !(modpackApi instanceof CommonApi)
-                    || ((CommonApi) modpackApi).isCurseforgeAvailable();
-            if (!curseforgeAvailable) {
-                sourceTitle.setVisibility(View.GONE);
-                sourceGroup.setVisibility(View.GONE);
+            // Set up the "Modrinth / CurseForge / Both" engine picker. If CurseForge is
+            // disabled in experimental settings, only Modrinth is offered and the filter
+            // is pinned to it, since a CurseForge-only or Both search would otherwise
+            // silently return nothing.
+            boolean curseforgeDisabled = net.kdt.pojavlaunch.prefs.LauncherPreferences.DEFAULT_PREF
+                    .getBoolean("disableCurseforgeApi", false);
+            final int[] engineValues = curseforgeDisabled
+                    ? new int[]{Constants.ENGINE_MODRINTH}
+                    : new int[]{Constants.ENGINE_MODRINTH, Constants.ENGINE_CURSEFORGE, Constants.ENGINE_BOTH};
+            if (mEngineSpinner != null) {
+                String[] engineLabels = curseforgeDisabled
+                        ? new String[]{getString(R.string.search_mod_engine_modrinth)}
+                        : new String[]{getString(R.string.search_mod_engine_modrinth),
+                                        getString(R.string.search_mod_engine_curseforge),
+                                        getString(R.string.search_mod_engine_both)};
+                ArrayAdapter<String> engineAdapter = new ArrayAdapter<>(
+                        requireContext(), R.layout.spinner_item_m3, engineLabels);
+                engineAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_m3);
+                mEngineSpinner.setAdapter(engineAdapter);
+
+                if (curseforgeDisabled) {
+                    mSearchFilters.engine = Constants.ENGINE_MODRINTH;
+                    mEngineSpinner.setSelection(0);
+                    mEngineSpinner.setEnabled(false);
+                } else {
+                    mEngineSpinner.setEnabled(true);
+                    for (int i = 0; i < engineValues.length; i++) {
+                        if (engineValues[i] == mSearchFilters.engine) {
+                            mEngineSpinner.setSelection(i);
+                            break;
+                        }
+                    }
+                }
             }
 
-            // Setup the expendable list behavior
-            mSelectVersionButton.setOnClickListener(v -> VersionSelectorDialog.open(v.getContext(), true, (id, snapshot)-> mSelectedVersion.setText(id)));
+            // Set up loader spinner
+            final String[] loaderValues = {"", "fabric", "forge", "quilt", "neoforge"};
+            if (mLoaderSpinner != null) {
+                String[] loaderLabels = {"Any loader", "Fabric", "Forge", "Quilt", "NeoForge"};
+                ArrayAdapter<String> loaderAdapter = new ArrayAdapter<>(
+                        requireContext(), R.layout.spinner_item_m3, loaderLabels);
+                loaderAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_m3);
+                mLoaderSpinner.setAdapter(loaderAdapter);
 
-            // Apply visually all the current settings
+                // Restore current selection
+                String currentLoader = mSearchFilters.modLoader != null ? mSearchFilters.modLoader : "";
+                for (int i = 0; i < loaderValues.length; i++) {
+                    if (loaderValues[i].equals(currentLoader)) {
+                        mLoaderSpinner.setSelection(i);
+                        break;
+                    }
+                }
+            }
+
+            mSelectVersionButton.setOnClickListener(v ->
+                    VersionSelectorDialog.open(v.getContext(), true,
+                            (id, snapshot) -> mSelectedVersion.setText(id)));
             mSelectedVersion.setText(mSearchFilters.mcVersion);
-            loaderGroup.check(getLoaderChipId(mSearchFilters.loader));
-            sourceGroup.check(getSourceChipId(mSearchFilters.source));
 
-            // Apply the new settings
             mApplyButton.setOnClickListener(v -> {
+                if (mEngineSpinner != null) {
+                    mSearchFilters.engine = engineValues[mEngineSpinner.getSelectedItemPosition()];
+                }
+                if (mLoaderSpinner != null) {
+                    mSearchFilters.modLoader = loaderValues[mLoaderSpinner.getSelectedItemPosition()];
+                }
                 mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
-                mSearchFilters.loader = getLoaderForChip(loaderGroup.getCheckedChipId());
-                mSearchFilters.source = curseforgeAvailable
-                        ? getSourceForChip(sourceGroup.getCheckedChipId())
-                        : SearchFilters.SOURCE_MODRINTH;
                 searchMods(mSearchEditText.getText().toString());
                 dialogInterface.dismiss();
             });
         });
 
         dialog.show();
+    }
+
+    // ── ModpackSearchApi ──────────────────────────────────────────────────────
+
+    private static class ModpackSearchApi extends CommonApi {
+        private final SearchFilters mFilters;
+        private final ModrinthApi mModrinthApi = new ModrinthApi();
+
+        ModpackSearchApi(String curseforgeApiKey, boolean disableCurseforge, SearchFilters filters) {
+            super(curseforgeApiKey, disableCurseforge);
+            mFilters = filters;
+        }
+
+        /**
+         * Override getModDetails so the version dropdown only shows versions
+         * matching the selected MC version and loader filter.
+         */
+        @Override
+        public ModDetail getModDetails(ModItem item) {
+            if (item.apiSource == Constants.SOURCE_MODRINTH) {
+                String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
+                        ? mFilters.mcVersion : null;
+                String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
+                        ? mFilters.modLoader : null;
+                return mModrinthApi.getModDetails(item, filterVer, filterLoader);
+            }
+            // CurseForge: delegate normally (CF search already filters by version/loader)
+            return super.getModDetails(item);
+        }
     }
 }

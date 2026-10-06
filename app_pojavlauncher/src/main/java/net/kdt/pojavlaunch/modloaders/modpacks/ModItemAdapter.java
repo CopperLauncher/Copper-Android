@@ -1,5 +1,6 @@
 package net.kdt.pojavlaunch.modloaders.modpacks;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -7,12 +8,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.drawable.RoundedBitmapDrawable;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
@@ -33,9 +36,7 @@ import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchFilters;
 import net.kdt.pojavlaunch.modloaders.modpacks.models.SearchResult;
 import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Collections;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -66,7 +67,7 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
     public ModItemAdapter(Resources resources, ModpackApi api, SearchResultCallback callback) {
-        mCornerDimensionCache = 0.2f;
+        mCornerDimensionCache = resources.getDimension(R.dimen._1sdp) / 250;
         mModpackApi = api;
         mModItems = new ModItem[]{};
         mSearchResultCallback = callback;
@@ -163,8 +164,6 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private Bitmap mThumbnailBitmap;
         private ImageReceiver mImageReceiver;
         private boolean mInstallEnabled;
-        /* Maps the spinner positions to the versions of mModDetail that match the search filters */
-        private int[] mVisibleVersions = new int[0];
 
         /* Used to display available versions of the mod(pack) */
         private final SimpleArrayAdapter<String> mVersionAdapter = new SimpleArrayAdapter<>(null);
@@ -181,12 +180,35 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     mExtendedErrorTextView = mExtendedLayout.findViewById(R.id.mod_extended_error_textview);
 
                     mExtendedButton.setOnClickListener(v1 -> {
-                        int position = mExtendedSpinner.getSelectedItemPosition();
-                        if(mModDetail == null || position < 0 || position >= mVisibleVersions.length) return;
-                        mModpackApi.handleModpackInstallation(
-                                mExtendedButton.getContext().getApplicationContext(),
-                                mModDetail,
-                                mVisibleVersions[position]);
+                        final int selectedVersion = mExtendedSpinner.getSelectedItemPosition();
+                        if (computeButtonState(selectedVersion) == InstallButtonState.INSTALLED) {
+                            new MaterialAlertDialogBuilder(mExtendedButton.getContext())
+                                    .setTitle(R.string.mod_reinstall_confirm_title)
+                                    .setMessage(mExtendedButton.getContext().getString(
+                                            R.string.mod_reinstall_confirm_message,
+                                            mModDetail != null ? mModDetail.title : ""))
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .setPositiveButton(android.R.string.ok, (d, w) ->
+                                            mModpackApi.handleInstallation(
+                                                    mExtendedButton.getContext().getApplicationContext(),
+                                                    mModDetail,
+                                                    selectedVersion))
+                                    .show();
+                        } else {
+                            mModpackApi.handleInstallation(
+                                    mExtendedButton.getContext().getApplicationContext(),
+                                    mModDetail,
+                                    selectedVersion);
+                        }
+                    });
+                    mExtendedSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View selectedView, int position, long id) {
+                            updateExtendedButtonLabel();
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) { }
                     });
                     mExtendedSpinner.setAdapter(mLoadingAdapter);
                 } else {
@@ -262,7 +284,7 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 mImageReceiver = null;
                 mThumbnailBitmap = bm;
                 RoundedBitmapDrawable drawable = RoundedBitmapDrawableFactory.create(mIconView.getResources(), bm);
-                drawable.setCornerRadius(mCornerDimensionCache * Math.min(bm.getWidth(), bm.getHeight()));
+                drawable.setCornerRadius(mCornerDimensionCache * bm.getHeight());
                 mIconView.setImageDrawable(drawable);
             };
             mIconCache.getImage(mImageReceiver, mModItem.getIconCacheTag(), mModItem.imageUrl);
@@ -277,31 +299,20 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         /** Display extended info/interaction about a modpack */
         private void setStateDetailed(ModDetail detailedItem) {
+            mModDetail = detailedItem;
             if(detailedItem != null) {
-                // Only offer the versions that match the mod loader and Minecraft version of the search filters
-                String mcVersion = mSearchFilters != null ? mSearchFilters.mcVersion : null;
-                String loader = mSearchFilters != null ? mSearchFilters.loader : null;
-                mVisibleVersions = detailedItem.getMatchingVersions(mcVersion, loader);
-                List<String> visibleNames = new ArrayList<>(mVisibleVersions.length);
-                for(int index : mVisibleVersions) visibleNames.add(detailedItem.versionNames[index]);
-                mVersionAdapter.setObjects(visibleNames);
-                mExtendedSpinner.setAdapter(mVersionAdapter);
-                if(visibleNames.isEmpty()) {
-                    setInstallEnabled(false);
-                    mExtendedErrorTextView.setText(R.string.search_modpack_no_matching_versions);
-                    mExtendedErrorTextView.setVisibility(View.VISIBLE);
-                    return;
-                }
                 setInstallEnabled(true);
                 mExtendedErrorTextView.setVisibility(View.GONE);
+                mVersionAdapter.setObjects(Arrays.asList(detailedItem.versionNames));
+                mExtendedSpinner.setAdapter(mVersionAdapter);
+                updateExtendedButtonLabel();
             } else {
-                mVisibleVersions = new int[0];
                 closeDetailedView();
                 setInstallEnabled(false);
-                mExtendedErrorTextView.setText(R.string.search_modpack_download_error);
                 mExtendedErrorTextView.setVisibility(View.VISIBLE);
                 mExtendedSpinner.setAdapter(null);
                 mVersionAdapter.setObjects(null);
+                if (mExtendedButton != null) mExtendedButton.setText(R.string.generic_install);
             }
         }
 
@@ -356,7 +367,51 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             if(mExtendedButton != null)
                 mExtendedButton.setEnabled(mInstallEnabled && !mTasksRunning);
         }
+
+        /**
+         * Compares a candidate version index against mModDetail.installedVersionIndex
+         * (resolved by ModsInstallApi via local jar hashing) to decide whether the
+         * install button should read Install / Installed / Update / Downgrade.
+         * Versions are ordered newest-first, so a lower index than the installed
+         * one means "this is newer" (Update), and a higher index means "this is
+         * older" (Downgrade).
+         */
+        private InstallButtonState computeButtonState(int selectedIndex) {
+            if (mModDetail == null || mModDetail.isModpack || mModDetail.installedVersionIndex < 0) {
+                return InstallButtonState.INSTALL;
+            }
+            int installedIndex = mModDetail.installedVersionIndex;
+            if (selectedIndex == installedIndex) return InstallButtonState.INSTALLED;
+            return selectedIndex < installedIndex ? InstallButtonState.UPDATE : InstallButtonState.DOWNGRADE;
+        }
+
+        private void updateExtendedButtonLabel() {
+            if (mExtendedButton == null || mExtendedSpinner == null) return;
+            int selectedIndex = mExtendedSpinner.getSelectedItemPosition();
+            switch (computeButtonState(selectedIndex)) {
+                case INSTALLED:
+                    mExtendedButton.setText(R.string.mod_install_installed);
+                    break;
+                case UPDATE:
+                    mExtendedButton.setText(R.string.mod_install_update);
+                    break;
+                case DOWNGRADE:
+                    mExtendedButton.setText(R.string.mod_install_downgrade);
+                    break;
+                default:
+                    mExtendedButton.setText(R.string.generic_install);
+                    break;
+            }
+        }
     }
+
+    /**
+     * Install button states for the search/install screen — moved out of the
+     * (non-static) ViewHolder inner class since Java forbids static
+     * declarations, which an enum implicitly is, inside non-static inner
+     * classes.
+     */
+    private enum InstallButtonState { INSTALL, INSTALLED, UPDATE, DOWNGRADE }
 
     /**
      * The view holder used to hold the progress bar at the end of the list

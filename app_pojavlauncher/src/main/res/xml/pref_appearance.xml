@@ -29,7 +29,8 @@
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/preference_category_display">
-        <SwitchPreference
+        <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="false"
             android:key="force_landscape"
             android:title="@string/preference_force_landscape_title"

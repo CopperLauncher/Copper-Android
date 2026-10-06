@@ -3,7 +3,6 @@ package net.kdt.pojavlaunch.customcontrols.handleview;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -15,7 +14,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.Spinner;
-import android.widget.Switch;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import android.widget.TextView;
 
 import com.kdt.SideDialogView;
@@ -63,8 +62,7 @@ public class EditControlSideDialog extends SideDialogView {
         }
     };
     private EditText mNameEditText, mWidthEditText, mHeightEditText;
-    @SuppressLint("UseSwitchCompatOrMaterialCode")
-    private Switch mToggleSwitch, mPassthroughSwitch, mSwipeableSwitch, mForwardLockSwitch, mAbsoluteTrackingSwitch;
+    private MaterialSwitch mToggleSwitch, mPassthroughSwitch, mSwipeableSwitch, mForwardLockSwitch, mAbsoluteTrackingSwitch;
     private Spinner mOrientationSpinner;
     private final TextView[] mKeycodeTextviews = new TextView[4];
     private SeekBar mStrokeWidthSeekbar, mCornerRadiusSeekbar, mAlphaSeekbar;

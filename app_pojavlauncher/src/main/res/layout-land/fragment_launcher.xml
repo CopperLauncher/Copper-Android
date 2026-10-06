@@ -30,44 +30,95 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <LinearLayout
             android:id="@+id/left_sidebar_content"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-            <com.kdt.mcgui.LauncherMenuButton
-                android:id="@+id/custom_control_button"
-                style="@style/LauncherMenuButton.Universal"
-                android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_px_gamepad"
-                android:text="@string/mcl_option_customcontrol"
-                app:layout_constraintTop_toTopOf="parent" />
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="@string/mcl_section_quick_actions"
+				android:textAllCaps="true"
+				android:textAppearance="?attr/textAppearanceLabelMedium"
+				android:textColor="?attr/colorOnSurfaceVariant"
+				android:letterSpacing="0.08"
+				android:paddingHorizontal="@dimen/padding_heavy"
+				android:paddingTop="@dimen/padding_large"
+				android:paddingBottom="@dimen/padding_medium" />
 
-            <com.kdt.mcgui.LauncherMenuButton
-                android:id="@+id/install_jar_button"
-                style="@style/LauncherMenuButton.Universal"
-                android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_px_java_run"
-                android:text="@string/main_install_jar_file"
-                app:layout_constraintTop_toBottomOf="@id/custom_control_button" />
+			<com.kdt.mcgui.LauncherMenuButton
+				android:id="@+id/mod_store_button"
+				style="@style/LauncherMenuButton.Universal"
+				android:layout_width="match_parent"
+				android:drawableStart="@drawable/ic_add"
+				android:text="@string/mcl_button_mod_store" />
 
-            <com.kdt.mcgui.LauncherMenuButton
-                android:id="@+id/share_logs_button"
-                style="@style/LauncherMenuButton.Universal"
-                android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_px_sharelog"
-                android:text="@string/main_share_logs"
-                app:layout_constraintTop_toBottomOf="@id/install_jar_button" />
+			<com.kdt.mcgui.LauncherMenuButton
+				android:id="@+id/custom_control_button"
+				style="@style/LauncherMenuButton.Universal"
+				android:layout_width="match_parent"
+				android:drawableStart="@drawable/ic_px_gamepad"
+				android:text="@string/mcl_option_customcontrol" />
 
-            <com.kdt.mcgui.LauncherMenuButton
-                android:id="@+id/open_files_button"
-                style="@style/LauncherMenuButton.Universal"
-                android:layout_width="match_parent"
-                android:drawableStart="@drawable/ic_px_folder"
-                android:text="@string/mcl_button_open_directory"
-                app:layout_constraintTop_toBottomOf="@id/share_logs_button" />
-        </androidx.constraintlayout.widget.ConstraintLayout>
+			<com.google.android.material.divider.MaterialDivider
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="@dimen/padding_medium" />
+
+			<TextView
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:text="@string/mcl_section_instance_tools"
+				android:textAllCaps="true"
+				android:textAppearance="?attr/textAppearanceLabelMedium"
+				android:textColor="?attr/colorOnSurfaceVariant"
+				android:letterSpacing="0.08"
+				android:paddingHorizontal="@dimen/padding_heavy"
+				android:paddingTop="@dimen/padding_large"
+				android:paddingBottom="@dimen/padding_medium" />
+
+			<com.kdt.mcgui.LauncherMenuButton
+				android:id="@+id/open_files_button"
+				style="@style/LauncherMenuButton.Universal"
+				android:layout_width="match_parent"
+				android:drawableStart="@drawable/ic_folder_managed"
+				android:text="@string/mcl_button_manage_mods" />
+
+			<com.kdt.mcgui.LauncherMenuButton
+				android:id="@+id/open_directory_button"
+				style="@style/LauncherMenuButton.Universal"
+				android:layout_width="match_parent"
+				android:drawableStart="@drawable/ic_px_folder"
+				android:text="@string/mcl_button_open_directory" />
+
+			<com.kdt.mcgui.LauncherMenuButton
+				android:id="@+id/install_jar_button"
+				style="@style/LauncherMenuButton.Universal"
+				android:layout_width="match_parent"
+				android:drawableStart="@drawable/ic_px_java_run"
+				android:text="@string/main_install_jar_file" />
+
+			<com.kdt.mcgui.LauncherMenuButton
+				android:id="@+id/share_logs_button"
+				style="@style/LauncherMenuButton.Universal"
+				android:layout_width="match_parent"
+				android:drawableStart="@drawable/ic_px_sharelog"
+				android:text="@string/main_share_logs" />
+        </LinearLayout>
     </ScrollView>
+
+    <!-- Replaces the sidebar while Browse/Manage Content is open, see ContentPickerFragment -->
+    <FrameLayout
+        android:id="@+id/left_pane_container"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/pane_guideline"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!-- ══════════════ RIGHT PANE ══════════════
          Hosts the home screen by default and every screen opened from the sidebar or the version bar.

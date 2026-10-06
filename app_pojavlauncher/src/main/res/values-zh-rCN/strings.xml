@@ -369,4 +369,5 @@
     <string name="local_login_bad_username_title">用户名不合适</string>
     <string name="local_login_bad_username_text">用户名长度必须在 3–16 个字符之间，并且只能包含拉丁字母、数字 0–9 和下划线。</string>
     <string name="quick_setting_title">快速设置</string>
+
 </resources>

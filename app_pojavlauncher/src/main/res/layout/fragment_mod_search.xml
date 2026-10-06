@@ -33,8 +33,10 @@
             android:id="@+id/search_mod_edittext"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@drawable/background_line"
-            android:textSize="@dimen/_13ssp"
+            android:background="@drawable/bg_input_field"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
             android:translationZ="2dp"
 
             android:ems="10"
@@ -53,6 +55,7 @@
             android:background="?android:attr/selectableItemBackground"
             android:minWidth="@dimen/_38sdp"
             android:src="@drawable/ic_filter"
+            android:tint="?attr/colorOnSurfaceVariant"
 
             android:paddingHorizontal="@dimen/padding_medium"
 
@@ -62,9 +65,8 @@
 
             />
 
-        <ProgressBar
+        <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/search_mod_progressbar"
-            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:indeterminate="true"
@@ -89,7 +91,7 @@
 
         app:layout_constraintBottom_toTopOf="@id/mineButton_import_local_modpack"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginBottom="@dimen/padding_moderate"
+        app:layout_goneMarginBottom="0dp"
         />
 
     <TextView
@@ -103,11 +105,13 @@
         app:layout_constraintStart_toStartOf="@+id/search_mod_list"
         app:layout_constraintTop_toTopOf="@+id/search_mod_list" />
 
+    <!-- Only the standalone modpack search screen (SearchModFragment) shows this -->
     <com.kdt.mcgui.MineButton
         android:id="@+id/mineButton_import_local_modpack"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:enabled="false"
+        android:visibility="gone"
         android:layout_marginTop="@dimen/padding_moderate"
         android:layout_marginBottom="@dimen/padding_moderate"
         android:text="@string/import_local_modpack"

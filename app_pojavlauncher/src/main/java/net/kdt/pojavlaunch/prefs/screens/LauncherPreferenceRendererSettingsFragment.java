@@ -9,7 +9,7 @@ import android.text.TextWatcher;
 
 import androidx.preference.EditTextPreference;
 import androidx.preference.ListPreference;
-import androidx.preference.SwitchPreference;
+import androidx.preference.SwitchPreferenceCompat;
 
 import git.artdeell.mojo.R;
 
@@ -19,14 +19,14 @@ import java.util.Objects;
 public class LauncherPreferenceRendererSettingsFragment extends LauncherPreferenceFragment {
     EditTextPreference GLSLCachePreference;
     ListPreference MultiDrawEmulationPreference;
-    SwitchPreference ComputeMultiDrawPreference;
+    SwitchPreferenceCompat ComputeMultiDrawPreference;
     androidx.preference.Preference.SummaryProvider MultiDrawSummaryProvider;
 
     @Override
     public void onCreatePreferences(Bundle b, String str) {
         addPreferencesFromResource(R.xml.pref_renderer);
         GLSLCachePreference = requirePreference("mg_renderer_setting_glsl_cache_size", EditTextPreference.class);
-        ComputeMultiDrawPreference = requirePreference("mg_renderer_multidrawCompute", SwitchPreference.class);
+        ComputeMultiDrawPreference = requirePreference("mg_renderer_multidrawCompute", SwitchPreferenceCompat.class);
         MultiDrawEmulationPreference = requirePreference("mg_renderer_setting_multidraw", ListPreference.class);
         GLSLCachePreference.setOnBindEditTextListener((editText) -> {
             editText.setInputType(TYPE_CLASS_NUMBER);

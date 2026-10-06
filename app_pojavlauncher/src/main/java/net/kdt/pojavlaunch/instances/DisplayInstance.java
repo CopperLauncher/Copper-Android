@@ -8,6 +8,14 @@ public class DisplayInstance {
     public String versionId;
     public String icon;
 
+    /**
+     * Stable identifier of the instance: the name of its directory in the instances folder.
+     * This is also what the launcher stores as the selected instance.
+     */
+    public String getKey() {
+        return mInstanceRoot == null ? null : mInstanceRoot.getName();
+    }
+
     protected void sanitize() {
         sanitizeIcon();
     }
