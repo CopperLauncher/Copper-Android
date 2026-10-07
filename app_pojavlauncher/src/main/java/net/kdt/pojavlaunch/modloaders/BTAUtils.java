@@ -26,6 +26,8 @@ public class BTAUtils {
     private static final List<String> BTA_TESTED_VERSIONS = new ArrayList<>();
 
     static {
+        BTA_TESTED_VERSIONS.add("v8.0.1");
+        BTA_TESTED_VERSIONS.add("v8.0");
         BTA_TESTED_VERSIONS.add("v7.3_04");
         BTA_TESTED_VERSIONS.add("v7.3_03");
         BTA_TESTED_VERSIONS.add("v7.3_02");
