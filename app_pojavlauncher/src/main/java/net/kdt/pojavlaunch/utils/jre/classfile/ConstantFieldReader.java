@@ -1,4 +1,4 @@
-package net.kdt.pojavlaunch.modloaders.bta;
+package net.kdt.pojavlaunch.utils.jre.classfile;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -116,30 +116,24 @@ public class ConstantFieldReader {
 
     public ConstantFieldReader read(InputStream classSteam) throws IOException, ClassFormatException {
         mConstantFields.clear();
-        try(DataInputStream dataInputStream = new DataInputStream(classSteam)) {
-            int magic = dataInputStream.readInt();
-            if(magic != 0xCAFEBABE) throw new ClassFormatException("Invalid class file magic");
-            dataInputStream.skipBytes(2); // minor
-            int major = dataInputStream.readUnsignedShort();
+        DataInputStream dataInputStream = new DataInputStream(classSteam);
+        int magic = dataInputStream.readInt();
+        if(magic != 0xCAFEBABE) throw new ClassFormatException("Invalid class file magic");
+        dataInputStream.skipBytes(2); // minor
+        int major = dataInputStream.readUnsignedShort();
 
-            if(major < 45 || major > 65) throw new ClassFormatException("Unsupported class file major version "+major);
+        if(major < 45 || major > 65) throw new ClassFormatException("Unsupported class file major version "+major);
 
-            readConstantPool(dataInputStream);
+        readConstantPool(dataInputStream);
 
-            dataInputStream.skipBytes(6); // access_flags, this_class, super_class
+        dataInputStream.skipBytes(6); // access_flags, this_class, super_class
 
-            int interfacesCount = dataInputStream.readUnsignedShort();
-            if(interfacesCount != 0) dataInputStream.skipBytes(2 * interfacesCount);
+        int interfacesCount = dataInputStream.readUnsignedShort();
+        if(interfacesCount != 0) dataInputStream.skipBytes(2 * interfacesCount);
 
-            readFields(dataInputStream);
-            mConstants.clear();
-        }
+        readFields(dataInputStream);
+        mConstants.clear();
         return this;
     }
 
-    public static class ClassFormatException extends Exception {
-        public ClassFormatException(String s) {
-            super(s);
-        }
-    }
 }
