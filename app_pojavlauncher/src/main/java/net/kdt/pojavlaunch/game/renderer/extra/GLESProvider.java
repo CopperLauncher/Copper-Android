@@ -142,7 +142,7 @@ public interface GLESProvider {
             return "System ANGLE";
         }
         public String eglPath() {
-            return gles().getAbsolutePath();
+            return egl().getAbsolutePath();
         }
         public String glesPath() {
             return gles().getAbsolutePath();
@@ -151,7 +151,7 @@ public interface GLESProvider {
             return new File(BASE_PATH, ANGLE_EGL);
         }
         public File gles() {
-            return new File(BASE_PATH, ANGLE_EGL);
+            return new File(BASE_PATH, ANGLE_GLES);
         }
         public boolean supported() {
             return egl().exists() && gles().exists();
