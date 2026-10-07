@@ -15,7 +15,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name='PojavLauncher'
-include ':app_pojavlauncher'
+include ':app_mojo'
 
 include ':forge_installer'
 include ':glfw:jni_bindings'
