@@ -32,12 +32,14 @@ import android.provider.DocumentsProvider;
 import android.provider.OpenableColumns;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -58,6 +60,7 @@ import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutor;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutorTask;
 import net.kdt.pojavlaunch.utils.HashUtils;
+import net.kdt.pojavlaunch.utils.McLogsApi;
 import net.kdt.pojavlaunch.utils.maven.MavenName;
 import net.kdt.pojavlaunch.utils.maven.MavenNameAdapter;
 import net.kdt.pojavlaunch.utils.memory.MemoryHoleFinder;
@@ -841,9 +844,90 @@ public final class Tools {
         MAIN_HANDLER.post(runnable);
     }
 
-    /** Triggers the share intent chooser, with the latestlog file attached to it */
+    /** Shows a dialog letting the user pick between uploading the log to mclo.gs or sharing
+     *  the raw log file directly. */
     public static void shareLog(Context context){
+        shareLog(context, null);
+    }
+
+    /** Same as {@link #shareLog(Context)}, but invokes {@code onFinished} once the whole share
+     *  flow is over: the dialog was cancelled, the raw file share was started, or the mclo.gs
+     *  link was uploaded and handed to the share sheet. Meant for hosts that must finish()
+     *  afterwards (like ExitActivity), since finishing earlier would tear down the dialogs
+     *  and the upload this flow still needs the host for. If the mclo.gs upload fails and a
+     *  callback was given, the share dialog is shown again so the user can retry or cancel. */
+    public static void shareLog(Context context, @Nullable Runnable onFinished){
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_share_log, null);
+        final boolean[] picked = {false};
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.share_log_dialog_title)
+                .setView(dialogView)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener(d -> {
+                    if(!picked[0] && onFinished != null) onFinished.run();
+                })
+                .create();
+
+        dialogView.findViewById(R.id.share_log_mclogs_button).setOnClickListener(v -> {
+            picked[0] = true;
+            dialog.dismiss();
+            shareLogToMcLogs(context, onFinished);
+        });
+        dialogView.findViewById(R.id.share_log_file_button).setOnClickListener(v -> {
+            picked[0] = true;
+            dialog.dismiss();
+            shareLogFile(context);
+            if(onFinished != null) onFinished.run();
+        });
+
+        dialog.show();
+    }
+
+    /** Triggers the share intent chooser, with the latestlog file attached to it */
+    private static void shareLogFile(Context context){
         openPath(context, new File(Tools.DIR_GAME_HOME, "latestlog.txt"), true);
+    }
+
+    /** Uploads the latest log file to mclo.gs and shares the resulting link, copying it to the
+     *  clipboard as well so it isn't lost if the share sheet gets dismissed. */
+    private static void shareLogToMcLogs(Context context, @Nullable Runnable onFinished){
+        final File logFile = new File(Tools.DIR_GAME_HOME, "latestlog.txt");
+        final AlertDialog progressDialog = new MaterialAlertDialogBuilder(context)
+                .setView(R.layout.dialog_share_log_progress)
+                .setCancelable(false)
+                .show();
+
+        sExecutorService.execute(() -> {
+            try {
+                String url = McLogsApi.upload(logFile);
+                Tools.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+
+                    ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if(clipboardManager != null) clipboardManager.setPrimaryClip(ClipData.newPlainText("mclo.gs", url));
+                    Toast.makeText(context, R.string.share_log_mclogs_copied, Toast.LENGTH_SHORT).show();
+
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, url);
+                    Intent chooserIntent = Intent.createChooser(shareIntent, url);
+                    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(chooserIntent);
+                    if(onFinished != null) onFinished.run();
+                });
+            } catch (IOException e) {
+                Tools.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    if(onFinished == null) {
+                        Tools.showError(context, R.string.share_log_mclogs_error, e);
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.share_log_mclogs_error) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        shareLog(context, onFinished);
+                    }
+                });
+            }
+        });
     }
 
     /**

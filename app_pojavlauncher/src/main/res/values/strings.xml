@@ -161,6 +161,11 @@
     <string name="customctrl_export">Export controlmap</string>
 
     <string name="main_share_logs">Share log file</string>
+    <string name="share_log_dialog_title">Share log</string>
+    <string name="share_log_mclogs_option">Share to mclo.gs</string>
+    <string name="share_log_mclogs_uploading">Uploading log to mclo.gs…</string>
+    <string name="share_log_mclogs_copied">mclo.gs link copied to clipboard</string>
+    <string name="share_log_mclogs_error">Failed to upload log to mclo.gs</string>
     <string name="main_install_jar_file">Execute a .jar</string>
     <string name="main_play">Play</string>
     <string name="autoram_info_msg">Memory set to %d MB</string>
@@ -183,6 +188,10 @@
     <string name="address_memory_warning_msg">The current amount of free addressable RAM space (%d) is lower than the allocated RAM (%d), which will lead to crashes. Change the allocation if the game crashes.</string>
     <string name="mcl_memory_allocation">Memory allocation</string>
     <string name="mcl_memory_allocation_subtitle">Controls how much memory is given to the Java runtime.</string>
+    <string name="mcl_memory_allocation_dialog_hint">Memory (MB)</string>
+    <string name="mcl_memory_allocation_dialog_free">Free RAM right now: %1$d MB</string>
+    <string name="mcl_memory_allocation_dialog_helper">Between %1$d and %2$d MB</string>
+    <string name="mcl_memory_allocation_dialog_error">Enter a value between %1$d and %2$d MB</string>
     <string name="multirt_runtime_corrupt">Corrupted Java Runtime</string>
     <string name="multirt_runtime_incompatiblearch">Incompatible architecture: %s</string>
     <string name="multirt_config_title">Java Runtimes</string>
@@ -415,6 +424,10 @@
     <string name="log_view_button_output_off">Output\nOFF</string>
     <string name="log_view_button_output_on">Output\nON</string>
     <string name="log_view_label_log_output">Log output:</string>
+    <string name="log_view_toggle_autoscroll_label">Autoscroll</string>
+    <string name="log_view_toggle_output_label">Show log</string>
+    <string name="log_view_close_description">Close log view</string>
+    <string name="log_view_empty_state">Enable “Show log” above to view live output</string>
     <string name="execute_jar_failed_to_read_file">Failed to read the .jar file</string>
     <string name="execute_jar_incompatible_runtime">Execute .jar feature is not compatible with Java %d</string>
     <string name="controller_button_a">A</string>

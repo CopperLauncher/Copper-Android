@@ -58,9 +58,14 @@ If you are building on Windows:
 - [x] Out-of-the box 1.21.5 support
 - [x] mrpack/CurseForge zip import
 - [x] LTW: enable compute shader/image extensions
+- [x] Add Mod/Content manager & browser
+- [x] Add option to share logs to mclo.gs
+- [x] Make the launcher fully m3
+- [ ] MS skin manager
+- [ ] Ely.by skin manager (idk how ely.by api works but I will try)
 - [ ] LTW: resolve issues with Create
 - [ ] LTW: switch to a color-renderable format for framebuffers
-- [ ] Modpack/mod management tool
+- [ ] Modpack management tool
 - [ ] MMC-compatible instance import
 - [ ] Vintage Story support
 - [ ] Implement common native library standard
@@ -97,3 +102,7 @@ Any code change to this repository should be submitted as a pull request. The de
 - [alsoft](https://github.com/kcat/openal-soft/) (Audio output library): [GNU LIBRARY GENERAL PUBLIC LICENSE](https://github.com/kcat/openal-soft/blob/master/COPYING) and [modified PFFFT](https://github.com/kcat/openal-soft/blob/master/LICENSE-pffft).
 - [oboe](https://github.com/google/oboe): [Apache License 2.0](https://github.com/google/oboe/blob/main/LICENSE).
 - Thanks to [Mineskin](https://mineskin.eu/) for providing Minecraft avatars.
+
+## Special thanks
+- Thanks to [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher/) for the android icons, Made by [Yarpopcat08](https://github.com/Yarpopcat08).
+- Thanks to [whynelo](https://github.com/whynelo) for the new copper icons.

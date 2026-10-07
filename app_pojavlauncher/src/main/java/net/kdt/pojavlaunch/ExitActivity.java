@@ -33,10 +33,18 @@ public class ExitActivity extends AppCompatActivity {
 
         String message = isSignal ? getString(R.string.mcn_abort_title) : getString(R.string.mcn_exit_title, code);
 
+        // The share dialog has to be shown before this activity finishes, so when the user
+        // taps "share", finishing is deferred until the share dialog itself is closed.
+        final boolean[] sharing = {false};
         new MaterialAlertDialogBuilder(this)
                 .setMessage(message)
-                .setPositiveButton(R.string.main_share_logs, (dialog, which) -> shareLog(this))
-                .setOnDismissListener(dialog -> ExitActivity.this.finish())
+                .setPositiveButton(R.string.main_share_logs, (dialog, which) -> {
+                    sharing[0] = true;
+                    shareLog(this, ExitActivity.this::finish);
+                })
+                .setOnDismissListener(dialog -> {
+                    if(!sharing[0]) ExitActivity.this.finish();
+                })
                 .show();
     }
 

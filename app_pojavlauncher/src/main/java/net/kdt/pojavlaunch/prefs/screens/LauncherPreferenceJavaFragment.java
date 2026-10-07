@@ -15,6 +15,7 @@ import net.kdt.pojavlaunch.contracts.OpenDocumentWithExtension;
 import net.kdt.pojavlaunch.multirt.MultiRTConfigDialog;
 import net.kdt.pojavlaunch.prefs.CustomSeekBarPreference;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+import net.kdt.pojavlaunch.prefs.RamInputDialog;
 
 public class LauncherPreferenceJavaFragment extends LauncherPreferenceFragment {
     private MultiRTConfigDialog mDialogScreen;
@@ -41,6 +42,12 @@ public class LauncherPreferenceJavaFragment extends LauncherPreferenceFragment {
         memorySeekbar.setMaxKeepIncrement(maxRAM);
         memorySeekbar.setValue(ramAllocation);
         memorySeekbar.setSuffix(" MB");
+
+        // Tapping the row lets the user type the amount of RAM instead of using the slider
+        final int finalMaxRAM = maxRAM;
+        memorySeekbar.setOnRowClickListener(preference ->
+                RamInputDialog.show(requireContext(), preference.getValue(),
+                        preference.getMinValue(), finalMaxRAM, preference::setValue));
 
         EditTextPreference editJVMArgs = findPreference("javaArgs");
         if (editJVMArgs != null) {

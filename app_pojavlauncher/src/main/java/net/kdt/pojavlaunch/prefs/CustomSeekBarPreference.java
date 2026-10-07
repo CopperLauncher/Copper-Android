@@ -26,6 +26,13 @@ public class CustomSeekBarPreference extends SeekBarPreference {
     private TextView mTextView;
     /** Seekbar increment in case the max gets set */
     private final int mIncrement;
+    /** Called when the preference row (not the slider itself) is tapped */
+    private OnRowClickListener mRowClickListener;
+
+    /** Lets the owner react to a tap on the row, e.g. to open a dialog for typing the value */
+    public interface OnRowClickListener {
+        void onRowClick(CustomSeekBarPreference preference);
+    }
 
 
     @SuppressLint("PrivateResource")
@@ -64,6 +71,12 @@ public class CustomSeekBarPreference extends SeekBarPreference {
         TextView titleTextView = (TextView) view.findViewById(android.R.id.title);
         titleTextView.setTextColor(ThemeColors.onSurface(titleTextView.getContext()));
 
+        // The preference is not selectable (so the slider keeps working), which makes the
+        // framework mark the row as non-clickable. Make it clickable again for the row itself;
+        // touches on the slider are still consumed by the slider.
+        view.itemView.setClickable(mRowClickListener != null);
+        view.itemView.setOnClickListener(mRowClickListener == null ? null : v -> mRowClickListener.onRowClick(this));
+
         mTextView = (TextView) view.findViewById(R.id.seekbar_value);
         mTextView.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         SeekBar seekBar = (SeekBar) view.findViewById(R.id.seekbar);
@@ -98,6 +111,17 @@ public class CustomSeekBarPreference extends SeekBarPreference {
         });
 
         updateTextViewWithSuffix();
+    }
+
+    /** Sets the listener notified when the preference row is tapped, or null to disable it */
+    public void setOnRowClickListener(OnRowClickListener listener) {
+        mRowClickListener = listener;
+        notifyChanged();
+    }
+
+    /** @return the minimum value, as configured through the XML attribute or {@link #setMin(int)} */
+    public int getMinValue() {
+        return mMin;
     }
 
     /**
