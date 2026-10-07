@@ -10,7 +10,11 @@ import git.artdeell.mojo.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.instances.Instances;
+import net.kdt.pojavlaunch.modloaders.bta.BuiltinLWJGLVersion;
+import net.kdt.pojavlaunch.modloaders.bta.ConstantFieldReader;
+import net.kdt.pojavlaunch.progresskeeper.DownloaderProgressWrapper;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
+import net.kdt.pojavlaunch.utils.DownloadUtils;
 import net.kdt.pojavlaunch.utils.FileUtils;
 
 import java.io.File;
@@ -19,6 +23,8 @@ import java.net.URL;
 
 public class BTADownloadTask implements Runnable {
     private static final String BASE_JSON = "{\"inheritsFrom\":\"b1.7.3\",\"mainClass\":\"net.minecraft.client.Minecraft\",\"libraries\":[{\"name\":\"bta-client:bta-client:%1$s\",\"downloads\":{\"artifact\":{\"path\":\"bta-client/bta-client-%1$s.jar\",\"url\":\"%2$s\"}}}],\"id\":\"%3$s\"}";
+    private static final String BASE_JSON_LWJGL3 = "{\"inheritsFrom\": \"b1.7.3\", \"mainClass\": \"net.minecraft.client.Minecraft\", \"libraries\": [ { \"name\": \"org.lwjgl.lwjgl:lwjgl:*\", \"rules\": [ { \"action\": \"disallow\" } ] }, { \"name\": \"org.lwjgl.lwjgl:lwjgl_util:*\", \"rules\": [ { \"action\": \"disallow\" } ] }, { \"name\": \"org.lwjgl.lwjgl:lwjgl-platform:*\", \"rules\": [ { \"action\": \"disallow\" } ] }, { \"name\": \"bta-client:bta-client:%1$s\", \"downloads\": { \"artifact\": { \"path\": \"bta-client/bta-client-%1$s.jar\", \"url\": \"%2$s\" } } }, { \"name\": \"org.lwjgl:lwjgl:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-glfw:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-openal:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-opengl:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-stb:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-tinyfd:%4$s\" } ], \"id\": \"%3$s\"}";
+    private static final String BASE_JSON_LWJGL3_GLCORE = "{\"inheritsFrom\": \"b1.7.3\", \"mainClass\": \"net.minecraft.client.Minecraft\", \"contextHint\": \"core\", \"javaVersion\": { \"component\": \"jre-runtime-alpha\", \"majorVersion\": 17 }, \"environment\": { \"MESA_GL_VERSION_OVERRIDE\": \"4.1\" }, \"libraries\": [ { \"name\": \"org.lwjgl.lwjgl:lwjgl:*\", \"rules\": [ { \"action\": \"disallow\" } ] }, { \"name\": \"org.lwjgl.lwjgl:lwjgl_util:*\", \"rules\": [ { \"action\": \"disallow\" } ] }, { \"name\": \"org.lwjgl.lwjgl:lwjgl-platform:*\", \"rules\": [ { \"action\": \"disallow\" } ] }, { \"name\": \"bta-client:bta-client:%1$s\", \"downloads\": { \"artifact\": { \"path\": \"bta-client/bta-client-%1$s.jar\", \"url\": \"%2$s\" } } }, { \"name\": \"org.lwjgl:lwjgl:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-glfw:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-openal:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-opengl:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-stb:%4$s\" }, { \"name\": \"org.lwjgl:lwjgl-tinyfd:%4$s\" } ], \"id\": \"%3$s\"}";
     private final ModloaderDownloadListener mListener;
     private final BTAUtils.BTAVersion mBtaVersion;
 
@@ -33,7 +39,7 @@ public class BTADownloadTask implements Runnable {
         try {
             runCatching() ;
             mListener.onDownloadFinished(null);
-        }catch (IOException e) {
+        }catch (IOException | ConstantFieldReader.ClassFormatException e) {
             mListener.onDownloadError(e);
         }
         ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
@@ -48,21 +54,44 @@ public class BTADownloadTask implements Runnable {
         }
     }
 
-    private void createJson(String btaVersionId) throws IOException {
-        String btaJson = String.format(BASE_JSON, mBtaVersion.versionName, mBtaVersion.downloadUrl, btaVersionId);
+    private void createJson(String btaVersionId, String lwjglVersion, boolean requiresCore) throws IOException {
+        String btaJson;
+        if(lwjglVersion == null) {
+            btaJson = String.format(BASE_JSON, mBtaVersion.versionName, mBtaVersion.downloadUrl, btaVersionId);
+        }else {
+            btaJson = String.format(
+                    requiresCore ? BASE_JSON_LWJGL3_GLCORE : BASE_JSON_LWJGL3,
+                    mBtaVersion.versionName, mBtaVersion.downloadUrl, btaVersionId, lwjglVersion
+            );
+        }
         File jsonDir = new File(Tools.DIR_HOME_VERSION, btaVersionId);
         File jsonFile = new File(jsonDir, btaVersionId+".json");
         FileUtils.ensureDirectory(jsonDir);
         Tools.write(jsonFile, btaJson);
     }
 
-    // BTA doesn't have SHA1 checksums in its repositories, so the user may try to reinstall it
-    // if it didn't work due to a broken download. So, for reinstalls like that to work,
-    // we need to delete the old client jar to force the download of a new one.
-    private void removeOldClient() throws IOException{
+    private String installClient() throws IOException, ConstantFieldReader.ClassFormatException {
         File btaClientPath = new File(Tools.DIR_HOME_LIBRARY, String.format("bta-client/bta-client-%1$s.jar", mBtaVersion.versionName));
         if(btaClientPath.exists() && !btaClientPath.delete())
             throw new IOException("Failed to delete old client jar");
+
+        FileUtils.ensureParentDirectory(btaClientPath);
+
+        DownloaderProgressWrapper progressWrapper = new DownloaderProgressWrapper(R.string.mcl_launch_downloading_progress, ProgressLayout.INSTALL_MODPACK);
+        progressWrapper.extraString = "BTA "+mBtaVersion.versionName;
+        DownloadUtils.downloadFileMonitored(mBtaVersion.downloadUrl, btaClientPath, null, progressWrapper);
+
+        BuiltinLWJGLVersion builtinLWJGLVersion = BuiltinLWJGLVersion.detect(btaClientPath);
+
+        Log.i("BTADownloadTask", "Detected LWJGL3 version: "+builtinLWJGLVersion);
+
+        if(builtinLWJGLVersion == null) {
+            return null; // No special LWJGL version requirement
+        }
+
+        if(!builtinLWJGLVersion.isValid()) throw new IOException("Invalid LWJGL version");
+
+        return builtinLWJGLVersion.toString();
     }
 
     private void createProfile(String btaVersionId) throws IOException {
@@ -73,10 +102,10 @@ public class BTADownloadTask implements Runnable {
         tryDownloadIcon(instance);
     }
 
-    public void runCatching() throws IOException {
-        removeOldClient();
+    public void runCatching() throws IOException, ConstantFieldReader.ClassFormatException {
+        String lwjglVersion = installClient();
         String btaVersionId = "bta-"+mBtaVersion.versionName;
-        createJson(btaVersionId);
+        createJson(btaVersionId, lwjglVersion, false);
         createProfile(btaVersionId);
     }
 }
