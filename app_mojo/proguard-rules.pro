@@ -22,6 +22,6 @@
     *;
  }
 # Option screens
- -keep class net.kdt.pojavlaunch.prefs.screens** {*;}
+ -keep class git.artdeell.mojo.prefs.screens** {*;}
 
 

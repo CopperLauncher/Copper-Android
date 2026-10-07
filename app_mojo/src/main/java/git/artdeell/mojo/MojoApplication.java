@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class MojoApplication extends Application {
-	public static final String CRASH_REPORT_TAG = "PojavCrashReport";
+	public static final String CRASH_REPORT_TAG = "MojoCrashReport";
 	public static final ExecutorService sExecutorService = new ThreadPoolExecutor(4, 4, 500, TimeUnit.MILLISECONDS,  new LinkedBlockingQueue<>());
 
 	private void installFatalErrorHandler() {

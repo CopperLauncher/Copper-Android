@@ -161,7 +161,7 @@ public class LauncherActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_pojav_launcher);
+        setContentView(R.layout.activity_mojo_ui);
         MoJsonDownloader.prepareSubstitutionMap(getAssets());
 
         try {

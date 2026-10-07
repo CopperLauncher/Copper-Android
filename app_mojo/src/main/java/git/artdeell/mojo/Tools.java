@@ -90,7 +90,7 @@ public final class Tools {
     public static final String MAVEN_CENTRAL = "https://maven-central-eu.storage-download.googleapis.com/maven2/";
     public  static final float BYTE_TO_MB = 1024 * 1024;
     public static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
-    public static String APP_NAME = "PojavLauncher";
+    public static String APP_NAME = "MojoLauncher";
 
     public static final Gson GLOBAL_GSON = new GsonBuilder()
             .registerTypeAdapter(MavenName.class, new MavenNameAdapter())
@@ -106,6 +106,7 @@ public final class Tools {
 
     // New since 3.3.1
     public static String DIR_ACCOUNT_NEW;
+    // PojavLauncher is left for compatibility purposes
     public static String DIR_GAME_HOME = Environment.getExternalStorageDirectory().getAbsolutePath() + "/games/PojavLauncher";
     public static String DIR_GAME_NEW;
 
@@ -123,12 +124,13 @@ public final class Tools {
     public static final Object WAIT_OBJECT = new Object();
 
 
-    private static @Nullable File getPojavStorageRoot(Context ctx) {
+    private static @Nullable File getAppStorageRoot(Context ctx) {
         if(SDK_INT >= 29) {
             return ctx.getExternalFilesDir(null);
         }
         File externalStorageDirectory = Environment.getExternalStorageDirectory();
         if(externalStorageDirectory == null) return null;
+        // PojavLauncher is left for compatibility purposes
         File launcherRoot = new File(externalStorageDirectory,"games/PojavLauncher");
         if(!Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState(launcherRoot))) return null;
         return launcherRoot;
@@ -140,7 +142,7 @@ public final class Tools {
      * @return true if storage is fine, false if storage is not accessible
      */
     public static boolean checkStorageRoot(Context context) {
-        return getPojavStorageRoot(context) != null;
+        return getAppStorageRoot(context) != null;
     }
 
     /**
@@ -180,9 +182,9 @@ public final class Tools {
      */
     public static void initStorageConstants(Context ctx){
         initEarlyConstants(ctx);
-        File pojavStorageRoot = getPojavStorageRoot(ctx);
-        if(pojavStorageRoot == null) throw new RuntimeException("Whoops! You have to put the SD into your phone.");
-        DIR_GAME_HOME = pojavStorageRoot.getAbsolutePath();
+        File appStorageRoot = getAppStorageRoot(ctx);
+        if(appStorageRoot == null) throw new RuntimeException("Whoops! You have to put the SD into your phone.");
+        DIR_GAME_HOME = appStorageRoot.getAbsolutePath();
         DIR_GAME_NEW = DIR_GAME_HOME + "/.minecraft";
         DIR_HOME_VERSION = DIR_GAME_NEW + "/versions";
         DIR_HOME_LIBRARY = DIR_GAME_NEW + "/libraries";
