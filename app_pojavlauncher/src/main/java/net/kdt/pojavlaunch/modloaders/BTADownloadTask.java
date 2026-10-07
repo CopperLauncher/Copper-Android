@@ -8,6 +8,7 @@ import com.kdt.mcgui.ProgressLayout;
 
 import git.artdeell.mojo.R;
 import net.kdt.pojavlaunch.Tools;
+import net.kdt.pojavlaunch.game.renderer.def.Renderers;
 import net.kdt.pojavlaunch.instances.Instance;
 import net.kdt.pojavlaunch.instances.Instances;
 import net.kdt.pojavlaunch.modloaders.bta.BTAHeuristics;
@@ -91,8 +92,11 @@ public class BTADownloadTask implements Runnable {
     }
 
     private void createProfile(String btaVersionId) throws IOException {
+        // BTA 8.0+ uses Core context
+        final boolean core = BTAUtils.isNightlyVersion(mBtaVersion) || BTAUtils.parseBTAVersion(mBtaVersion)[0] >= 8;
         Instance instance = Instances.createInstance(i -> {
             i.versionId = btaVersionId;
+            if(core) i.renderer = Renderers.LTW_RENDERER;
             i.name = "Better than Adventure!";
         }, "BTA-"+btaVersionId);
         tryDownloadIcon(instance);
