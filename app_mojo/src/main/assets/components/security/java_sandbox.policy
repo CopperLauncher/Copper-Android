@@ -11,7 +11,7 @@ grant {
 };
 
 deny {
-    permission java.io.FilePermission "${pojav.path.private.account}/-", "read, write, delete";
+    permission java.io.FilePermission "${mojo.path.account}/-", "read, write, delete";
     permission java.io.FilePermission "<<ALL FILES>>", "write, delete, execute";
 };
 
