@@ -191,8 +191,11 @@ public class GameRunner {
 
         RenderSpec renderer = gameRenderer.getCurrentRenderer();
 
+        boolean core = "core".equals(versionInfo.contextHint);
+        boolean compat = "compat".equals(versionInfo.contextHint);
+
         // Switch renderer to GL4ES when running a compat context version on LTW
-        if(isCompatContext(versionInfo) && !hasAngelica(gamedir) && renderer instanceof GLESRenderSpec.LTWRenderSpec) {
+        if(!core && isCompatContext(versionInfo) && !hasAngelica(gamedir) && renderer instanceof GLESRenderSpec.LTWRenderSpec) {
             switchRendererIfSupported(true, GameRenderer.getKnownRenderer(Renderers.GL4ES_RENDERER), gameRenderer, instance, activity, 0);
         }
 
@@ -200,12 +203,12 @@ public class GameRunner {
         RenderSpec ltw = GameRenderer.getKnownRenderer(Renderers.LTW_RENDERER);
         boolean ltwSupported = ltw != null && ltw.compatibleDevice(activity);
         // Block Sodium from running with GL4ES on 1.17+
-        if(!isCompatContext(versionInfo) && isGl4es && hasSodium(gamedir)) {
+        if(!core && !isCompatContext(versionInfo) && isGl4es && hasSodium(gamedir)) {
             switchRendererIfSupported(ltwSupported, ltw, gameRenderer, instance, activity, R.string.compat_sodium_not_supported);
         }
 
         // Switch renderer to LTW when running 1.21.5
-        if(!isGl4esCompatible(versionInfo) && isGl4es) {
+        if(!compat && !isGl4esCompatible(versionInfo) && isGl4es) {
             switchRendererIfSupported(ltwSupported, ltw, gameRenderer, instance, activity, R.string.compat_sodium_not_supported);
         }
 
@@ -289,9 +292,11 @@ public class GameRunner {
 
         javaArgList.addAll(JREUtils.parseJavaArguments(instance.getLaunchArgs()));
 
+        Map<String, String> versionEnvMap = versionInfo.environment;
+
         // TODO: this should be decoupled from GameRunner completely
         gameRenderer.setupEnvironment(activity);
-        JREUtils.setGameEnvironment(activity);
+        JREUtils.setGameEnvironment(activity, versionEnvMap);
         JREUtils.chdir(instance.getGameDirectory().getAbsolutePath());
 
         if(!gameRenderer.maybeSetupRenderer()) {
