@@ -580,7 +580,7 @@ public final class Tools {
                         "assetIndex", "assets", "id",
                         "mainClass", "minecraftArguments",
                         "releaseTime", "time", "type", "environment",
-                        "contextHint"
+                        "disableRendererChecks"
                 );
 
 

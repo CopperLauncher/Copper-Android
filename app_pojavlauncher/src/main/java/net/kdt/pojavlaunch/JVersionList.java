@@ -36,7 +36,7 @@ public class JVersionList {
         public String type;
         // Our specific stuff for BTA
         public HashMap<String, String> environment;
-        public String contextHint;
+        public boolean disableRendererChecks = false;
     }
     @Keep
     public static class JavaVersionInfo {
