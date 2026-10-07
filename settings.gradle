@@ -14,7 +14,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name='PojavLauncher'
+rootProject.name='MojoLauncher'
 include ':app_mojo'
 
 include ':forge_installer'
