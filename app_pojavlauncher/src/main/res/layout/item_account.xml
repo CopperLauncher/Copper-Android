@@ -25,6 +25,18 @@
 
         tools:ignore="RtlSymmetry" />
 
+    <!-- Skin/cape editor, shown for Microsoft accounts only (right next to their logo) -->
+    <ImageView
+        android:id="@+id/edit_account_button"
+        android:layout_width="@dimen/_44sdp"
+        android:layout_height="match_parent"
+        android:background="?attr/selectableItemBackground"
+        android:contentDescription="@string/skin_editor_edit_button"
+        android:src="@drawable/ic_px_edit"
+        android:padding="@dimen/padding_moderate"
+        android:visibility="gone"
+        />
+
     <!-- Fun fact, if I put an Image button, the spinner fails to put an onclick listener on the extended view -->
     <ImageView
         android:id="@+id/delete_account_button"

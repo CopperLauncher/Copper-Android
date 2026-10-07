@@ -5,6 +5,7 @@ import net.kdt.pojavlaunch.utils.ThemeColors;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -12,6 +13,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -26,6 +28,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 
@@ -40,6 +44,7 @@ import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
 import net.kdt.pojavlaunch.extra.ExtraListener;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
+import net.kdt.pojavlaunch.skins.SkinEditorFragment;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -186,6 +191,32 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
         onAttachedToWindow();
     }
 
+    /** Opens the skin/cape editor for a Microsoft account */
+    private void openSkinEditor(@NonNull Account account) {
+        FragmentActivity activity = findActivity(getContext());
+        if(activity == null || account.mSaveLocation == null) return;
+        FragmentManager manager = activity.getSupportFragmentManager();
+        if(manager.isStateSaved()) return;
+        if(ProgressKeeper.hasProgressKey(ProgressLayout.AUTHENTICATE)) {
+            // The session is being refreshed, the editor would fight it for the tokens
+            Toast.makeText(getContext(), R.string.tasks_ongoing, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        dismissPopup();
+        Bundle args = new Bundle();
+        args.putString(SkinEditorFragment.ARG_ACCOUNT_FILE, account.mSaveLocation.getName());
+        Tools.swapFragmentFullScreen(activity, SkinEditorFragment.class, SkinEditorFragment.TAG, args);
+    }
+
+    @Nullable
+    private static FragmentActivity findActivity(Context context) {
+        while(context instanceof ContextWrapper) {
+            if(context instanceof FragmentActivity) return (FragmentActivity) context;
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
+    }
+
     private void createAccount() {
         setSelection(0);
         dismissPopup();
@@ -299,6 +330,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
 
             ExtendedTextView textview = view.findViewById(R.id.account_item);
             ImageView deleteButton = view.findViewById(R.id.delete_account_button);
+            ImageView editButton = view.findViewById(R.id.edit_account_button);
 
             if(position == 0) {
                 // "Add account" button
@@ -306,6 +338,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
                 textview.setCompoundDrawables(plusDrawable, null, null, null);
                 textview.setText(R.string.main_add_account);
                 deleteButton.setVisibility(View.GONE);
+                editButton.setVisibility(View.GONE);
                 // Only activate the listener behaviour when in drop-down mode
                 // or when there's no accounts
                 if(isDropDown || getCount() == 1) view.setOnClickListener(v-> createAccount());
@@ -321,6 +354,15 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
 
 
             Account account = Objects.requireNonNull(getItem(position));
+
+            // Skins and capes live on the Minecraft account, so only Microsoft ones can edit them
+            if(account.authType == AuthType.MICROSOFT) {
+                editButton.setVisibility(View.VISIBLE);
+                editButton.setOnClickListener(v -> openSkinEditor(account));
+            }else {
+                editButton.setVisibility(View.GONE);
+                editButton.setOnClickListener(null);
+            }
 
             int authTypeResource = account.authType.iconResource;
 

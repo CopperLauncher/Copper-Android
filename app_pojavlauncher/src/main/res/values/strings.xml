@@ -681,4 +681,24 @@
     <string name="mjdl_download_error_title">Download error</string>
     <string name="mjdl_download_error_subtitle">Download failed. Check your internet connection and make sure that you have enough free disk space.</string>
     <string name="mjdl_download_error_subtitle_2">File verification failed. Please try again. If this error keeps happening, contact us on GitHub or on Discord.</string>
+    <!-- Skin & cape editor -->
+    <string name="skin_editor_edit_button">Edit skin and cape</string>
+    <string name="skin_editor_tab_skins">Skins</string>
+    <string name="skin_editor_tab_capes">Capes</string>
+    <string name="skin_editor_slim">Slim skin (Alex arms)</string>
+    <string name="skin_editor_no_cape">None</string>
+    <string name="skin_editor_add_skin">Add a skin</string>
+    <string name="skin_editor_delete_title">Delete this skin?</string>
+    <string name="skin_editor_delete_message">It will be removed from this launcher only. The skin currently set on your Minecraft account will not change.</string>
+    <string name="skin_editor_skin_applied">Skin applied</string>
+    <string name="skin_editor_cape_applied">Cape applied</string>
+    <string name="skin_editor_cape_removed">Cape removed</string>
+    <string name="skin_editor_current_skin">Current skin</string>
+    <string name="skin_editor_invalid_skin">Pick a PNG skin that is 64×64 or 64×32 pixels.</string>
+    <string name="skin_editor_no_capes">This account doesn\'t own any capes yet.</string>
+    <string name="skin_editor_not_microsoft">Skin editing is only available for Microsoft accounts.</string>
+    <string name="skin_editor_load_failed">Couldn\'t load your profile. Check your connection.</string>
+    <string name="skin_editor_error">Couldn\'t update your profile: %s</string>
+    <string name="skin_editor_rate_limited">Too many requests to Mojang. Wait a minute and try again.</string>
+    <string name="skin_editor_session_expired">Your session expired. Log in to this account again.</string>
 </resources>
