@@ -71,6 +71,7 @@
     <string name="mcl_setting_renderer_mesa_desktop">Mesa (DRM) - all versions</string>
     <string name="mcl_setting_renderer_mesa_desktop_ext">Mesa (DRM, external) - all versions</string>
     <string name="mcl_setting_renderer_mobileglues">MobileGlues (OpenGL ES) - 1.17+ only</string>
+    <string name="mcl_setting_renderer_sfpew">SFPEW/MobileGlues (OpenGL ES) - (all versions)</string>
     <string name="mcl_setting_veroption_release">Release</string>
     <string name="mcl_setting_veroption_snapshot">Snapshot</string>
     <string name="mcl_setting_veroption_oldalpha">Old-alpha</string>
@@ -701,4 +702,5 @@
     <string name="skin_editor_error">Couldn\'t update your profile: %s</string>
     <string name="skin_editor_rate_limited">Too many requests to Mojang. Wait a minute and try again.</string>
     <string name="skin_editor_session_expired">Your session expired. Log in to this account again.</string>
+    <string name="angelica_found_sfpew_notice">Angelica mod found, Simple FPE Wrapper not needed</string>
 </resources>

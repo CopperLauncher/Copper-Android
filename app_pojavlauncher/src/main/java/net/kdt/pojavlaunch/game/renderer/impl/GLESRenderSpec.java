@@ -6,14 +6,18 @@ import android.util.Log;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
+import net.kdt.pojavlaunch.instances.Instance;
+import net.kdt.pojavlaunch.instances.Instances;
 import net.kdt.pojavlaunch.game.renderer.GameRenderer;
 import net.kdt.pojavlaunch.game.renderer.RenderSpec;
 import net.kdt.pojavlaunch.game.renderer.def.Renderers;
 import net.kdt.pojavlaunch.game.renderer.extra.GLESProvider;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.utils.JREUtils;
+import net.kdt.pojavlaunch.utils.jre.GameRunner;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 import git.artdeell.mojo.R;
@@ -81,6 +85,52 @@ public abstract class GLESRenderSpec implements RenderSpec {
         }
         protected int glesVersion() {
             return 2;
+        }
+    }
+
+    /**
+     * SFPEW (Simple FPE Wrapper). Emulates the fixed function pipeline on top of the GLES backend
+     * selected through SFPEW_EGL. Like upstream PojavLauncher, the backend is MobileGlues.
+     */
+    public static class SFPEWRenderSpec extends GLESRenderSpec {
+        /** Backend library SFPEW wraps */
+        public static final String BACKEND_LIBRARY = "libmobileglues.so";
+
+        public boolean compatibleDevice(Context context) {
+            return JREUtils.getDetectedVersion() >= 3
+                    && new File(Tools.NATIVE_LIB_DIR, this.library()).exists()
+                    && new File(Tools.NATIVE_LIB_DIR, BACKEND_LIBRARY).exists();
+        }
+        public String name() {
+            return "SFPEW";
+        }
+        public int displayName() {
+            return R.string.mcl_setting_renderer_sfpew;
+        }
+        public void setupEnvironment(Context context, Map<String, String> envMap) {
+            // Same MG-ES config as the standalone MobileGlues renderer, since MG is the backend here
+            try {
+                LauncherPreferences.writeMGRendererSettings();
+            } catch (IOException e) {
+                Log.e("SFPEWRenderSpec", "Failed to write MG-ES renderer settings", e);
+            }
+            envMap.put("MG_DIR_PATH", Tools.DIR_DATA + "/MobileGlues");
+
+            Instance instance = Instances.loadSelectedInstance();
+            boolean hasAngelica = instance != null && GameRunner.hasAngelica(instance.getGameDirectory());
+            // If Angelica is present, don't set SFPEW_EGL (Angelica provides its own FPE)
+            if (!hasAngelica) {
+                envMap.put("SFPEW_EGL", BACKEND_LIBRARY);
+            }
+        }
+        public String tag() {
+            return Renderers.SFPEW_RENDERER;
+        }
+        public String library() {
+            return "libSimpleFPEWrapper.so";
+        }
+        protected int glesVersion() {
+            return 3;
         }
     }
 }

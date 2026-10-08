@@ -75,6 +75,7 @@ import net.kdt.pojavlaunch.tasks.AsyncAssetManager;
 import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
 import net.kdt.pojavlaunch.authenticator.accounts.Account;
+import net.kdt.pojavlaunch.game.renderer.impl.GLESRenderSpec;
 import net.kdt.pojavlaunch.utils.jre.GameRunner;
 
 import java.io.File;
@@ -414,6 +415,13 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         Logger.appendToLog("--------- Starting game with Launcher Debug!");
         Tools.printLauncherInfo(versionId, instance.getLaunchArgs(), mGameRenderer.getCurrentRenderer(), this);
         JREUtils.redirectAndPrintJRELog();
+
+        // Show Angelica + SFPEW notice
+        if (mGameRenderer.getCurrentRenderer() instanceof GLESRenderSpec.SFPEWRenderSpec
+                && GameRunner.hasAngelica(instance.getGameDirectory())) {
+            Tools.runOnUiThread(() -> Toast.makeText(this, R.string.angelica_found_sfpew_notice, Toast.LENGTH_LONG).show());
+        }
+
         GameRunner.launchGame(this, account, instance, versionId, classpath, mGameRenderer);
         //Note that we actually stall in the above function, even if the game crashes. But let's be safe.
         Tools.runOnUiThread(()-> mServiceBinder.isActive = false);
