@@ -30,9 +30,14 @@ public interface GLESProvider {
     static GLESProvider getGlesProvider(Context context, boolean preferAngle) {
         if (!preferAngle) return new NativeGLESProvider();
         GLESProvider provider;
-        // External ANGLE takes priority over system ANGLE so we can override it easily
+        // External ANGLE takes priority over everything else so we can override it easily
         LibraryPlugin anglePlugin = LibraryPlugin.discoverPlugin(context, LibraryPlugin.ID_ANGLE_PLUGIN);
         provider = new GLESProvider.ExternalAngleProvider(anglePlugin);
+        if (provider.supported()) {
+            return provider;
+        }
+        // ANGLE bundled with the launcher (angle-release.aar)
+        provider = new GLESProvider.BundledAngleProvider(context);
         if (provider.supported()) {
             return provider;
         }
@@ -137,12 +142,12 @@ public interface GLESProvider {
      * System ANGLE provider. Android 15+ devices often have ANGLE libraries located in their system partition, so we can take advantage of them
      */
     class SystemAngleProvider implements GLESProvider {
-        private static final String BASE_PATH = Architecture.is64BitsDevice() ? "/system/lib64/" : "/system/lib";
+        private static final String BASE_PATH = Architecture.is64BitsDevice() ? "/system/lib64/" : "/system/lib/";
         public String type() {
             return "System ANGLE";
         }
         public String eglPath() {
-            return gles().getAbsolutePath();
+            return egl().getAbsolutePath();
         }
         public String glesPath() {
             return gles().getAbsolutePath();
@@ -151,7 +156,7 @@ public interface GLESProvider {
             return new File(BASE_PATH, ANGLE_EGL);
         }
         public File gles() {
-            return new File(BASE_PATH, ANGLE_EGL);
+            return new File(BASE_PATH, ANGLE_GLES);
         }
         public boolean supported() {
             return egl().exists() && gles().exists();
@@ -192,5 +197,40 @@ public interface GLESProvider {
             return false;
         }
     }
-    // One might add other OpenGLES providers (such as Mesa and/or bundled ANGLE), but this is not something we want right now
+
+    /**
+     * Bundled ANGLE provider. Uses the ANGLE libraries shipped inside the launcher itself (angle-release.aar),
+     * so no extra plugin is needed. The libraries live in the app's native library directory
+     */
+    class BundledAngleProvider implements GLESProvider {
+        private final File egl;
+        private final File gles;
+        public BundledAngleProvider(Context context) {
+            String nativeLibDir = context.getApplicationInfo().nativeLibraryDir;
+            this.egl = new File(nativeLibDir, ANGLE_EGL);
+            this.gles = new File(nativeLibDir, ANGLE_GLES);
+        }
+        public String type() {
+            return "Bundled ANGLE";
+        }
+        public String eglPath() {
+            return egl.getAbsolutePath();
+        }
+        public String glesPath() {
+            return gles.getAbsolutePath();
+        }
+        public File egl() {
+            return egl;
+        }
+        public File gles() {
+            return gles;
+        }
+        public boolean supported() {
+            return egl.exists() && gles.exists();
+        }
+        public boolean requiresNamespace() {
+            return false;
+        }
+    }
+    // One might add other OpenGLES providers (such as Mesa), but this is not something we want right now
 }

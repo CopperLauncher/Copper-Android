@@ -42,6 +42,22 @@ jobs:
           name: mesa.aar
           path: app_pojavlauncher/libs
 
+      - name: Get Rust Renderer
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          repo: whaltermc/rust-renderer
+          workflow: build.yml
+          workflow_conclusion: success
+          name: rust-renderer-library
+          path: app_pojavlauncher/libs
+
+      - name: Normalize Rust Renderer AAR name
+        run: |
+          if [ -f app_pojavlauncher/libs/renderer-release.aar ]; then
+            mv app_pojavlauncher/libs/renderer-release.aar app_pojavlauncher/libs/rust-renderer.aar
+          fi
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.14.3"

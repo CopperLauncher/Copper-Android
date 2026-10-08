@@ -10,3 +10,5 @@ app_pojavlauncher/.cxx/
 .vs/
 /curseforge_key.txt
 /app_pojavlauncher/libs/ltw-release.aar
+/app_pojavlauncher/libs/rust-renderer.aar
+/app_pojavlauncher/libs/renderer-release.aar
