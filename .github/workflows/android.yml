@@ -27,7 +27,7 @@ jobs:
           workflow: android.yml
           workflow_conclusion: success
           name: output-aar
-          path: app_pojavlauncher/libs
+          path: app_mojo/libs
 
       - name: Get Mesa
         uses: dawidd6/action-download-artifact@v6  
