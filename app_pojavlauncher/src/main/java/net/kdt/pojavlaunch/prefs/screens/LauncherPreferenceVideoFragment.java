@@ -56,14 +56,27 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
         boolean supportsTurnip = GpuUtils.checkVulkanSupport(packageManager) && GpuUtils.getGlInfo().isAdreno();
         driverPreference.setVisible(supportsTurnip);
 
-        // Show ANGLE switch only if AnglePlugin is available
+        // Show the bundled ANGLE switch only if the bundled ANGLE libraries are actually present
         if(hasAngle == null) {
-            GLESProvider provider = GLESProvider.getGlesProvider(getContext(), true);
-            hasAngle = provider instanceof GLESProvider.ExternalAngleProvider || provider instanceof GLESProvider.SystemAngleProvider;
+            hasAngle = new GLESProvider.ExternalAngleProvider(requireContext()).supported();
         }
         SwitchPreferenceCompat angleSwitch = requirePreference("use_angle", SwitchPreferenceCompat.class);
         angleSwitch.setVisible(hasAngle);
         angleSwitch.setChecked(LauncherPreferences.PREF_USE_ANGLE);
+
+        // System ANGLE is only shipped by the OS on Android 15+ (API 35)
+        SwitchPreferenceCompat systemAngleSwitch = requirePreference("use_system_angle", SwitchPreferenceCompat.class);
+        systemAngleSwitch.setVisible(Build.VERSION.SDK_INT >= 35);
+        systemAngleSwitch.setChecked(LauncherPreferences.PREF_USE_SYSTEM_ANGLE);
+        // The two ANGLE sources are mutually exclusive
+        angleSwitch.setOnPreferenceChangeListener((preference, newValue) -> {
+            if(Boolean.TRUE.equals(newValue)) systemAngleSwitch.setChecked(false);
+            return true;
+        });
+        systemAngleSwitch.setOnPreferenceChangeListener((preference, newValue) -> {
+            if(Boolean.TRUE.equals(newValue)) angleSwitch.setChecked(false);
+            return true;
+        });
 
         ListPreference rendererListPreference = requirePreference("renderer",
                 ListPreference.class);

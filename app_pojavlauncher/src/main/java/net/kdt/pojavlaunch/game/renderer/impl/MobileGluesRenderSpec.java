@@ -55,7 +55,7 @@ public class MobileGluesRenderSpec implements RenderSpec {
         // or an AnglePlugin if one is installed. If neither is available, this safely
         // falls back to a no-op (native GLES), which MobileGlues will ignore anyway if
         // its own "enableANGLE" setting is off.
-        GLESProvider provider = GLESProvider.getGlesProvider(context, true);
+        GLESProvider provider = GLESProvider.getGlesProvider(context, true, LauncherPreferences.PREF_USE_SYSTEM_ANGLE);
         Log.i("MobileGluesRenderSpec", "Using GLESProvider: " + provider.type());
         provider.setEnvironment(envMap);
         envMap.put("MG_DIR_PATH", Tools.DIR_DATA + "/MobileGlues");
