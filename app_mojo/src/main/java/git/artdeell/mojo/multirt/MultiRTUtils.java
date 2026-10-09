@@ -9,6 +9,8 @@ import android.util.Log;
 
 import com.kdt.mcgui.ProgressLayout;
 
+import git.artdeell.mojo.Architecture;
+import git.artdeell.mojo.NewJREUtil;
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.utils.MathUtils;
@@ -53,6 +55,20 @@ public class MultiRTUtils {
         else throw new RuntimeException("The runtime directory does not exist");
 
         return runtimes;
+    }
+
+    public static List<NewJREUtil.ExternalRuntime> getRuntimesToDownload() {
+        List<NewJREUtil.ExternalRuntime> runtimesToDownload = new ArrayList<>();
+        NewJREUtil.ExternalRuntime[] downloadableRuntimes = NewJREUtil.ExternalRuntime.values();
+
+        for (NewJREUtil.ExternalRuntime downloadableruntime : downloadableRuntimes) {
+            if(getExactJreName(downloadableruntime.majorVersion) == null){
+                // x86 isn't supported for JRE21+
+                if (!(Tools.DEVICE_ARCHITECTURE == Architecture.ARCH_X86 && downloadableruntime.majorVersion >= 21))
+                    runtimesToDownload.add(downloadableruntime);
+            }
+        }
+        return runtimesToDownload;
     }
 
     public static String getExactJreName(int majorVersion) {

@@ -96,6 +96,9 @@
     <string name="global_retry">Retry</string>
     <string name="global_default">Default</string>
     <string name="global_off">Off</string>
+    <string name="global_not_installed">Not Installed</string>
+    <string name="global_download">Download</string>
+    <string name="global_installing">Installing…</string>
 
     <!-- MainActivity: strings -->
     <string name="mcn_exit_title">Application/Game exited with code %d, check latestlog.txt for more details.</string>
