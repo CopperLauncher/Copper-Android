@@ -35,6 +35,7 @@ public class RTRecyclerViewAdapter extends RecyclerView.Adapter<RTRecyclerViewAd
 
     private boolean mIsDeleting = false;
     private Activity mActivity;
+    private boolean mIsDownloading = false;
 
     public void setActivity(Activity activity) {
         mActivity = activity;
@@ -153,7 +154,9 @@ public class RTRecyclerViewAdapter extends RecyclerView.Adapter<RTRecyclerViewAd
         @SuppressLint("NotifyDataSetChanged")
         private void downloadRuntime(NewJREUtil.ExternalRuntime runtime) {
             if(mActivity == null) return;
+            if(mIsDownloading) return;
 
+            mIsDownloading = true;
             mSetDefaultButton.setEnabled(false);
             mSetDefaultButton.setText(R.string.global_installing);
             runtime.isDownloading = true;
@@ -165,12 +168,14 @@ public class RTRecyclerViewAdapter extends RecyclerView.Adapter<RTRecyclerViewAd
 
                     mSetDefaultButton.post(() -> {
                         runtime.isDownloading = false;
+                        mIsDownloading = false;
                         notifyDataSetChanged();
                     });
                 } catch (RuntimeSelectionException e) {
                     Tools.showError(mActivity, e);
                     mSetDefaultButton.post(() -> {
                         runtime.isDownloading = false;
+                        mIsDownloading = false;
                         notifyDataSetChanged();
                     });
                 }
@@ -223,12 +228,14 @@ public class RTRecyclerViewAdapter extends RecyclerView.Adapter<RTRecyclerViewAd
             mSetDefaultButton.setVisibility(View.VISIBLE);
             mDeleteButton.setVisibility(View.GONE);
 
-            if (runtime.isDownloading) {
+            if (mIsDownloading || runtime.isDownloading) {
                 mSetDefaultButton.setEnabled(false);
                 mSetDefaultButton.setText(R.string.global_installing);
+                mSetDefaultButton.setAlpha(0.5f);
             } else {
                 mSetDefaultButton.setEnabled(true);
                 mSetDefaultButton.setText(R.string.global_download);
+                mSetDefaultButton.setAlpha(1.0f);
             }
         }
 
