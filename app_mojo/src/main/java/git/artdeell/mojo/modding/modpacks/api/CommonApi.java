@@ -1,0 +1,288 @@
+package git.artdeell.mojo.modding.modpacks.api;
+
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
+import git.artdeell.mojo.MojoApplication;
+import git.artdeell.mojo.R;
+import git.artdeell.mojo.Tools;
+import git.artdeell.mojo.modding.modpacks.api.modloader.LoaderInstaller;
+import git.artdeell.mojo.modding.modpacks.models.Constants;
+import git.artdeell.mojo.modding.modpacks.models.ModDetail;
+import git.artdeell.mojo.modding.modpacks.models.ModItem;
+import git.artdeell.mojo.modding.modpacks.models.SearchFilters;
+import git.artdeell.mojo.modding.modpacks.models.SearchResult;
+import git.artdeell.mojo.utils.ZipUtils;
+
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+
+/**
+ * Group all apis under the same umbrella, as another layer of abstraction
+ */
+public class CommonApi implements ModpackApi {
+
+    private final ModpackApi mCurseforgeApi;
+    private final ModpackApi mModrinthApi;
+    private final ModpackApi[] mModpackApis;
+    /** Parallel to mModpackApis — which Constants.SOURCE_* each entry is, for engine filtering. */
+    private final int[] mModpackApiSources;
+
+    public CommonApi(String curseforgeApiKey) {
+        this(curseforgeApiKey, false);
+    }
+
+    /**
+     * @param disableCurseforge when true, CurseForge is excluded from
+     *                          {@link #searchMod}'s result fan-out entirely —
+     *                          used by the "Disable CurseForge" experimental
+     *                          setting, since its API can be noticeably slower
+     *                          than Modrinth's. The instance is still created
+     *                          (cheap, no network) so {@link #getModpackApi}
+     *                          keeps working for things like importing an
+     *                          existing CurseForge modpack zip.
+     */
+    public CommonApi(String curseforgeApiKey, boolean disableCurseforge) {
+        mCurseforgeApi = new CurseforgeApi(curseforgeApiKey);
+        mModrinthApi = new ModrinthApi();
+        if (disableCurseforge) {
+            mModpackApis = new ModpackApi[]{mModrinthApi};
+            mModpackApiSources = new int[]{Constants.SOURCE_MODRINTH};
+        } else {
+            mModpackApis = new ModpackApi[]{mModrinthApi, mCurseforgeApi};
+            mModpackApiSources = new int[]{Constants.SOURCE_MODRINTH, Constants.SOURCE_CURSEFORGE};
+        }
+    }
+
+    /** Whether the given per-api source should be queried under the requested engine filter. */
+    private static boolean isEngineIncluded(int apiSource, int engineFilter) {
+        switch (engineFilter) {
+            case Constants.ENGINE_MODRINTH:   return apiSource == Constants.SOURCE_MODRINTH;
+            case Constants.ENGINE_CURSEFORGE: return apiSource == Constants.SOURCE_CURSEFORGE;
+            case Constants.ENGINE_BOTH:
+            default:                          return true;
+        }
+    }
+
+    @Override
+    public SearchResult searchMod(SearchFilters searchFilters, SearchResult previousPageResult) {
+        CommonApiSearchResult commonApiSearchResult = (CommonApiSearchResult) previousPageResult;
+        // If there are no previous page results, create a new array. Otherwise, use the one from the previous page
+        SearchResult[] results = commonApiSearchResult == null ?
+                new SearchResult[mModpackApis.length] : commonApiSearchResult.searchResults;
+
+        int totalSize = 0;
+
+        Future<?>[] futures = new Future<?>[mModpackApis.length];
+        for(int i = 0; i < mModpackApis.length; i++) {
+            // Skip engines the user didn't pick in the search filter dialog (Modrinth / CurseForge / Both)
+            if(!isEngineIncluded(mModpackApiSources[i], searchFilters.engine)) continue;
+            // If there is an array and its length is zero, this means that we've exhausted the results for this
+            // search query and we don't need to actually do the search
+            if(results[i] != null && results[i].results.length == 0) continue;
+            // If the previous page result is not null (aka the arrays aren't fresh)
+            // and the previous result is null, it means that na error has occured on the previous
+            // page. We lost contingency anyway, so don't bother requesting.
+            if(previousPageResult != null && results[i] == null) continue;
+            futures[i] = MojoApplication.sExecutorService.submit(new ApiDownloadTask(i, searchFilters,
+                    results[i]));
+        }
+
+        if(Thread.interrupted()) {
+            cancelAllFutures(futures);
+            return null;
+        }
+        boolean hasSuccessful = false;
+        // Count up all the results
+        for(int i = 0; i < mModpackApis.length; i++) {
+            Future<?> future = futures[i];
+            if(future == null) continue;
+            try {
+                SearchResult searchResult = results[i] = (SearchResult) future.get();
+                if(searchResult != null) hasSuccessful = true;
+                else continue;
+                totalSize += searchResult.totalResultCount;
+            }catch (Exception e) {
+                cancelAllFutures(futures);
+                e.printStackTrace();
+                return null;
+            }
+        }
+        if(!hasSuccessful) {
+            return null;
+        }
+        // Then build an array with all the mods
+        ArrayList<ModItem[]> filteredResults = new ArrayList<>(results.length);
+
+        // Sanitize returned values
+        for(SearchResult result : results) {
+            if(result == null) continue;
+            ModItem[] searchResults = result.results;
+            // If the length is zero, we don't need to perform needless copies
+            if(searchResults.length == 0) continue;
+            filteredResults.add(searchResults);
+        }
+        filteredResults.trimToSize();
+        if(Thread.interrupted()) return null;
+
+        ModItem[] concatenatedItems = buildFusedResponse(filteredResults);
+        if(Thread.interrupted()) return null;
+        // Recycle or create new search result
+        if(commonApiSearchResult == null) commonApiSearchResult = new CommonApiSearchResult();
+        commonApiSearchResult.searchResults = results;
+        commonApiSearchResult.totalResultCount = totalSize;
+        commonApiSearchResult.results = concatenatedItems;
+        return commonApiSearchResult;
+    }
+
+    @Override
+    public ModDetail getModDetails(ModItem item) {
+        Log.i("CommonApi", "Invoking getModDetails on item.apiSource="+item.apiSource +" item.title="+item.title);
+        return getModpackApi(item.apiSource).getModDetails(item);
+    }
+
+    @Override
+    public LoaderInstaller installModpack(ModDetail modDetail, int selectedVersion) throws IOException {
+        return getModpackApi(modDetail.apiSource).installModpack(modDetail, selectedVersion);
+    }
+
+    @Override
+    public LoaderInstaller installLocalModpack(String modpackName, File modpackFile, String icon) throws IOException {
+        try {
+            return getModpackApi(modpackFile).installLocalModpack(modpackName, modpackFile, icon);
+        } catch (IllegalArgumentException e) {
+            // Neither modrinth.index.json nor manifest.json is in the archive, this is not a modpack
+            modpackFile.delete();
+            throw new IOException(e.getMessage(), e);
+        }
+    }
+
+    /** Kept for callers that only need to know what kind of modpack a file is */
+    public static final short PACK_UNDEFINED = 0, PACK_MODRINTH = 1, PACK_CURSEFORGE = 2;
+
+    public static short checkModpack(File outFile) {
+        try (ZipFile zipFile = new ZipFile(outFile)) {
+            if (zipFile.getEntry("modrinth.index.json") != null) return PACK_MODRINTH;
+            if (zipFile.getEntry("manifest.json") != null) return PACK_CURSEFORGE;
+            return PACK_UNDEFINED;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    private @NonNull ModpackApi getModpackApi(int apiSource) {
+        switch (apiSource) {
+            case Constants.SOURCE_MODRINTH:
+                return mModrinthApi;
+            case Constants.SOURCE_CURSEFORGE:
+                return mCurseforgeApi;
+            default:
+                throw new UnsupportedOperationException("Unknown API source: " + apiSource);
+        }
+    }
+
+    private @NonNull ModpackApi getModpackApi(@NonNull File modpackFile) throws IOException {
+        try (ZipFile zip = new ZipFile(modpackFile)) {
+            boolean isModrinth;
+            boolean isCurseforge;
+
+            try {
+                ZipUtils.getEntryStream(zip, "modrinth.index.json");
+                isModrinth = true;
+            } catch (IOException ignored) {
+                isModrinth = false;
+            }
+
+            try {
+                ZipUtils.getEntryStream(zip, "manifest.json");
+                isCurseforge = true;
+            } catch (IOException ignored) {
+                isCurseforge = false;
+            }
+
+            if (isModrinth && isCurseforge) {
+                String name = modpackFile.getName();
+                int dot = name.lastIndexOf('.');
+                String extension = (dot == -1) ? "" : name.substring(dot + 1);
+                if (extension.equalsIgnoreCase("mrpack")) return mModrinthApi;
+                throw new IOException("Ambiguous file contains both modrinth.index.json and manifest.json. Cannot determine modpack format.");
+            }
+            if (isModrinth) return mModrinthApi;
+            if (isCurseforge) return mCurseforgeApi;
+
+            throw new IllegalArgumentException("Zip provided does not contain a manifest file.");
+        }
+    }
+
+    /** Fuse the arrays in a way that's fair for every endpoint */
+    private ModItem[] buildFusedResponse(List<ModItem[]> modMatrix){
+        int totalSize = 0;
+
+        // Calculate the total size of the merged array
+        for (ModItem[] array : modMatrix) {
+            totalSize += array.length;
+        }
+
+        ModItem[] fusedItems = new ModItem[totalSize];
+
+        int mergedIndex = 0;
+        int maxLength = 0;
+
+        // Find the maximum length of arrays
+        for (ModItem[] array : modMatrix) {
+            if (array.length > maxLength) {
+                maxLength = array.length;
+            }
+        }
+
+        // Populate the merged array
+        for (int i = 0; i < maxLength; i++) {
+            for (ModItem[] matrix : modMatrix) {
+                if (i < matrix.length) {
+                    fusedItems[mergedIndex] = matrix[i];
+                    mergedIndex++;
+                }
+            }
+        }
+
+        return fusedItems;
+    }
+
+    private void cancelAllFutures(Future<?>[] futures) {
+        for(Future<?> future : futures) {
+            if(future == null) continue;
+            future.cancel(true);
+        }
+    }
+
+    private class ApiDownloadTask implements Callable<SearchResult> {
+        private final int mModApi;
+        private final SearchFilters mSearchFilters;
+        private final SearchResult mPreviousPageResult;
+
+        private ApiDownloadTask(int modApi, SearchFilters searchFilters, SearchResult previousPageResult) {
+            this.mModApi = modApi;
+            this.mSearchFilters = searchFilters;
+            this.mPreviousPageResult = previousPageResult;
+        }
+
+        @Override
+        public SearchResult call() {
+            return mModpackApis[mModApi].searchMod(mSearchFilters, mPreviousPageResult);
+        }
+    }
+
+    class CommonApiSearchResult extends SearchResult {
+        SearchResult[] searchResults = new SearchResult[mModpackApis.length];
+    }
+}

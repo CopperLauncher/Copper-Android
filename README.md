@@ -2,7 +2,7 @@
 
 <a href="./README_RU.md">Readme на русском</a>
 
-<img src="./app_pojavlauncher/src/main/assets/pojavlauncher.png" align="left" width="150" height="150" alt="Copper logo">
+<img src="./app_mojo/src/main/assets/mojo.png" align="left" width="150" height="150" alt="Copper logo">
 
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/CopperLauncher/Copper-Android)
 ![GitHub Downloads](https://img.shields.io/github/downloads/CopperLauncher/Copper-Android/total)
