@@ -42,7 +42,7 @@
 ## Сборка  
 * Скомпилируйте лаунчер (все необходимые компоненты скачаются автоматически)
 ```
-./gradlew :app_pojavlauncher:assembleDebug
+./gradlew :app_mojo:assembleDebug
 ```
 При сборке на Windows:
 * Замените `./gradlew` на `.\gradlew.bat`

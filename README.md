@@ -41,7 +41,7 @@ You can get MojoLauncher via four methods:
 ## Building   
 * Build the launcher (it will automatically download all required components)
 ```
-./gradlew :app_pojavlauncher:assembleDebug
+./gradlew :app_mojo:assembleDebug
 ```
 If you are building on Windows:
 * Replace `./gradlew` with `.\gradlew.bat`
