@@ -7,6 +7,8 @@ import com.kdt.mcgui.ProgressLayout;
 import git.artdeell.mojo.R;
 
 import git.artdeell.mojo.Tools;
+import git.artdeell.mojo.extra.ExtraConstants;
+import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.instances.InstanceInstaller;
 import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.instances.Instance;
@@ -47,6 +49,7 @@ public class ModpackInstaller {
             ModIconCache.writeInstanceImage(instance, icon);
 
             Instances.setSelectedInstance(instance);
+            ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, true);
             if(loaderInstaller.requiresGuiInstallation()) {
                 instance.installer.start();
             }

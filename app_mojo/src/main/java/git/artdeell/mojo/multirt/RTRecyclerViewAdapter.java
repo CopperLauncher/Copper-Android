@@ -231,11 +231,9 @@ public class RTRecyclerViewAdapter extends RecyclerView.Adapter<RTRecyclerViewAd
             if (mIsDownloading || runtime.isDownloading) {
                 mSetDefaultButton.setEnabled(false);
                 mSetDefaultButton.setText(R.string.global_installing);
-                mSetDefaultButton.setAlpha(0.5f);
             } else {
                 mSetDefaultButton.setEnabled(true);
                 mSetDefaultButton.setText(R.string.global_download);
-                mSetDefaultButton.setAlpha(1.0f);
             }
         }
 

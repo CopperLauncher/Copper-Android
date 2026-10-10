@@ -9,6 +9,8 @@ import androidx.fragment.app.Fragment;
 
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
+import git.artdeell.mojo.extra.ExtraConstants;
+import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.Instances;
 
@@ -27,6 +29,7 @@ public class ProfileTypeSelectFragment extends Fragment {
             try {
                 Instance instance = Instances.createDefaultInstance();
                 Instances.setSelectedInstance(instance);
+                ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, true);
                 Tools.swapFragment(requireActivity(), InstanceEditorFragment.class,
                         InstanceEditorFragment.TAG, new Bundle(1));
             }catch (IOException e) {

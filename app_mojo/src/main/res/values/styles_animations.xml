@@ -39,6 +39,11 @@
         <item name="android:stateListAnimator">?attr/copperPressAnimator</item>
     </style>
 
+    <!-- Text button (primary coloured label, no fill) with the same press animator -->
+    <style name="Widget.Copper.Button.TextButton" parent="Widget.Material3.Button.TextButton">
+        <item name="android:stateListAnimator">?attr/copperPressAnimator</item>
+    </style>
+
     <style name="Widget.Copper.ImageButton" parent="Widget.AppCompat.ImageButton">
         <item name="android:stateListAnimator">?attr/copperPressAnimator</item>
     </style>

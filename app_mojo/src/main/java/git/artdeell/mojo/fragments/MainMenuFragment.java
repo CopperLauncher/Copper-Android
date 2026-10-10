@@ -69,6 +69,10 @@ public class MainMenuFragment extends Fragment {
         mRightPaneBackCallback.setEnabled(isRightPaneActive());
         updateBottomBar();
         updateLeftPaneVisibility();
+        // Back at the home screen: instances may have been created, renamed or deleted
+        if (mVersionSpinner != null && getChildFragmentManager().getBackStackEntryCount() == 0) {
+            mVersionSpinner.reloadProfiles();
+        }
     };
 
     public MainMenuFragment(){
