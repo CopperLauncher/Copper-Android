@@ -41,6 +41,16 @@ jobs:
           workflow_conclusion: success
           name: mesa.aar
           path: app_mojo/libs
+          
+      - name: Get Filedialog Module
+        uses: dawidd6/action-download-artifact@v6
+        continue-on-error: true
+        with:
+          repo: whaltermc/FileDiaglogModule
+          workflow: build-aar.yml
+          workflow_conclusion: success
+          name: filedialogmodule-aar
+          path: app_mojo/libs
 
       - uses: gradle/actions/setup-gradle@v4
         with:
