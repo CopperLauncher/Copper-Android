@@ -209,7 +209,7 @@ public class GameRunner {
 
             // Switch renderer to LTW when running 1.21.5
             if(!isGl4esCompatible(versionInfo) && isGl4es) {
-                switchRendererIfSupported(ltwSupported, ltw, gameRenderer, instance, activity, R.string.compat_sodium_not_supported);
+                switchRendererIfSupported(ltwSupported, ltw, gameRenderer, instance, activity, R.string.compat_version_not_supported);
             }
         }
 
