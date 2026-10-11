@@ -16,7 +16,9 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -60,6 +62,9 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
     private final ValueAnimator mLoginStepAnimator = ValueAnimator.ofFloat(mMaxSteps);
     private final Paint mLoginBarPaint = new Paint();
     private float mLoginStep;
+    /* Tap-only touch handling: swipes must not open the account popup */
+    private float mTouchDownX, mTouchDownY;
+    private boolean mTouchMoved;
 
     class LoginExtraListener implements ExtraListener<String> {
         private final AuthType mAuthType;
@@ -221,6 +226,39 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
         setSelection(0);
         dismissPopup();
         ExtraCore.setValue(ExtraConstants.SELECT_AUTH_METHOD, true);
+    }
+
+    /**
+     * Only open the account popup on a real tap. The default Spinner opens it as soon as the
+     * finger has been down for a moment, which made swiping down to open the notification
+     * panel pop up the account list instead.
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if(!isEnabled()) return super.onTouchEvent(event);
+        switch(event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                mTouchDownX = event.getX();
+                mTouchDownY = event.getY();
+                mTouchMoved = false;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if(!mTouchMoved) {
+                    int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                    if(Math.abs(event.getX() - mTouchDownX) > slop
+                            || Math.abs(event.getY() - mTouchDownY) > slop) {
+                        mTouchMoved = true;
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if(!mTouchMoved) performClick();
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                mTouchMoved = true;
+                break;
+        }
+        return true;
     }
 
     @Override
