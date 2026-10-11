@@ -45,6 +45,8 @@ add_library(pojavexec SHARED
         jre_launcher/native_library_hook.c
         jre_launcher/elf_hinter.c
         jre_launcher/abort_wait.c
+        tinyfd/tinyfd_bridge.c
+        nfd/nfd_bridge.c
         utils.c
         stdio_is.c
         minibridge.c
