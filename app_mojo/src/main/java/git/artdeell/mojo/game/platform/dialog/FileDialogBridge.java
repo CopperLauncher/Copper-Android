@@ -381,15 +381,15 @@ public class FileDialogBridge {
         return intent;
     }
 
-    // Convert tinyfd/SDL filter patterns ("*.png", "*.jpg;*.jpeg", "*", "png")
-    // into MIME types. Unknown extensions are skipped.
+    // Convert tinyfd/SDL/NFD filter patterns ("*.png", "*.jpg;*.jpeg", "png,jpg",
+    // "*", "png") into MIME types. Unknown extensions are skipped.
     private static String[] patternsToMimeTypes(String[] filterPatterns) {
         if (filterPatterns == null || filterPatterns.length == 0) return new String[0];
         MimeTypeMap mimeTypeMap = MimeTypeMap.getSingleton();
         ArrayList<String> mimeTypes = new ArrayList<>();
         for (String pattern : filterPatterns) {
             if (pattern == null) continue;
-            for (String extension : pattern.split(";")) {
+            for (String extension : pattern.split("[;,]")) {
                 extension = extension.trim().toLowerCase();
                 while (extension.startsWith("*")) extension = extension.substring(1);
                 while (extension.startsWith(".")) extension = extension.substring(1);

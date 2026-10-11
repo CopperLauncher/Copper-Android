@@ -15,13 +15,15 @@
 
 #include "utils.h"
 
+#include "dialog_bridge.h"
+
 #define TINYFD_RESULT_BUFFER_SIZE (32 * 1024)
 
-static JavaVM *g_android_vm;
-static jclass g_bridge_class;
-static jmethodID m_open_file_dialog;
-static jmethodID m_save_file_dialog;
-static jmethodID m_select_folder_dialog;
+JavaVM *g_dialog_vm;
+jclass g_dialog_class;
+jmethodID g_m_open_file_dialog;
+jmethodID g_m_save_file_dialog;
+jmethodID g_m_select_folder_dialog;
 static jmethodID m_message_box;
 static jmethodID m_input_box;
 static jmethodID m_notify_popup;
@@ -33,13 +35,13 @@ static char g_result_buffer[TINYFD_RESULT_BUFFER_SIZE];
 
 JNIEXPORT void JNICALL
 Java_git_artdeell_mojo_game_platform_dialog_FileDialogBridge_nativeInit(JNIEnv *env, jclass clazz) {
-    (*env)->GetJavaVM(env, &g_android_vm);
-    g_bridge_class = (*env)->NewGlobalRef(env, clazz);
-    m_open_file_dialog = (*env)->GetStaticMethodID(env, clazz, "openFileDialog",
+    (*env)->GetJavaVM(env, &g_dialog_vm);
+    g_dialog_class = (*env)->NewGlobalRef(env, clazz);
+    g_m_open_file_dialog = (*env)->GetStaticMethodID(env, clazz, "openFileDialog",
             "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/String;");
-    m_save_file_dialog = (*env)->GetStaticMethodID(env, clazz, "saveFileDialog",
+    g_m_save_file_dialog = (*env)->GetStaticMethodID(env, clazz, "saveFileDialog",
             "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
-    m_select_folder_dialog = (*env)->GetStaticMethodID(env, clazz, "selectFolderDialog",
+    g_m_select_folder_dialog = (*env)->GetStaticMethodID(env, clazz, "selectFolderDialog",
             "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
     m_message_box = (*env)->GetStaticMethodID(env, clazz, "messageBox",
             "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)I");
@@ -127,10 +129,10 @@ Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeOpenFileDialog(JNIEnv *env, jcl
         jstring single_filter_description, jboolean allow_multiple) {
     pthread_mutex_lock(&g_bridge_lock);
     const char *result_utf = NULL;
-    JNIEnv *android_env = g_android_vm != NULL ? get_attached_env(g_android_vm) : NULL;
+    JNIEnv *android_env = g_dialog_vm != NULL ? get_attached_env(g_dialog_vm) : NULL;
     if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 16) == 0) {
-        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_bridge_class,
-                m_open_file_dialog,
+        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_dialog_class,
+                g_m_open_file_dialog,
                 export_string(env, android_env, title),
                 export_string(env, android_env, default_path),
                 export_patterns(env, android_env, filter_patterns),
@@ -149,10 +151,10 @@ Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeSaveFileDialog(JNIEnv *env, jcl
         jstring single_filter_description) {
     pthread_mutex_lock(&g_bridge_lock);
     const char *result_utf = NULL;
-    JNIEnv *android_env = g_android_vm != NULL ? get_attached_env(g_android_vm) : NULL;
+    JNIEnv *android_env = g_dialog_vm != NULL ? get_attached_env(g_dialog_vm) : NULL;
     if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 16) == 0) {
-        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_bridge_class,
-                m_save_file_dialog,
+        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_dialog_class,
+                g_m_save_file_dialog,
                 export_string(env, android_env, title),
                 export_string(env, android_env, default_path),
                 export_patterns(env, android_env, filter_patterns),
@@ -169,10 +171,10 @@ Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeSelectFolderDialog(JNIEnv *env,
         jstring title, jstring default_path) {
     pthread_mutex_lock(&g_bridge_lock);
     const char *result_utf = NULL;
-    JNIEnv *android_env = g_android_vm != NULL ? get_attached_env(g_android_vm) : NULL;
+    JNIEnv *android_env = g_dialog_vm != NULL ? get_attached_env(g_dialog_vm) : NULL;
     if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 16) == 0) {
-        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_bridge_class,
-                m_select_folder_dialog,
+        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_dialog_class,
+                g_m_select_folder_dialog,
                 export_string(env, android_env, title),
                 export_string(env, android_env, default_path));
         result_utf = import_result(android_env, end_object_call(android_env, call_result));
@@ -188,9 +190,9 @@ Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeMessageBox(JNIEnv *env, jclass 
         jint default_button) {
     pthread_mutex_lock(&g_bridge_lock);
     jint result = 0;
-    JNIEnv *android_env = g_android_vm != NULL ? get_attached_env(g_android_vm) : NULL;
+    JNIEnv *android_env = g_dialog_vm != NULL ? get_attached_env(g_dialog_vm) : NULL;
     if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 16) == 0) {
-        result = (*android_env)->CallStaticIntMethod(android_env, g_bridge_class, m_message_box,
+        result = (*android_env)->CallStaticIntMethod(android_env, g_dialog_class, m_message_box,
                 export_string(env, android_env, title),
                 export_string(env, android_env, message),
                 export_string(env, android_env, dialog_type),
@@ -211,9 +213,9 @@ Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeInputBox(JNIEnv *env, jclass cl
         jstring title, jstring message, jstring default_input, jboolean password) {
     pthread_mutex_lock(&g_bridge_lock);
     const char *result_utf = NULL;
-    JNIEnv *android_env = g_android_vm != NULL ? get_attached_env(g_android_vm) : NULL;
+    JNIEnv *android_env = g_dialog_vm != NULL ? get_attached_env(g_dialog_vm) : NULL;
     if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 16) == 0) {
-        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_bridge_class,
+        jstring call_result = (*android_env)->CallStaticObjectMethod(android_env, g_dialog_class,
                 m_input_box,
                 export_string(env, android_env, title),
                 export_string(env, android_env, message),
@@ -230,9 +232,9 @@ JNIEXPORT void JNICALL
 Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeNotifyPopup(JNIEnv *env, jclass clazz,
         jstring title, jstring message, jstring icon_type) {
     pthread_mutex_lock(&g_bridge_lock);
-    JNIEnv *android_env = g_android_vm != NULL ? get_attached_env(g_android_vm) : NULL;
+    JNIEnv *android_env = g_dialog_vm != NULL ? get_attached_env(g_dialog_vm) : NULL;
     if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 16) == 0) {
-        (*android_env)->CallStaticVoidMethod(android_env, g_bridge_class, m_notify_popup,
+        (*android_env)->CallStaticVoidMethod(android_env, g_dialog_class, m_notify_popup,
                 export_string(env, android_env, title),
                 export_string(env, android_env, message),
                 export_string(env, android_env, icon_type));
@@ -244,9 +246,9 @@ Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeNotifyPopup(JNIEnv *env, jclass
 JNIEXPORT void JNICALL
 Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeBeep(JNIEnv *env, jclass clazz) {
     pthread_mutex_lock(&g_bridge_lock);
-    JNIEnv *android_env = g_android_vm != NULL ? get_attached_env(g_android_vm) : NULL;
+    JNIEnv *android_env = g_dialog_vm != NULL ? get_attached_env(g_dialog_vm) : NULL;
     if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 8) == 0) {
-        (*android_env)->CallStaticVoidMethod(android_env, g_bridge_class, m_beep);
+        (*android_env)->CallStaticVoidMethod(android_env, g_dialog_class, m_beep);
         end_void_call(android_env);
     }
     pthread_mutex_unlock(&g_bridge_lock);

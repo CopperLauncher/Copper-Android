@@ -44,7 +44,7 @@ import java.util.Map;
 import git.artdeell.mojo.R;
 
 public class GameRunner {
-    private static final String TINYFD_BRIDGE_ASSET = "components/tinyfd_bridge/tinyfd_bridge.jar";
+    private static final String FILEDIALOG_BRIDGE_ASSET = "components/filedialog_bridge/filedialog_bridge.jar";
     /**
      * Optimization mods based on Sodium can mitigate the render distance issue. Check if Sodium
      * or its derivative is currently installed to skip the render distance check.
@@ -245,7 +245,7 @@ public class GameRunner {
         OldVersionsUtils.selectOpenGlVersion(versionInfo);
 
         ArrayList<String> launchClassPath = new ArrayList<>(classpath.length + 1);
-        classpath = prependTinyfdBridge(activity, classpath);
+        classpath = prependFileDialogBridge(activity, classpath);
         for(int i = 0; i < classpath.length; i++) {
             File classpathEntry = classpath[i];
             String entryPath = classpathEntry.getAbsolutePath();
@@ -331,16 +331,16 @@ public class GameRunner {
     }
 
     /**
-     * Unpack the tinyfd bridge jar and put it ahead of the game classpath, so
-     * games link against the launcher file dialog implementation instead of
-     * the bundled liblwjgl_tinyfd.so (which has no Android file picker).
+     * Unpack the file dialog bridge jar and put it ahead of the game classpath, so
+     * games link against the launcher dialog implementations (tinyfd, NFD) instead
+     * of the bundled native glue libraries (which have no Android file picker).
      */
-    private static File[] prependTinyfdBridge(AppCompatActivity activity, File[] classpath) {
+    private static File[] prependFileDialogBridge(AppCompatActivity activity, File[] classpath) {
         try {
-            File bridgeDir = new File(Tools.DIR_CACHE, "tinyfd_bridge");
+            File bridgeDir = new File(Tools.DIR_CACHE, "filedialog_bridge");
             if (!bridgeDir.isDirectory() && !bridgeDir.mkdirs()) return classpath;
-            File bridgeJar = new File(bridgeDir, "tinyfd_bridge.jar");
-            try (InputStream in = activity.getAssets().open(TINYFD_BRIDGE_ASSET);
+            File bridgeJar = new File(bridgeDir, "filedialog_bridge.jar");
+            try (InputStream in = activity.getAssets().open(FILEDIALOG_BRIDGE_ASSET);
                  OutputStream out = new FileOutputStream(bridgeJar)) {
                 byte[] buffer = new byte[8192];
                 int read;
@@ -349,10 +349,10 @@ public class GameRunner {
             File[] newClasspath = new File[classpath.length + 1];
             newClasspath[0] = bridgeJar;
             System.arraycopy(classpath, 0, newClasspath, 1, classpath.length);
-            Log.i("GameRunner", "Tinyfd bridge prepended to the game classpath");
+            Log.i("GameRunner", "File dialog bridge prepended to the game classpath");
             return newClasspath;
         } catch (Throwable t) {
-            Log.w("GameRunner", "Tinyfd bridge unavailable, file dialogs will stay inactive", t);
+            Log.w("GameRunner", "File dialog bridge unavailable, file dialogs will stay inactive", t);
             return classpath;
         }
     }
