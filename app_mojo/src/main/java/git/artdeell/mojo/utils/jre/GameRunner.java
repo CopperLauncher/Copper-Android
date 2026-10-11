@@ -30,7 +30,10 @@ import git.artdeell.mojo.utils.MCOptionUtils;
 import git.artdeell.mojo.utils.OldVersionsUtils;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +44,7 @@ import java.util.Map;
 import git.artdeell.mojo.R;
 
 public class GameRunner {
+    private static final String TINYFD_BRIDGE_ASSET = "components/tinyfd_bridge/tinyfd_bridge.jar";
     /**
      * Optimization mods based on Sodium can mitigate the render distance issue. Check if Sodium
      * or its derivative is currently installed to skip the render distance check.
@@ -240,7 +244,8 @@ public class GameRunner {
         // Select the appropriate openGL version
         OldVersionsUtils.selectOpenGlVersion(versionInfo);
 
-        ArrayList<String> launchClassPath = new ArrayList<>(classpath.length);
+        ArrayList<String> launchClassPath = new ArrayList<>(classpath.length + 1);
+        classpath = prependTinyfdBridge(activity, classpath);
         for(int i = 0; i < classpath.length; i++) {
             File classpathEntry = classpath[i];
             String entryPath = classpathEntry.getAbsolutePath();
@@ -323,6 +328,33 @@ public class GameRunner {
 
         Tools.restartLauncherActivity(activity);
         Tools.fullyExit();
+    }
+
+    /**
+     * Unpack the tinyfd bridge jar and put it ahead of the game classpath, so
+     * games link against the launcher file dialog implementation instead of
+     * the bundled liblwjgl_tinyfd.so (which has no Android file picker).
+     */
+    private static File[] prependTinyfdBridge(AppCompatActivity activity, File[] classpath) {
+        try {
+            File bridgeDir = new File(Tools.DIR_CACHE, "tinyfd_bridge");
+            if (!bridgeDir.isDirectory() && !bridgeDir.mkdirs()) return classpath;
+            File bridgeJar = new File(bridgeDir, "tinyfd_bridge.jar");
+            try (InputStream in = activity.getAssets().open(TINYFD_BRIDGE_ASSET);
+                 OutputStream out = new FileOutputStream(bridgeJar)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = in.read(buffer)) != -1) out.write(buffer, 0, read);
+            }
+            File[] newClasspath = new File[classpath.length + 1];
+            newClasspath[0] = bridgeJar;
+            System.arraycopy(classpath, 0, newClasspath, 1, classpath.length);
+            Log.i("GameRunner", "Tinyfd bridge prepended to the game classpath");
+            return newClasspath;
+        } catch (Throwable t) {
+            Log.w("GameRunner", "Tinyfd bridge unavailable, file dialogs will stay inactive", t);
+            return classpath;
+        }
     }
 
     private static void disableSplash(File dir) {

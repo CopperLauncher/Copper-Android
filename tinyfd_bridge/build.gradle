@@ -1,0 +1,13 @@
+plugins {
+    id 'java-library'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+dependencies {
+    // Only the PointerBuffer type is needed; the game provides LWJGL at runtime.
+    compileOnly 'org.lwjgl:lwjgl:3.3.6'
+}

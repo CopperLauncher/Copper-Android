@@ -297,6 +297,7 @@ afterEvaluate {
         registrar.setVariant(variant)
 
         registrar.projectJarDependency project(":forge_installer"), "components/forge_installer"
+        registrar.projectJarDependency project(":tinyfd_bridge"), "components/tinyfd_bridge"
 
 		if (variant.getName().toLowerCase().contains("full")) {
             registrar.jreRuntimeDependency 8, "components/jre"
