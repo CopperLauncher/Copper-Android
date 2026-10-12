@@ -223,10 +223,19 @@ public class CurseforgeApi implements ModpackApi{
         String[] mcVersionNames = new String[length];
         String[] versionUrls = new String[length];
         String[] hashes = new String[length];
+        String[] dates = new String[length];
+        String[] types = new String[length];
+        String[] loaderNames = new String[length];
         ModDetail.Dependencies[][] dependencies = new ModDetail.Dependencies[length][];
         for(int i = 0; i < allModDetails.size(); i++) {
             JsonObject modDetail = allModDetails.get(i);
             versionNames[i] = modDetail.get("displayName").getAsString();
+            dates[i] = GsonJsonUtils.getStringSafe(modDetail, "fileDate");
+            JsonElement releaseType = GsonJsonUtils.getElementSafe(modDetail, "releaseType");
+            if (releaseType != null) {
+                int releaseTypeId = releaseType.getAsInt();
+                types[i] = releaseTypeId == 1 ? "release" : releaseTypeId == 2 ? "beta" : "alpha";
+            }
             versionIds[i] = modDetail.get("id").getAsString();
             JsonElement downloadUrl = modDetail.get("downloadUrl");
             if (downloadUrl == null || downloadUrl.isJsonNull()) {
@@ -249,18 +258,29 @@ public class CurseforgeApi implements ModpackApi{
                     );
                 }
             } catch (Exception ignored) {}
+            StringBuilder loaderBuilder = new StringBuilder();
             for(JsonElement jsonElement : gameVersions) {
                 String gameVersion = jsonElement.getAsString();
                 if(!sMcVersionPattern.matcher(gameVersion).matches()) {
+                    // Loaders are mixed into the same array as the Minecraft versions
+                    if (gameVersion.equalsIgnoreCase("fabric") || gameVersion.equalsIgnoreCase("forge")
+                            || gameVersion.equalsIgnoreCase("quilt") || gameVersion.equalsIgnoreCase("neoforge")) {
+                        if (loaderBuilder.length() > 0) loaderBuilder.append(", ");
+                        loaderBuilder.append(gameVersion);
+                    }
                     continue;
                 }
-                mcVersionNames[i] = gameVersion;
-                break;
+                if (mcVersionNames[i] == null) mcVersionNames[i] = gameVersion;
             }
+            loaderNames[i] = loaderBuilder.length() == 0 ? null : loaderBuilder.toString();
 
             hashes[i] = getSha1FromModData(modDetail);
         }
-        return new ModDetail(item, versionNames, versionIds, mcVersionNames, versionUrls, hashes, dependencies);
+        ModDetail detail = new ModDetail(item, versionNames, versionIds, mcVersionNames, versionUrls, hashes, dependencies);
+        detail.versionDates = dates;
+        detail.versionTypes = types;
+        detail.versionLoaders = loaderNames;
+        return detail;
     }
 
     private void fillInMissingModItemData(ModItem item) {

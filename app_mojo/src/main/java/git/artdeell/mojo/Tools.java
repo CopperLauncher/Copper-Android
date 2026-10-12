@@ -740,7 +740,7 @@ public final class Tools {
 
     /** @return the two-pane main menu if it is the current screen of the activity, null otherwise */
     @Nullable
-    private static MainMenuFragment getTwoPaneMainMenu(FragmentActivity fragmentActivity) {
+    public static MainMenuFragment getTwoPaneMainMenu(FragmentActivity fragmentActivity) {
         Fragment current = fragmentActivity.getSupportFragmentManager().findFragmentById(R.id.container_fragment);
         if(current instanceof MainMenuFragment && ((MainMenuFragment) current).isTwoPane()) {
             return (MainMenuFragment) current;

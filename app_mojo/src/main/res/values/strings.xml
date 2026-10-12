@@ -708,4 +708,40 @@
     <string name="skin_editor_session_expired">Your session expired. Log in to this account again.</string>
     <string name="angelica_found_sfpew_notice">Angelica mod found, Simple FPE Wrapper not needed</string>
     <string name="bta_configuring">Configuring BTA…</string>
+
+    <!-- Content detail screen (description / gallery / changelog + versions) -->
+    <string name="content_kind_mod">Mod</string>
+    <string name="content_kind_resourcepack">Resource pack</string>
+    <string name="content_kind_shaderpack">Shader pack</string>
+    <string name="content_kind_modpack">Modpack</string>
+    <string name="content_tab_description">Description</string>
+    <string name="content_tab_gallery">Gallery</string>
+    <string name="content_tab_changelog">Changelog</string>
+    <string name="content_tab_versions">Versions</string>
+    <string name="content_open_page">Open page</string>
+    <string name="content_description_error">Could not load the full description, showing the summary instead.</string>
+    <string name="content_description_empty">This project has no description.</string>
+    <string name="content_gallery_empty">No pictures in the gallery.</string>
+    <string name="content_changelog_empty">No changelog available.</string>
+    <string name="content_changelog_none">No changelog was provided for this version.</string>
+    <string name="content_changelog_error">Could not load the changelog.</string>
+    <string name="content_changelog_more">Show more</string>
+    <string name="content_changelog_retry">Retry</string>
+    <string name="content_versions_title">Versions</string>
+    <string name="content_versions_count">%d available</string>
+    <string name="content_versions_empty">No versions found. Try changing the filters.</string>
+    <string name="content_version_release">Release</string>
+    <string name="content_version_beta">Beta</string>
+    <string name="content_version_alpha">Alpha</string>
+    <string name="content_session_lost">This screen was closed while the launcher was in the background.</string>
+
+    <!-- Filter dialog -->
+    <string name="filter_dialog_title">Filters</string>
+    <string name="filter_dialog_subtitle">Narrow down what you see</string>
+    <string name="filter_dialog_subtitle_manage">Used when checking installed content for updates</string>
+    <string name="filter_section_version">Minecraft version</string>
+    <string name="filter_any_version">Any version</string>
+    <string name="filter_change">Change</string>
+    <string name="filter_clear_version">Clear the version</string>
+    <string name="filter_reset">Reset</string>
 </resources>

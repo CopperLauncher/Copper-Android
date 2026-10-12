@@ -30,6 +30,16 @@ public class ModDetail extends ModItem {
      * both versions sitting in the mods folder side-by-side. */
     public String installedFilePath = null;
 
+    /* The version names exactly as the API reported them, before the Minecraft version gets
+     * appended to versionNames. Used by the version list, which shows the Minecraft version
+     * as its own piece of information. */
+    public String[] baseVersionNames;
+    /* Optional extra per-version info, any of these can be null. Dates are ISO-8601 strings,
+     * types are "release", "beta" or "alpha", loaders are a display string like "Fabric, Quilt". */
+    public String[] versionDates;
+    public String[] versionTypes;
+    public String[] versionLoaders;
+
     public ModDetail(ModItem item, String[] versionNames, String[] mcVersionNames, String[] versionUrls, String[] hashes) {
         this(item, versionNames, null, mcVersionNames, versionUrls, hashes, null);
     }
@@ -45,6 +55,7 @@ public class ModDetail extends ModItem {
         this.versionUrls = versionUrls;
         this.versionHashes = hashes;
         this.dependencies = dependencies;
+        this.baseVersionNames = versionNames.clone();
 
         // Add the mc version to the version model
         for (int i=0; i<versionNames.length; i++){

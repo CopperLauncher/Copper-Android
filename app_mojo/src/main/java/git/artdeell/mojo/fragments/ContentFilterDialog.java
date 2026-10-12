@@ -60,67 +60,17 @@ public final class ContentFilterDialog {
             savedLoader  = storedLoader;
         }
 
-        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
-                .setView(R.layout.dialog_mod_filters)
-                .create();
-
-        dialog.setOnShowListener(di -> {
-            TextView versionText   = dialog.findViewById(R.id.search_mod_selected_mc_version_textview);
-            Button   selectVersion = dialog.findViewById(R.id.search_mod_mc_version_button);
-            Button   applyButton   = dialog.findViewById(R.id.search_mod_apply_filters);
-            Spinner  loaderSpinner = dialog.findViewById(R.id.search_mod_loader_spinner);
-
-            // This dialog is shared with the mod/modpack search screens, which also
-            // show a Modrinth/CurseForge/Both engine picker — not applicable here,
-            // since this just filters already-installed content by version/loader
-            // for update checking, it doesn't pick a search engine.
-            View engineLabel   = dialog.findViewById(R.id.search_mod_engine_textview);
-            View engineSpinner = dialog.findViewById(R.id.search_mod_engine_spinner);
-            if (engineLabel != null) engineLabel.setVisibility(View.GONE);
-            if (engineSpinner != null) engineSpinner.setVisibility(View.GONE);
-
-            if (versionText == null || selectVersion == null || applyButton == null) return;
-
-            versionText.setText(savedVersion);
-
-            final String[] loaderValues = { "", "fabric", "forge", "quilt", "neoforge" };
-            if (loaderSpinner != null) {
-                String[] loaderLabels = {
-                        context.getString(R.string.search_mod_any_loader),
-                        "Fabric", "Forge", "Quilt", "NeoForge"
-                };
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                        context, R.layout.spinner_item_m3, loaderLabels);
-                adapter.setDropDownViewResource(R.layout.spinner_dropdown_item_m3);
-                loaderSpinner.setAdapter(adapter);
-                for (int i = 0; i < loaderValues.length; i++) {
-                    if (loaderValues[i].equals(savedLoader)) {
-                        loaderSpinner.setSelection(i);
-                        break;
-                    }
-                }
-            }
-
-            selectVersion.setOnClickListener(v ->
-                    VersionSelectorDialog.open(v.getContext(), true,
-                            (id, snapshot) -> versionText.setText(id)));
-
-            applyButton.setOnClickListener(v -> {
-                String newVersion = versionText.getText().toString().trim();
-                String newLoader  = (loaderSpinner != null)
-                        ? loaderValues[loaderSpinner.getSelectedItemPosition()]
-                        : "";
-
-                prefs.edit()
-                        .putString(KEY_MC_VERSION + profileKey, newVersion)
-                        .putString(KEY_LOADER      + profileKey, newLoader)
-                        .apply();
-
-                if (onApplied != null) onApplied.onApplied(newVersion, newLoader);
-                di.dismiss();
-            });
+        SearchFilterDialog.Options options = new SearchFilterDialog.Options();
+        options.showEngine = false;
+        options.mcVersion = savedVersion;
+        options.loader = savedLoader;
+        options.subtitle = R.string.filter_dialog_subtitle_manage;
+        SearchFilterDialog.show(context, options, (engine, newVersion, newLoader) -> {
+            prefs.edit()
+                    .putString(KEY_MC_VERSION + profileKey, newVersion)
+                    .putString(KEY_LOADER      + profileKey, newLoader)
+                    .apply();
+            if (onApplied != null) onApplied.onApplied(newVersion, newLoader);
         });
-
-        dialog.show();
     }
 }

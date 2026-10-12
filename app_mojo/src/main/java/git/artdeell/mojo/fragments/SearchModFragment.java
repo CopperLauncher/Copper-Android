@@ -131,6 +131,10 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         });
         mFilterButton.setOnClickListener(v -> displayFilterDialog());
 
+        // Tapping a modpack opens its detail screens instead of expanding the card
+        mModItemAdapter.setOnContentClickListener(item ->
+                ContentDetailFragment.open(requireActivity(), item, modpackApi, null));
+
         // Installing a modpack the user already has on their device
         mImportButton = view.findViewById(R.id.mineButton_import_local_modpack);
         mImportButton.setVisibility(View.VISIBLE);
@@ -181,95 +185,16 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
     }
 
     private void displayFilterDialog() {
-        AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
-                .setView(R.layout.dialog_mod_filters)
-                .create();
-
-        // setup the view behavior
-        dialog.setOnShowListener(dialogInterface -> {
-            TextView mSelectedVersion = dialog.findViewById(R.id.search_mod_selected_mc_version_textview);
-            Button mSelectVersionButton = dialog.findViewById(R.id.search_mod_mc_version_button);
-            Button mApplyButton = dialog.findViewById(R.id.search_mod_apply_filters);
-            Spinner mLoaderSpinner = dialog.findViewById(R.id.search_mod_loader_spinner);
-            Spinner mEngineSpinner = dialog.findViewById(R.id.search_mod_engine_spinner);
-
-            assert mSelectVersionButton != null;
-            assert mSelectedVersion != null;
-            assert mApplyButton != null;
-
-            // Set up the "Modrinth / CurseForge / Both" engine picker. If CurseForge is
-            // disabled in experimental settings, only Modrinth is offered and the filter
-            // is pinned to it, since a CurseForge-only or Both search would otherwise
-            // silently return nothing.
-            boolean curseforgeDisabled = git.artdeell.mojo.prefs.LauncherPreferences.DEFAULT_PREF
-                    .getBoolean("disableCurseforgeApi", false);
-            final int[] engineValues = curseforgeDisabled
-                    ? new int[]{Constants.ENGINE_MODRINTH}
-                    : new int[]{Constants.ENGINE_MODRINTH, Constants.ENGINE_CURSEFORGE, Constants.ENGINE_BOTH};
-            if (mEngineSpinner != null) {
-                String[] engineLabels = curseforgeDisabled
-                        ? new String[]{getString(R.string.search_mod_engine_modrinth)}
-                        : new String[]{getString(R.string.search_mod_engine_modrinth),
-                                        getString(R.string.search_mod_engine_curseforge),
-                                        getString(R.string.search_mod_engine_both)};
-                ArrayAdapter<String> engineAdapter = new ArrayAdapter<>(
-                        requireContext(), R.layout.spinner_item_m3, engineLabels);
-                engineAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_m3);
-                mEngineSpinner.setAdapter(engineAdapter);
-
-                if (curseforgeDisabled) {
-                    mSearchFilters.engine = Constants.ENGINE_MODRINTH;
-                    mEngineSpinner.setSelection(0);
-                    mEngineSpinner.setEnabled(false);
-                } else {
-                    mEngineSpinner.setEnabled(true);
-                    for (int i = 0; i < engineValues.length; i++) {
-                        if (engineValues[i] == mSearchFilters.engine) {
-                            mEngineSpinner.setSelection(i);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Set up loader spinner
-            final String[] loaderValues = {"", "fabric", "forge", "quilt", "neoforge"};
-            if (mLoaderSpinner != null) {
-                String[] loaderLabels = {"Any loader", "Fabric", "Forge", "Quilt", "NeoForge"};
-                ArrayAdapter<String> loaderAdapter = new ArrayAdapter<>(
-                        requireContext(), R.layout.spinner_item_m3, loaderLabels);
-                loaderAdapter.setDropDownViewResource(R.layout.spinner_dropdown_item_m3);
-                mLoaderSpinner.setAdapter(loaderAdapter);
-
-                // Restore current selection
-                String currentLoader = mSearchFilters.modLoader != null ? mSearchFilters.modLoader : "";
-                for (int i = 0; i < loaderValues.length; i++) {
-                    if (loaderValues[i].equals(currentLoader)) {
-                        mLoaderSpinner.setSelection(i);
-                        break;
-                    }
-                }
-            }
-
-            mSelectVersionButton.setOnClickListener(v ->
-                    VersionSelectorDialog.open(v.getContext(), true,
-                            (id, snapshot) -> mSelectedVersion.setText(id)));
-            mSelectedVersion.setText(mSearchFilters.mcVersion);
-
-            mApplyButton.setOnClickListener(v -> {
-                if (mEngineSpinner != null) {
-                    mSearchFilters.engine = engineValues[mEngineSpinner.getSelectedItemPosition()];
-                }
-                if (mLoaderSpinner != null) {
-                    mSearchFilters.modLoader = loaderValues[mLoaderSpinner.getSelectedItemPosition()];
-                }
-                mSearchFilters.mcVersion = mSelectedVersion.getText().toString();
-                searchMods(mSearchEditText.getText().toString());
-                dialogInterface.dismiss();
-            });
+        SearchFilterDialog.Options options = new SearchFilterDialog.Options();
+        options.engine = mSearchFilters.engine;
+        options.mcVersion = mSearchFilters.mcVersion != null ? mSearchFilters.mcVersion : "";
+        options.loader = mSearchFilters.modLoader != null ? mSearchFilters.modLoader : "";
+        SearchFilterDialog.show(requireContext(), options, (engine, version, loader) -> {
+            mSearchFilters.engine = engine;
+            mSearchFilters.mcVersion = version;
+            mSearchFilters.modLoader = loader;
+            searchMods(mSearchEditText.getText().toString());
         });
-
-        dialog.show();
     }
 
     // ── ModpackSearchApi ──────────────────────────────────────────────────────

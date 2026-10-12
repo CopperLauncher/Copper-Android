@@ -53,6 +53,8 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final Set<ViewHolder> mViewHolderSet = Collections.newSetFromMap(new WeakHashMap<>());
     private final ModIconCache mIconCache = new ModIconCache();
     private final SearchResultCallback mSearchResultCallback;
+    /* When set, tapping an item reports it here instead of expanding the card in place */
+    private OnContentClickListener mContentClickListener;
     private ModItem[] mModItems;
     private final ModpackApi mModpackApi;
 
@@ -70,6 +72,14 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         mModpackApi = api;
         mModItems = new ModItem[]{};
         mSearchResultCallback = callback;
+    }
+
+    /**
+     * Makes the items open a detail screen when tapped. Without a listener the card expands in
+     * place with a version spinner, which is how the adapter used to work.
+     */
+    public void setOnContentClickListener(OnContentClickListener listener) {
+        mContentClickListener = listener;
     }
 
     public void performSearchQuery(SearchFilters searchFilters) {
@@ -171,6 +181,10 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(view);
             mViewHolderSet.add(this);
             view.setOnClickListener(v -> {
+                if(mContentClickListener != null) {
+                    if(mModItem != null) mContentClickListener.onContentClicked(mModItem);
+                    return;
+                }
                 if(!hasExtended()){
                     // Inflate the ViewStub
                     mExtendedLayout = ((ViewStub)v.findViewById(R.id.mod_limited_state_stub)).inflate();
@@ -475,6 +489,10 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         }
+    }
+
+    public interface OnContentClickListener {
+        void onContentClicked(ModItem item);
     }
 
     public interface SearchResultCallback {

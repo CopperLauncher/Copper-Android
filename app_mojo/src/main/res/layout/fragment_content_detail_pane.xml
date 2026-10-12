@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Left pane of the landscape two-pane main menu: back button on top, then everything scrolls
+     together so a short screen still has room for the text. The versions are shown in the right
+     pane by ContentVersionsFragment. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_detail_back"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_arrow_back_white"
+        android:text="@string/preference_back_title" />
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <ScrollView
+        android:id="@+id/content_detail_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <include layout="@layout/content_detail_hero" />
+
+            <include layout="@layout/content_detail_tabs" />
+
+            <include layout="@layout/content_detail_sections" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

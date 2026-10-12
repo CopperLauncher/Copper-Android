@@ -34,4 +34,21 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">match_parent</item>
     </style>
+
+    <!-- Tab chip of the content detail screen, see ContentDetailFragment for the selected look -->
+    <style name="ContentTabChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">@dimen/padding_medium</item>
+        <item name="android:background">@drawable/bg_tab_chip</item>
+        <item name="android:paddingStart">@dimen/padding_heavy</item>
+        <item name="android:paddingEnd">@dimen/padding_heavy</item>
+        <item name="android:paddingTop">@dimen/padding_moderate</item>
+        <item name="android:paddingBottom">@dimen/padding_moderate</item>
+        <item name="android:textAppearance">?attr/textAppearanceLabelLarge</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
 </resources>

@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.kdt.mcgui.mcVersionSpinner;
@@ -192,13 +193,39 @@ public class MainMenuFragment extends Fragment {
         onContentTypeChosen(manage, contentType);
     }
 
-    /** Shows the sidebar or the content picker in the left pane, depending on which is active */
+    /**
+     * Landscape: opens the content that was just put into the ContentSession. The description
+     * side (logo, description, gallery, changelog, back button) takes the left pane and the
+     * versions take the right pane. Whatever was showing in the two panes is hidden, not
+     * replaced, so Back brings the search results back exactly as they were, scroll position
+     * and query included. Both panes are in a single back stack entry.
+     */
+    public void openContentDetail() {
+        if (!isTwoPane()) return;
+        if (isTagAlreadyOnTop(ContentDetailFragment.TAG)) return;
+
+        FragmentManager manager = getChildFragmentManager();
+        FragmentTransaction transaction = manager.beginTransaction().setReorderingAllowed(true);
+        Fragment left = manager.findFragmentById(R.id.left_pane_container);
+        Fragment right = manager.findFragmentById(R.id.right_pane_container);
+        if (left != null) transaction.hide(left);
+        if (right != null) transaction.hide(right);
+        transaction
+                .add(R.id.left_pane_container, ContentDetailFragment.class, null, ContentDetailFragment.TAG)
+                .add(R.id.right_pane_container, ContentVersionsFragment.class, null, ContentVersionsFragment.TAG)
+                .addToBackStack(ContentDetailFragment.TAG)
+                .commit();
+        // Visibility is updated by mBackStackListener once the transaction lands
+    }
+
+    /** Shows the sidebar or the content picker / content detail in the left pane, depending on which is active */
     private void updateLeftPaneVisibility() {
         if (!isTwoPane() || mLeftSidebar == null || mLeftPaneContainer == null) return;
         Fragment leftFragment = getChildFragmentManager().findFragmentById(R.id.left_pane_container);
-        boolean pickerActive = leftFragment instanceof ContentPickerFragment;
-        mLeftSidebar.setVisibility(pickerActive ? View.GONE : View.VISIBLE);
-        mLeftPaneContainer.setVisibility(pickerActive ? View.VISIBLE : View.GONE);
+        boolean paneActive = leftFragment instanceof ContentPickerFragment
+                || leftFragment instanceof ContentDetailFragment;
+        mLeftSidebar.setVisibility(paneActive ? View.GONE : View.VISIBLE);
+        mLeftPaneContainer.setVisibility(paneActive ? View.VISIBLE : View.GONE);
     }
 
     private void showContentPickerDialog(boolean manage) {

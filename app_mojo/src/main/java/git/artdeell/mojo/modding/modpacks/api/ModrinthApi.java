@@ -148,11 +148,17 @@ public class ModrinthApi implements ModpackApi{
         String[] mcNames = new String[size];
         String[] urls = new String[size];
         String[] hashes = new String[size];
+        String[] dates = new String[size];
+        String[] types = new String[size];
+        String[] loaderNames = new String[size];
         ModDetail.Dependencies[][] dependencies = new ModDetail.Dependencies[size][];
 
         for (int i = 0; i < size; i++) {
             JsonObject version = versions.get(i);
             names[i] = version.get("name").getAsString();
+            dates[i] = GsonJsonUtils.getStringSafe(version, "date_published");
+            types[i] = GsonJsonUtils.getStringSafe(version, "version_type");
+            loaderNames[i] = joinLoaders(version.getAsJsonArray("loaders"));
             ids[i] = version.get("id").getAsString();
             try {
                 JsonArray dependenciesJsonArray = version.getAsJsonArray("dependencies");
@@ -177,7 +183,24 @@ public class ModrinthApi implements ModpackApi{
                     : hashesMap.get("sha1").getAsString();
         }
 
-        return new ModDetail(item, names, ids, mcNames, urls, hashes, dependencies);
+        ModDetail detail = new ModDetail(item, names, ids, mcNames, urls, hashes, dependencies);
+        detail.versionDates = dates;
+        detail.versionTypes = types;
+        detail.versionLoaders = loaderNames;
+        return detail;
+    }
+
+    /** "fabric", "quilt" -> "Fabric, Quilt". Null when the array is missing or empty. */
+    private static String joinLoaders(JsonArray loaders) {
+        if (loaders == null || loaders.size() == 0) return null;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < loaders.size(); i++) {
+            String loader = loaders.get(i).getAsString();
+            if (loader.isEmpty()) continue;
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(Character.toUpperCase(loader.charAt(0))).append(loader.substring(1));
+        }
+        return sb.length() == 0 ? null : sb.toString();
     }
 
     private void fillInMissingModItemData(ModItem item) {

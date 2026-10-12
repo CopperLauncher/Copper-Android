@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fillViewport="true">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical">
 
     <com.kdt.mcgui.LauncherMenuButton
@@ -74,4 +80,232 @@
         android:drawableStart="@drawable/ic_setting_screen_resolution"
         android:text="@string/mcl_content_shaderpacks" />
 
+
+    <!-- Inline filters of the landscape browser, flipped to the left side of the results.
+         Only visible in browse mode, see ContentPickerFragment. -->
+    <LinearLayout
+        android:id="@+id/content_picker_filters"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="@dimen/padding_moderate"
+        android:visibility="gone">
+
+    <LinearLayout
+        android:id="@+id/pf_engine_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/padding_moderate"
+        android:layout_marginTop="@dimen/padding_moderate"
+        android:background="@drawable/bg_filter_card"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_moderate">
+
+        <LinearLayout
+            android:id="@+id/pf_engine_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/search_mod_engine_label"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                android:textColor="?attr/colorOnSurface" />
+            <ImageView
+                android:id="@+id/pf_engine_chevron"
+                android:layout_width="@dimen/_18sdp"
+                android:layout_height="@dimen/_18sdp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_filter_chevron" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/pf_engine_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="@drawable/bg_filter_pill"
+            android:paddingHorizontal="@dimen/padding_moderate"
+            android:paddingVertical="@dimen/padding_small"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="?attr/colorOnPrimaryContainer" />
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/pf_engine_chips"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:visibility="gone"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_engine_modrinth"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="@string/search_mod_engine_modrinth" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_engine_curseforge"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="@string/search_mod_engine_curseforge" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_engine_both"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="@string/search_mod_engine_both" />
+        </com.google.android.material.chip.ChipGroup>
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/pf_version_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/padding_moderate"
+        android:layout_marginTop="@dimen/padding_moderate"
+        android:background="@drawable/bg_filter_card"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_moderate">
+
+        <LinearLayout
+            android:id="@+id/pf_version_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/filter_section_version"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                android:textColor="?attr/colorOnSurface" />
+            <ImageButton
+                android:id="@+id/pf_version_clear"
+                android:layout_width="@dimen/_22sdp"
+                android:layout_height="@dimen/_22sdp"
+                android:layout_marginStart="@dimen/padding_medium"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/filter_clear_version"
+                android:padding="@dimen/padding_medium"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_close"
+                android:tint="?attr/colorOnSurfaceVariant"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/pf_version_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="@drawable/bg_filter_pill"
+            android:paddingHorizontal="@dimen/padding_moderate"
+            android:paddingVertical="@dimen/padding_small"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="?attr/colorOnPrimaryContainer" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/pf_loader_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/padding_moderate"
+        android:layout_marginTop="@dimen/padding_moderate"
+        android:background="@drawable/bg_filter_card"
+        android:orientation="vertical"
+        android:padding="@dimen/padding_moderate">
+
+        <LinearLayout
+            android:id="@+id/pf_loader_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/search_mod_loader_label"
+                android:textAppearance="?attr/textAppearanceTitleSmall"
+                android:textColor="?attr/colorOnSurface" />
+            <ImageView
+                android:id="@+id/pf_loader_chevron"
+                android:layout_width="@dimen/_18sdp"
+                android:layout_height="@dimen/_18sdp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_filter_chevron" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/pf_loader_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="@drawable/bg_filter_pill"
+            android:paddingHorizontal="@dimen/padding_moderate"
+            android:paddingVertical="@dimen/padding_small"
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="?attr/colorOnPrimaryContainer" />
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/pf_loader_chips"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:visibility="gone"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_loader_any"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="@string/search_mod_any_loader" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_loader_fabric"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="Fabric" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_loader_forge"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="Forge" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_loader_quilt"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="Quilt" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/pf_loader_neoforge"
+                style="@style/Widget.Material3.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checkable="true"
+                android:text="NeoForge" />
+        </com.google.android.material.chip.ChipGroup>
+    </LinearLayout>
+    </LinearLayout>
+
 </LinearLayout>
+</ScrollView>
