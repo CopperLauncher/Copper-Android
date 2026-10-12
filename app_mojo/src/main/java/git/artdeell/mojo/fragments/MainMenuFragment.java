@@ -186,6 +186,26 @@ public class MainMenuFragment extends Fragment {
     }
 
     /**
+     * Landscape: Manage Content's add / browse button. The left pane switches from the manage
+     * picker to the browse picker (with the filter cards) and the right pane to the store, in one
+     * back stack entry, so Back returns to the manage screen it came from.
+     * @return false when this isn't the two-pane layout, the caller then navigates on its own
+     */
+    public boolean openBrowseFromManage(@NonNull Bundle searchArgs, @NonNull String tag) {
+        if (!isTwoPane()) return false;
+        Bundle pickerArgs = new Bundle();
+        pickerArgs.putBoolean(ContentPickerFragment.ARG_MANAGE, false);
+        getChildFragmentManager()
+                .beginTransaction()
+                .setReorderingAllowed(true)
+                .replace(R.id.left_pane_container, ContentPickerFragment.class, pickerArgs, ContentPickerFragment.TAG)
+                .replace(R.id.right_pane_container, ModsSearchFragment.class, searchArgs, tag)
+                .addToBackStack(tag)
+                .commit();
+        return true;
+    }
+
+    /**
      * Called by {@link ContentPickerFragment} when one of its mods / resource packs / shader packs
      * buttons is tapped. The picker itself stays in the left pane.
      */

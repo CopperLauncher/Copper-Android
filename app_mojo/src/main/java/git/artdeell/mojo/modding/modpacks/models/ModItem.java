@@ -12,6 +12,10 @@ public class ModItem extends ModSource {
     public boolean isRestricted;
     /** Direct website URL for the mod page (used for CF restricted mods) */
     public String websiteUrl;
+    /** Total downloads, -1 if the API didn't say */
+    public long downloads = -1;
+    /** Modrinth follows / CurseForge likes, -1 if the API didn't say */
+    public long favorites = -1;
 
     public ModItem(int apiSource, boolean isModpack, String id, String title, String description, String imageUrl) {
         this.apiSource = apiSource;

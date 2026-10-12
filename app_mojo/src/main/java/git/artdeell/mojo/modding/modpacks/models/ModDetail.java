@@ -39,6 +39,8 @@ public class ModDetail extends ModItem {
     public String[] versionDates;
     public String[] versionTypes;
     public String[] versionLoaders;
+    /** Downloads of every version, null or -1 entries when unknown */
+    public long[] versionDownloads;
 
     public ModDetail(ModItem item, String[] versionNames, String[] mcVersionNames, String[] versionUrls, String[] hashes) {
         this(item, versionNames, null, mcVersionNames, versionUrls, hashes, null);

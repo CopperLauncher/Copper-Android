@@ -733,6 +733,7 @@
     <string name="content_version_release">Release</string>
     <string name="content_version_beta">Beta</string>
     <string name="content_version_alpha">Alpha</string>
+    <string name="content_version_downloads">%s downloads</string>
     <string name="content_session_lost">This screen was closed while the launcher was in the background.</string>
 
     <!-- Filter dialog -->

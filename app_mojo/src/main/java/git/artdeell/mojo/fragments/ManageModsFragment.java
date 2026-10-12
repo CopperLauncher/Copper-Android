@@ -188,9 +188,16 @@ public class ManageModsFragment extends Fragment {
         if (!loader.isEmpty())  args.putString(ModsSearchFragment.ARG_PRESET_LOADER,     loader);
         args.putString(ModsSearchFragment.ARG_CONTENT_TYPE, mContentType.name());
 
+        String tag = ModsSearchFragment.TAG + ":" + mContentType.name();
+        // Landscape: the left pane has to become the browse menu too, not stay on the manage one
+        Fragment parent = getParentFragment();
+        if (parent instanceof MainMenuFragment && ((MainMenuFragment) parent).openBrowseFromManage(args, tag)) {
+            return;
+        }
+
         ModsSearchFragment fragment = new ModsSearchFragment();
         fragment.setArguments(args);
-        navigateToFragment(fragment, ModsSearchFragment.TAG + ":" + mContentType.name());
+        navigateToFragment(fragment, tag);
     }
 
     /**

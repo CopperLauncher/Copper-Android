@@ -165,6 +165,8 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private ModItem mModItem = null;
         private final TextView mTitle, mDescription;
         private final ImageView mIconView, mSourceView;
+        private final View mDownloadsGroup, mFavoritesGroup;
+        private final TextView mDownloadsText, mFavoritesText;
         private View mExtendedLayout;
         private Spinner mExtendedSpinner;
         private Button mExtendedButton;
@@ -270,6 +272,10 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             mDescription = view.findViewById(R.id.mod_body_textview);
             mIconView = view.findViewById(R.id.mod_thumbnail_imageview);
             mSourceView = view.findViewById(R.id.mod_source_imageview);
+            mDownloadsGroup = view.findViewById(R.id.mod_downloads_group);
+            mDownloadsText = view.findViewById(R.id.mod_downloads_text);
+            mFavoritesGroup = view.findViewById(R.id.mod_favorites_group);
+            mFavoritesText = view.findViewById(R.id.mod_favorites_text);
         }
 
         /** Display basic info about the moditem */
@@ -304,6 +310,8 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             mSourceView.setImageResource(getSourceDrawable(item.apiSource));
             mTitle.setText(item.title);
             mDescription.setText(item.description);
+            bindCount(mDownloadsGroup, mDownloadsText, item.downloads);
+            bindCount(mFavoritesGroup, mFavoritesText, item.favorites);
 
             if(hasExtended()){
                 closeDetailedView();
@@ -489,6 +497,11 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         }
+    }
+
+    private static void bindCount(View group, TextView text, long count) {
+        group.setVisibility(count < 0 ? View.GONE : View.VISIBLE);
+        if (count >= 0) text.setText(git.artdeell.mojo.utils.CountFormatter.compact(count));
     }
 
     public interface OnContentClickListener {

@@ -53,6 +53,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import git.artdeell.mojo.R;
+import git.artdeell.mojo.extra.ExtraConstants;
+import git.artdeell.mojo.extra.ExtraCore;
 
 /**
  * Lets the user pick the skin and the cape of a Microsoft account without leaving the launcher.
@@ -334,8 +336,15 @@ public class SkinEditorFragment extends Fragment {
             Throwable error = null;
             try {
                 fresh = MinecraftSkinApi.ensureFreshSession(account);
-                MinecraftSkinApi.uploadSkin(fresh.accessToken, SkinLibrary.readBytes(entry), slim);
+                byte[] skinBytes = SkinLibrary.readBytes(entry);
+                MinecraftSkinApi.uploadSkin(fresh.accessToken, skinBytes, slim);
                 SkinLibrary.setSelected(fresh.profileId, skinId);
+                try {
+                    // The avatar next to the account name comes from here
+                    fresh.updateSkinFace(skinBytes);
+                } catch (RuntimeException ignored) {
+                    // The skin is applied, a stale avatar is not worth failing for
+                }
             } catch (Exception e) {
                 error = e;
             }
@@ -346,6 +355,8 @@ public class SkinEditorFragment extends Fragment {
                 mAccount = finalAccount;
                 if (finalError == null) {
                     Toast.makeText(requireContext(), R.string.skin_editor_skin_applied, Toast.LENGTH_SHORT).show();
+                    // Reloads the account bar so the avatar beside the name shows the new skin
+                    ExtraCore.setValue(ExtraConstants.REFRESH_ACCOUNT_SPINNER, true);
                     return;
                 }
                 if (skinId.equals(mSelectedSkinId)) {

@@ -110,6 +110,8 @@ public class CurseforgeApi implements ModpackApi{
                     dataElement.get("summary").getAsString(),
                     thumbnailUrl);
             modItem.isRestricted = restricted;
+            modItem.downloads = GsonJsonUtils.getLongSafe(dataElement, "downloadCount", -1);
+            modItem.favorites = GsonJsonUtils.getLongSafe(dataElement, "thumbsUpCount", -1);
             // Capture the mod page URL from CF API for use in restriction dialog
             JsonObject links = dataElement.getAsJsonObject("links");
             if (links != null && links.has("websiteUrl") && !links.get("websiteUrl").isJsonNull()) {
@@ -226,11 +228,14 @@ public class CurseforgeApi implements ModpackApi{
         String[] dates = new String[length];
         String[] types = new String[length];
         String[] loaderNames = new String[length];
+        long[] downloadCounts = new long[length];
+        java.util.Arrays.fill(downloadCounts, -1);
         ModDetail.Dependencies[][] dependencies = new ModDetail.Dependencies[length][];
         for(int i = 0; i < allModDetails.size(); i++) {
             JsonObject modDetail = allModDetails.get(i);
             versionNames[i] = modDetail.get("displayName").getAsString();
             dates[i] = GsonJsonUtils.getStringSafe(modDetail, "fileDate");
+            downloadCounts[i] = GsonJsonUtils.getLongSafe(modDetail, "downloadCount", -1);
             JsonElement releaseType = GsonJsonUtils.getElementSafe(modDetail, "releaseType");
             if (releaseType != null) {
                 int releaseTypeId = releaseType.getAsInt();
@@ -280,6 +285,7 @@ public class CurseforgeApi implements ModpackApi{
         detail.versionDates = dates;
         detail.versionTypes = types;
         detail.versionLoaders = loaderNames;
+        detail.versionDownloads = downloadCounts;
         return detail;
     }
 

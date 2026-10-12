@@ -121,10 +121,10 @@ public class ContentPickerFragment extends Fragment {
         boolean curseforgeDisabled = LauncherPreferences.DEFAULT_PREF.getBoolean("disableCurseforgeApi", false);
         if (curseforgeDisabled) mEngineCard.setVisibility(View.GONE);
 
-        // Tapping a card header expands or collapses its choices
-        view.findViewById(R.id.pf_engine_header).setOnClickListener(v -> toggle(mEngineChips, view, R.id.pf_engine_chevron));
-        view.findViewById(R.id.pf_loader_header).setOnClickListener(v -> toggle(mLoaderChips, view, R.id.pf_loader_chevron));
-        view.findViewById(R.id.pf_version_header).setOnClickListener(v -> VersionSelectorDialog.open(
+        // The whole card is the button: tapping anywhere on it expands its choices or opens the picker
+        mEngineCard.setOnClickListener(v -> toggle(mEngineChips, view, R.id.pf_engine_chevron));
+        mLoaderCard.setOnClickListener(v -> toggle(mLoaderChips, view, R.id.pf_loader_chevron));
+        view.findViewById(R.id.pf_version_card).setOnClickListener(v -> VersionSelectorDialog.open(
                 v.getContext(), true, (id, snapshot) -> applyChange(-1, id == null ? "" : id, null)));
         mVersionClear.setOnClickListener(v -> applyChange(-1, "", null));
 

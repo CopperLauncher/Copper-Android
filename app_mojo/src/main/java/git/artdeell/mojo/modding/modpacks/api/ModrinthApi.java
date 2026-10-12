@@ -89,6 +89,8 @@ public class ModrinthApi implements ModpackApi{
                     hit.get("description").getAsString(),
                     hit.get("icon_url").getAsString()
             );
+            items[i].downloads = GsonJsonUtils.getLongSafe(hit, "downloads", -1);
+            items[i].favorites = GsonJsonUtils.getLongSafe(hit, "follows", -1);
         }
         if(modrinthSearchResult == null) modrinthSearchResult = new ModrinthSearchResult();
         modrinthSearchResult.previousOffset += responseHits.size();
@@ -151,6 +153,7 @@ public class ModrinthApi implements ModpackApi{
         String[] dates = new String[size];
         String[] types = new String[size];
         String[] loaderNames = new String[size];
+        long[] downloadCounts = new long[size];
         ModDetail.Dependencies[][] dependencies = new ModDetail.Dependencies[size][];
 
         for (int i = 0; i < size; i++) {
@@ -159,6 +162,7 @@ public class ModrinthApi implements ModpackApi{
             dates[i] = GsonJsonUtils.getStringSafe(version, "date_published");
             types[i] = GsonJsonUtils.getStringSafe(version, "version_type");
             loaderNames[i] = joinLoaders(version.getAsJsonArray("loaders"));
+            downloadCounts[i] = GsonJsonUtils.getLongSafe(version, "downloads", -1);
             ids[i] = version.get("id").getAsString();
             try {
                 JsonArray dependenciesJsonArray = version.getAsJsonArray("dependencies");
@@ -187,6 +191,7 @@ public class ModrinthApi implements ModpackApi{
         detail.versionDates = dates;
         detail.versionTypes = types;
         detail.versionLoaders = loaderNames;
+        detail.versionDownloads = downloadCounts;
         return detail;
     }
 

@@ -95,6 +95,9 @@
         android:id="@+id/pf_engine_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
         android:layout_marginHorizontal="@dimen/padding_moderate"
         android:layout_marginTop="@dimen/padding_moderate"
         android:background="@drawable/bg_filter_card"
@@ -105,7 +108,6 @@
             android:id="@+id/pf_engine_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -170,6 +172,9 @@
         android:id="@+id/pf_version_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
         android:layout_marginHorizontal="@dimen/padding_moderate"
         android:layout_marginTop="@dimen/padding_moderate"
         android:background="@drawable/bg_filter_card"
@@ -180,7 +185,6 @@
             android:id="@+id/pf_version_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -221,6 +225,9 @@
         android:id="@+id/pf_loader_card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
         android:layout_marginHorizontal="@dimen/padding_moderate"
         android:layout_marginTop="@dimen/padding_moderate"
         android:background="@drawable/bg_filter_card"
@@ -231,7 +238,6 @@
             android:id="@+id/pf_loader_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 

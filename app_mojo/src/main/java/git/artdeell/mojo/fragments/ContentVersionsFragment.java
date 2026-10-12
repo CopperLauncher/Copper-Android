@@ -26,6 +26,7 @@ import git.artdeell.mojo.modding.modpacks.ContentSession;
 import git.artdeell.mojo.modding.modpacks.api.ModpackApi;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.progresskeeper.ProgressKeeper;
+import git.artdeell.mojo.utils.CountFormatter;
 import git.artdeell.mojo.progresskeeper.TaskCountListener;
 
 import java.text.DateFormat;
@@ -178,6 +179,11 @@ public class ContentVersionsFragment extends Fragment {
         if (mcVersion != null) parts.add(mcVersion);
         String date = formatDate(at(detail.versionDates, position));
         if (date != null) parts.add(date);
+        if (detail.versionDownloads != null && position < detail.versionDownloads.length
+                && detail.versionDownloads[position] >= 0) {
+            parts.add(getString(R.string.content_version_downloads,
+                    CountFormatter.compact(detail.versionDownloads[position])));
+        }
         StringBuilder joined = new StringBuilder();
         for (String part : parts) {
             if (joined.length() > 0) joined.append(" · ");

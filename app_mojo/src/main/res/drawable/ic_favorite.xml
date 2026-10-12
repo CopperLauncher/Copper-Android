@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <!-- Pixel-art heart, used for favorite / follower counts -->
+  <path
+      android:fillColor="?attr/colorOnSurface"
+      android:pathData="M4,4 h6 v2 h-6 z M14,4 h6 v2 h-6 z M2,6 h20 v2 h-20 z M2,8 h20 v2 h-20 z M2,10 h20 v2 h-20 z M4,12 h16 v2 h-16 z M6,14 h12 v2 h-12 z M8,16 h8 v2 h-8 z M10,18 h4 v2 h-4 z"/>
+</vector>

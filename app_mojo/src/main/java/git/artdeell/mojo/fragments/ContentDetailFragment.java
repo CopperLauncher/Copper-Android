@@ -33,6 +33,7 @@ import git.artdeell.mojo.modding.modpacks.models.ContentInfo;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
 import git.artdeell.mojo.utils.ContentTextRenderer;
+import git.artdeell.mojo.utils.CountFormatter;
 import git.artdeell.mojo.utils.RemoteImageLoader;
 
 import java.text.DateFormat;
@@ -154,7 +155,10 @@ public class ContentDetailFragment extends Fragment {
 
         bindHero(view, item);
         setupTabs(view);
+        // Portrait lands on the versions, that is what the screen is mostly opened for.
+        // Landscape has them in the right pane already and starts on the description.
         if (savedInstanceState != null) mTab = savedInstanceState.getInt(STATE_TAB, TAB_DESCRIPTION);
+        else mTab = mInPane ? TAB_DESCRIPTION : TAB_VERSIONS;
         if (mTab == TAB_VERSIONS && mInPane) mTab = TAB_DESCRIPTION;
         selectTab(mTab);
 
@@ -201,6 +205,8 @@ public class ContentDetailFragment extends Fragment {
         }
 
         ((TextView) view.findViewById(R.id.content_detail_kind_badge)).setText(kindLabel(item));
+        bindCount(view, R.id.content_detail_downloads_group, R.id.content_detail_downloads_text, item.downloads);
+        bindCount(view, R.id.content_detail_favorites_group, R.id.content_detail_favorites_text, item.favorites);
 
         float radius = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 14,
                 getResources().getDisplayMetrics());
@@ -213,6 +219,12 @@ public class ContentDetailFragment extends Fragment {
         }
 
         if (item.websiteUrl != null && !item.websiteUrl.isEmpty()) showOpenPage(item.websiteUrl);
+    }
+
+    private static void bindCount(View root, int groupId, int textId, long count) {
+        View group = root.findViewById(groupId);
+        group.setVisibility(count < 0 ? View.GONE : View.VISIBLE);
+        if (count >= 0) ((TextView) root.findViewById(textId)).setText(CountFormatter.compact(count));
     }
 
     private int kindLabel(ModItem item) {
@@ -293,7 +305,7 @@ public class ContentDetailFragment extends Fragment {
         }
 
         mDescriptionNote.setVisibility(View.GONE);
-        CharSequence body = ContentTextRenderer.render(info.body, info.bodyIsHtml);
+        CharSequence body = ContentTextRenderer.render(info.body, info.bodyIsHtml, mDescriptionBody);
         if (body.length() == 0) {
             mDescriptionBody.setText(R.string.content_description_empty);
         } else {
@@ -387,7 +399,7 @@ public class ContentDetailFragment extends Fragment {
 
             TextView text = card.findViewById(R.id.changelog_text);
             text.setMovementMethod(LinkMovementMethod.getInstance());
-            CharSequence rendered = ContentTextRenderer.render(entry.text, entry.textIsHtml);
+            CharSequence rendered = ContentTextRenderer.render(entry.text, entry.textIsHtml, text);
             if (rendered.length() == 0) text.setText(R.string.content_changelog_none);
             else text.setText(rendered);
             mChangelogList.addView(card);
