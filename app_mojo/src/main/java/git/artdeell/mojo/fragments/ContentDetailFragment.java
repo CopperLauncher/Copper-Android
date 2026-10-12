@@ -24,6 +24,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.imageview.ShapeableImageView;
 
+import git.artdeell.mojo.MojoApplication;
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.modding.modpacks.ContentSession;
@@ -86,6 +87,8 @@ public class ContentDetailFragment extends Fragment {
     private TextView mChangelogStatus;
     private TextView mChangelogMore;
     private int mChangelogShown;
+    private ContentInfo mLoadedInfo;
+    private boolean mGalleryBuilt;
 
     private final List<Future<?>> mImageLoads = new ArrayList<>();
 
@@ -149,6 +152,8 @@ public class ContentDetailFragment extends Fragment {
         mChangelogStatus = view.findViewById(R.id.content_changelog_status);
         mChangelogMore = view.findViewById(R.id.content_changelog_more);
         mChangelogShown = 0;
+        mLoadedInfo = null;
+        mGalleryBuilt = false;
 
         mDescriptionBody.setMovementMethod(LinkMovementMethod.getInstance());
         mChangelogMore.setOnClickListener(v -> mSession.loadMoreChangelogs());
@@ -282,6 +287,7 @@ public class ContentDetailFragment extends Fragment {
             }
         }
 
+        if (tab == TAB_GALLERY) ensureGallery();
         if (tab == TAB_CHANGELOG) mSession.startChangelogs();
     }
 
@@ -305,15 +311,30 @@ public class ContentDetailFragment extends Fragment {
         }
 
         mDescriptionNote.setVisibility(View.GONE);
-        CharSequence body = ContentTextRenderer.render(info.body, info.bodyIsHtml, mDescriptionBody);
-        if (body.length() == 0) {
-            mDescriptionBody.setText(R.string.content_description_empty);
-        } else {
-            mDescriptionBody.setText(body);
-        }
-
+        mLoadedInfo = info;
         if (info.websiteUrl != null && !info.websiteUrl.isEmpty()) showOpenPage(info.websiteUrl);
-        buildGallery(info);
+        // The gallery is only built once its tab is opened, it downloads pictures
+        if (mTab == TAB_GALLERY) ensureGallery();
+        else mGalleryEmpty.setVisibility(View.GONE);
+
+        // Long descriptions take a while to turn into styled text, keep that off the UI thread
+        mDescriptionProgress.setVisibility(View.VISIBLE);
+        final TextView target = mDescriptionBody;
+        MojoApplication.sExecutorService.execute(() -> {
+            CharSequence body = ContentTextRenderer.render(info.body, info.bodyIsHtml, target);
+            Tools.runOnUiThread(() -> {
+                if (!isAdded() || mDescriptionBody != target) return;
+                mDescriptionProgress.setVisibility(View.GONE);
+                if (body.length() == 0) target.setText(R.string.content_description_empty);
+                else target.setText(body);
+            });
+        });
+    }
+
+    private void ensureGallery() {
+        if (mLoadedInfo == null || mGalleryBuilt || mGalleryList == null) return;
+        mGalleryBuilt = true;
+        buildGallery(mLoadedInfo);
     }
 
     private void buildGallery(ContentInfo info) {

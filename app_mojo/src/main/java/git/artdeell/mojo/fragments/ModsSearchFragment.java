@@ -372,7 +372,21 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             }
         }
 
+        /* Hashing every jar for every version lookup was the slowest part of opening a mod. A jar's
+         * hash only changes when the file does, so it is remembered by path, size and timestamp. */
+        private static final java.util.concurrent.ConcurrentHashMap<String, String> sHashCache =
+                new java.util.concurrent.ConcurrentHashMap<>();
+
         private static String sha1Hex(File file) {
+            String key = file.getAbsolutePath() + "|" + file.length() + "|" + file.lastModified();
+            String cached = sHashCache.get(key);
+            if (cached != null) return cached;
+            String hash = computeSha1Hex(file);
+            if (hash != null) sHashCache.put(key, hash);
+            return hash;
+        }
+
+        private static String computeSha1Hex(File file) {
             try {
                 java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-1");
                 byte[] buffer = new byte[8192];

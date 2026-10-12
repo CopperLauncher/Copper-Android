@@ -1,7 +1,6 @@
 package git.artdeell.mojo.fragments;
 
 import android.content.Context;
-import android.content.res.ColorStateList;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,13 +15,13 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.kdt.mcgui.MineButton;
 
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.modding.modpacks.ContentSession;
+import git.artdeell.mojo.modding.modpacks.InstallButtonStyle;
 import git.artdeell.mojo.modding.modpacks.api.ModpackApi;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.progresskeeper.ProgressKeeper;
@@ -45,8 +44,6 @@ import java.util.Locale;
  */
 public class ContentVersionsFragment extends Fragment {
     public static final String TAG = "ContentVersionsFragment";
-
-    private enum ActionState { INSTALL, INSTALLED, UPDATE, DOWNGRADE }
 
     private ContentSession mSession;
     private VersionAdapter mAdapter;
@@ -141,13 +138,6 @@ public class ContentVersionsFragment extends Fragment {
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok, (d, w) -> install.run())
                 .show();
-    }
-
-    private static ActionState stateOf(ModDetail detail, int position) {
-        if (detail.isModpack || detail.installedVersionIndex < 0) return ActionState.INSTALL;
-        if (position == detail.installedVersionIndex) return ActionState.INSTALLED;
-        // Versions are ordered newest first, so a lower index is a newer version
-        return position < detail.installedVersionIndex ? ActionState.UPDATE : ActionState.DOWNGRADE;
     }
 
     @Nullable
@@ -253,47 +243,16 @@ public class ContentVersionsFragment extends Fragment {
                 mDetails.setText(details);
                 mDetails.setVisibility(details.isEmpty() ? View.GONE : View.VISIBLE);
 
-                ActionState state = stateOf(detail, position);
-                mInstalledIcon.setVisibility(state == ActionState.INSTALLED ? View.VISIBLE : View.GONE);
-                styleAction(state);
+                InstallButtonStyle.State state = InstallButtonStyle.stateOf(detail, position);
+                mInstalledIcon.setVisibility(state == InstallButtonStyle.State.INSTALLED ? View.VISIBLE : View.GONE);
+                InstallButtonStyle.apply(mAction, state);
                 mAction.setEnabled(actionsEnabled);
                 mAction.setAlpha(actionsEnabled ? 1f : 0.5f);
                 mAction.setOnClickListener(v -> {
                     int adapterPosition = getAdapterPosition();
                     if (adapterPosition == RecyclerView.NO_POSITION) return;
-                    startInstall(v.getContext(), detail, adapterPosition, state == ActionState.INSTALLED);
+                    startInstall(v.getContext(), detail, adapterPosition, state == InstallButtonStyle.State.INSTALLED);
                 });
-            }
-
-            private void styleAction(ActionState state) {
-                int label;
-                int background;
-                int foreground;
-                switch (state) {
-                    case INSTALLED:
-                        label = R.string.mod_install_installed;
-                        background = com.google.android.material.R.attr.colorSurfaceContainerHighest;
-                        foreground = com.google.android.material.R.attr.colorOnSurfaceVariant;
-                        break;
-                    case UPDATE:
-                        label = R.string.mod_install_update;
-                        background = com.google.android.material.R.attr.colorPrimary;
-                        foreground = com.google.android.material.R.attr.colorOnPrimary;
-                        break;
-                    case DOWNGRADE:
-                        label = R.string.mod_install_downgrade;
-                        background = com.google.android.material.R.attr.colorSecondaryContainer;
-                        foreground = com.google.android.material.R.attr.colorOnSecondaryContainer;
-                        break;
-                    default:
-                        label = R.string.generic_install;
-                        background = com.google.android.material.R.attr.colorPrimary;
-                        foreground = com.google.android.material.R.attr.colorOnPrimary;
-                        break;
-                }
-                mAction.setText(label);
-                mAction.setBackgroundTintList(ColorStateList.valueOf(MaterialColors.getColor(mAction, background)));
-                mAction.setTextColor(MaterialColors.getColor(mAction, foreground));
             }
         }
     }

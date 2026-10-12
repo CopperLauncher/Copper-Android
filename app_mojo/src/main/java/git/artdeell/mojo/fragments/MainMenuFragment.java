@@ -185,6 +185,17 @@ public class MainMenuFragment extends Fragment {
         // Visibility is updated by mBackStackListener once the transaction lands
     }
 
+    /** Name of the back stack entry created by {@link #openBrowseFromManage} */
+    private static final String BACK_BROWSE_FROM_MANAGE = "browse_from_manage";
+
+    /**
+     * Back button of a browse picker that was opened from Manage Content: goes back to the manage
+     * screen, however many content types were browsed in between, instead of all the way home.
+     */
+    public void leaveBrowseFromManage() {
+        getChildFragmentManager().popBackStack(BACK_BROWSE_FROM_MANAGE, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+    }
+
     /**
      * Landscape: Manage Content's add / browse button. The left pane switches from the manage
      * picker to the browse picker (with the filter cards) and the right pane to the store, in one
@@ -195,12 +206,13 @@ public class MainMenuFragment extends Fragment {
         if (!isTwoPane()) return false;
         Bundle pickerArgs = new Bundle();
         pickerArgs.putBoolean(ContentPickerFragment.ARG_MANAGE, false);
+        pickerArgs.putBoolean(ContentPickerFragment.ARG_FROM_MANAGE, true);
         getChildFragmentManager()
                 .beginTransaction()
                 .setReorderingAllowed(true)
                 .replace(R.id.left_pane_container, ContentPickerFragment.class, pickerArgs, ContentPickerFragment.TAG)
                 .replace(R.id.right_pane_container, ModsSearchFragment.class, searchArgs, tag)
-                .addToBackStack(tag)
+                .addToBackStack(BACK_BROWSE_FROM_MANAGE)
                 .commit();
         return true;
     }

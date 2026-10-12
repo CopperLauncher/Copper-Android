@@ -68,65 +68,53 @@
         app:layout_constraintVertical_bias="0.0"
         tools:text="The fastest and most compatible rendering optimization mod for Minecraft." />
 
-    <!-- Download and favorite counts, hidden when the API didn't report them -->
+    <!-- Download / favorite counts and the install button of the card. Counts are plain TextViews
+         with pixel icons as compound drawables, a list row is inflated a lot, keep it light. -->
     <LinearLayout
         android:id="@+id/mod_stats_column"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/padding_medium"
         android:layout_marginEnd="@dimen/padding_moderate"
+        android:layout_marginBottom="@dimen/padding_moderate"
+        android:gravity="end"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/mod_source_imageview">
 
-        <LinearLayout
-            android:id="@+id/mod_downloads_group"
+        <TextView
+            android:id="@+id/mod_downloads_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:drawablePadding="@dimen/padding_medium"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone" />
 
-            <ImageView
-                android:layout_width="@dimen/_14sdp"
-                android:layout_height="@dimen/_14sdp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_download"
-                android:tint="?attr/colorOnSurfaceVariant" />
-
-            <TextView
-                android:id="@+id/mod_downloads_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/padding_medium"
-                android:textAppearance="?attr/textAppearanceLabelLarge"
-                android:textColor="?attr/colorOnSurfaceVariant" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/mod_favorites_group"
+        <TextView
+            android:id="@+id/mod_favorites_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginTop="@dimen/padding_small"
+            android:drawablePadding="@dimen/padding_medium"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:visibility="gone">
+            android:textAppearance="?attr/textAppearanceLabelLarge"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone" />
 
-            <ImageView
-                android:layout_width="@dimen/_14sdp"
-                android:layout_height="@dimen/_14sdp"
-                android:contentDescription="@null"
-                android:src="@drawable/ic_favorite"
-                android:tint="?attr/colorOnSurfaceVariant" />
-
-            <TextView
-                android:id="@+id/mod_favorites_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/padding_medium"
-                android:textAppearance="?attr/textAppearanceLabelLarge"
-                android:textColor="?attr/colorOnSurfaceVariant" />
-        </LinearLayout>
+        <com.kdt.mcgui.MineButton
+            android:id="@+id/mod_action_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_moderate"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="0dp"
+            android:minWidth="@dimen/_64sdp"
+            android:paddingTop="@dimen/padding_moderate"
+            android:paddingBottom="@dimen/padding_moderate"
+            android:visibility="gone" />
     </LinearLayout>
 
     <ViewStub

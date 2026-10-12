@@ -41,16 +41,6 @@ jobs:
           workflow_conclusion: success
           name: mesa.aar
           path: app_mojo/libs
-          
-      - name: Get Filedialog Module
-        uses: dawidd6/action-download-artifact@v6
-        continue-on-error: true
-        with:
-          repo: whaltermc/FileDiaglogModule
-          workflow: build-aar.yml
-          workflow_conclusion: success
-          name: filedialogmodule-aar
-          path: app_mojo/libs
 
       - uses: gradle/actions/setup-gradle@v4
         with:
@@ -63,18 +53,24 @@ jobs:
           java-version: '17'
       - name: Create out directory
         run: mkdir out
-      - name: Decode release keystores
-        if: github.repository_owner == 'CopperLauncher' && (github.ref_name == 'v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
+      # Release APKs are built on every branch of the main repo (not for pull requests, they don't get secrets)
+      - name: Decode release keystore
+        if: github.repository_owner == 'CopperLauncher' && github.event_name != 'pull_request'
         run: |
-          if [ -n "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" ]; then
-            echo "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > app_mojo/mojo_upload_next.jks
-          fi
           if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
             echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app_mojo/mojo_release_next.jks
           fi
 
+      # The Google Play upload key is only needed where the .aab is published
+      - name: Decode upload keystore
+        if: github.repository_owner == 'CopperLauncher' && (github.ref == 'refs/heads/v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
+        run: |
+          if [ -n "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > app_mojo/mojo_upload_next.jks
+          fi
+
       - name: Build Publishing .aab
-        if: github.repository_owner == 'CopperLauncher' && (github.ref_name == 'v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
+        if: github.repository_owner == 'CopperLauncher' && (github.ref == 'refs/heads/v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
         run: |
           gradle :app_mojo:bundleFullGplay
           mv app_mojo/build/outputs/bundle/fullGplay/app_mojo-full-gplay.aab out/app-gplay.aab
@@ -89,8 +85,8 @@ jobs:
         run: |
           gradle :app_mojo:assembleNoruntimeDebug
           mv app_mojo/build/outputs/apk/noruntime/debug/app_mojo-noruntime-debug.apk out/app-debug-noruntime.apk
-      - name: Build Nightly Release .apk
-        if: github.repository_owner == 'CopperLauncher' && (github.ref_name == 'v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
+      - name: Build Release .apk
+        if: github.repository_owner == 'CopperLauncher' && github.event_name != 'pull_request'
         run: |
           gradle :app_mojo:assembleFullPubRelease
           mv app_mojo/build/outputs/apk/full/pubRelease/app_mojo-full-pubRelease.apk out/Copper-release.apk
@@ -112,21 +108,22 @@ jobs:
           path: out/app-debug-noruntime.apk
 
       - name: Upload Release APK
-        if: github.repository_owner == 'CopperLauncher' && (github.ref_name == 'v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
+        if: github.repository_owner == 'CopperLauncher' && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
           name: app-release
           path: out/Copper-release.apk
 
       - name: Upload AAB
-        if: github.repository_owner == 'CopperLauncher' && (github.ref_name == 'v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
+        if: github.repository_owner == 'CopperLauncher' && (github.ref == 'refs/heads/v3_openjdk' || startsWith(github.ref, 'refs/tags/v'))
         uses: actions/upload-artifact@v4
         with:
           name: app-release-aab
           path: out/app-gplay.aab
 
+      # Only v3_openjdk publishes the nightly release, other branches just upload the APK as an artifact
       - name: Release Nightly APK
-        if: github.repository_owner == 'CopperLauncher' && github.ref_name == 'v3_openjdk'
+        if: github.repository_owner == 'CopperLauncher' && github.ref == 'refs/heads/v3_openjdk'
         uses: softprops/action-gh-release@v3
         with:
           name: Copper Nightly Builds
@@ -140,7 +137,7 @@ jobs:
 
       - name: Upload onto the Google Play testing track
         continue-on-error: true
-        if: github.repository_owner == 'CopperLauncher' && github.ref_name == 'v3_openjdk'
+        if: github.repository_owner == 'CopperLauncher' && github.ref == 'refs/heads/v3_openjdk'
         uses: r0adkll/upload-google-play@v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.SERVICE_JSON }}

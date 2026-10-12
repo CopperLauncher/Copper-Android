@@ -29,6 +29,8 @@ import git.artdeell.mojo.prefs.LauncherPreferences;
 public class ContentPickerFragment extends Fragment {
     public static final String TAG = "ContentPickerFragment";
     public static final String ARG_MANAGE = "manage";
+    /** Browse picker that was opened from Manage Content, its Back returns there instead of home */
+    public static final String ARG_FROM_MANAGE = "from_manage";
 
     public ContentPickerFragment() {
         super(R.layout.fragment_content_picker);
@@ -69,8 +71,12 @@ public class ContentPickerFragment extends Fragment {
         if (!(parent instanceof MainMenuFragment)) return;
         MainMenuFragment mainMenuFragment = (MainMenuFragment) parent;
 
+        boolean fromManage = getArguments() != null && getArguments().getBoolean(ARG_FROM_MANAGE, false);
         if (backButton != null) backButton.setOnClickListener(
-                v -> mainMenuFragment.clearRightPane());
+                v -> {
+                    if (fromManage) mainMenuFragment.leaveBrowseFromManage();
+                    else mainMenuFragment.clearRightPane();
+                });
 
         View modsButton = view.findViewById(R.id.content_picker_mods);
         View resourcepacksButton = view.findViewById(R.id.content_picker_resourcepacks);
