@@ -55,6 +55,8 @@ public final class ContentInfoLoader {
         ContentInfo info = new ContentInfo();
         info.body = GsonJsonUtils.getStringSafe(project, "body");
         info.bodyIsHtml = false;
+        info.downloads = GsonJsonUtils.getLongSafe(project, "downloads", -1);
+        info.favorites = GsonJsonUtils.getLongSafe(project, "followers", -1);
 
         String slug = GsonJsonUtils.getStringSafe(project, "slug");
         String type = GsonJsonUtils.getStringSafe(project, "project_type");
@@ -128,6 +130,8 @@ public final class ContentInfoLoader {
         if (data == null) return null;
 
         ContentInfo info = new ContentInfo();
+        info.downloads = GsonJsonUtils.getLongSafe(data, "downloadCount", -1);
+        info.favorites = GsonJsonUtils.getLongSafe(data, "thumbsUpCount", -1);
         JsonObject links = GsonJsonUtils.getJsonObjectSafe(data, "links");
         info.websiteUrl = GsonJsonUtils.getStringSafe(links, "websiteUrl");
 

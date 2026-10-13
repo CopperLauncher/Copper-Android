@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true"
+    android:overScrollMode="never">
+
+<LinearLayout
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -66,9 +72,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:digits="0123456789abcdefABCDEF#"
-            android:imeOptions="actionDone"
+            android:imeOptions="actionDone|flagNoExtractUi"
+            android:minHeight="56dp"
             android:inputType="textNoSuggestions|textCapCharacters"
             android:maxLength="7"
             android:singleLine="true" />
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>
+</ScrollView>

@@ -312,6 +312,18 @@ public class ContentDetailFragment extends Fragment {
 
         mDescriptionNote.setVisibility(View.GONE);
         mLoadedInfo = info;
+        // The project page knows the counts even when the search result didn't have them
+        View root = getView();
+        if (root != null) {
+            if (item.downloads < 0 && info.downloads >= 0) {
+                item.downloads = info.downloads;
+                bindCount(root, R.id.content_detail_downloads_group, R.id.content_detail_downloads_text, item.downloads);
+            }
+            if (item.favorites < 0 && info.favorites >= 0) {
+                item.favorites = info.favorites;
+                bindCount(root, R.id.content_detail_favorites_group, R.id.content_detail_favorites_text, item.favorites);
+            }
+        }
         if (info.websiteUrl != null && !info.websiteUrl.isEmpty()) showOpenPage(info.websiteUrl);
         // The gallery is only built once its tab is opened, it downloads pictures
         if (mTab == TAB_GALLERY) ensureGallery();

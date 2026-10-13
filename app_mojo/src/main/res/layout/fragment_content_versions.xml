@@ -24,6 +24,15 @@
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textColor="?attr/colorOnSurface" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/content_versions_toggle"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/padding_moderate"
+            android:text="@string/switch_mod_version_show_incompatible"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/content_versions_count"
             android:layout_width="wrap_content"

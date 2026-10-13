@@ -33,6 +33,8 @@ public final class ThemeManager {
     public static final String PREF_COLOR_SOURCE = "color_source";
     public static final String PREF_CUSTOM_COLOR = "theme_custom_color";
     public static final String PREF_FORCE_LANDSCAPE = "force_landscape";
+    /** The launcher opens in landscape until the user turns this off */
+    public static final boolean DEFAULT_FORCE_LANDSCAPE = true;
 
     public static final String SOURCE_DYNAMIC = "dynamic";
     public static final String SOURCE_DEFAULT = "default";
@@ -83,7 +85,7 @@ public final class ThemeManager {
     /** Locks the activity to landscape when the user asked for it, otherwise leaves it alone */
     public static void applyForcedOrientation(@NonNull Activity activity) {
         boolean force = PreferenceManager.getDefaultSharedPreferences(activity)
-                .getBoolean(PREF_FORCE_LANDSCAPE, false);
+                .getBoolean(PREF_FORCE_LANDSCAPE, DEFAULT_FORCE_LANDSCAPE);
         if (force) activity.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
     }
 

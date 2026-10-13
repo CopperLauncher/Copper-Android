@@ -13,6 +13,9 @@ public class ContentInfo {
     public boolean bodyIsHtml;
     /** The project page of the content, null if unknown */
     public String websiteUrl;
+    /** Counts of the project page, -1 when the API didn't send them */
+    public long downloads = -1;
+    public long favorites = -1;
     public final List<GalleryImage> gallery = new ArrayList<>();
 
     public static class GalleryImage {

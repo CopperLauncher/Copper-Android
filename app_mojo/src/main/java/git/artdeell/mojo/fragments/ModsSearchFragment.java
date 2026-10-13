@@ -280,7 +280,8 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
     // ── ModsInstallApi ────────────────────────────────────────────────────────
 
-    static class ModsInstallApi extends CommonApi implements git.artdeell.mojo.modding.modpacks.api.InstalledStateResolver {
+    static class ModsInstallApi extends CommonApi implements git.artdeell.mojo.modding.modpacks.api.InstalledStateResolver,
+            git.artdeell.mojo.modding.modpacks.api.UnfilteredVersionsProvider {
 
         private final SearchFilters mFilters;
         private final ModrinthApi mModrinthApi = new ModrinthApi();
@@ -307,19 +308,24 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
          */
         @Override
         public ModDetail getModDetails(ModItem item) {
+            return loadDetails(item, true);
+        }
+
+        @Override
+        public ModDetail getAllVersions(ModItem item) {
+            return loadDetails(item, false);
+        }
+
+        private ModDetail loadDetails(ModItem item, boolean applyFilters) {
             ModDetail detail;
+            String filterVer = applyFilters && mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty()
+                    ? mFilters.mcVersion : null;
+            String filterLoader = applyFilters && mFilters.modLoader != null && !mFilters.modLoader.isEmpty()
+                    ? mFilters.modLoader : null;
             if (item.apiSource == git.artdeell.mojo.modding.modpacks.models.Constants.SOURCE_MODRINTH) {
-                String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
-                        ? mFilters.mcVersion : null;
-                String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
-                        ? mFilters.modLoader : null;
                 detail = mModrinthApi.getModDetails(item, filterVer, filterLoader);
             } else if (item.apiSource == git.artdeell.mojo.modding.modpacks.models.Constants.SOURCE_CURSEFORGE) {
                 if (mCurseforgeApi == null) return null; // disabled in experimental settings
-                String filterVer = (mFilters.mcVersion != null && !mFilters.mcVersion.isEmpty())
-                        ? mFilters.mcVersion : null;
-                String filterLoader = (mFilters.modLoader != null && !mFilters.modLoader.isEmpty())
-                        ? mFilters.modLoader : null;
                 detail = mCurseforgeApi.getModDetails(item, filterVer, filterLoader);
             } else {
                 detail = super.getModDetails(item);

@@ -15,6 +15,7 @@ import git.artdeell.mojo.modding.modpacks.api.ContentInfoLoader;
 import git.artdeell.mojo.modding.modpacks.api.ContentInfoLoader.ChangelogSource;
 import git.artdeell.mojo.modding.modpacks.api.InstalledStateResolver;
 import git.artdeell.mojo.modding.modpacks.api.ModpackApi;
+import git.artdeell.mojo.modding.modpacks.api.UnfilteredVersionsProvider;
 import git.artdeell.mojo.modding.modpacks.models.ContentInfo;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
@@ -23,6 +24,8 @@ import git.artdeell.mojo.prefs.LauncherPreferences;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
 
 /**
@@ -40,10 +43,20 @@ public class ContentSession extends ViewModel {
     public static final class VersionsState {
         public final Status status;
         @Nullable public final ModDetail detail;
+        /** The "Show incompatible" button is on, the list has the versions that don't match the filters too */
+        public final boolean showingAll;
+        /** The API can give the versions that don't match the filters, so the button makes sense */
+        public final boolean canShowAll;
+        /** Ids of the versions that match the filters, used to mark the other ones as incompatible */
+        public final Set<String> compatibleIds;
 
-        VersionsState(Status status, @Nullable ModDetail detail) {
+        VersionsState(Status status, @Nullable ModDetail detail, boolean showingAll, boolean canShowAll,
+                      Set<String> compatibleIds) {
             this.status = status;
             this.detail = detail;
+            this.showingAll = showingAll;
+            this.canShowAll = canShowAll;
+            this.compatibleIds = compatibleIds;
         }
     }
 
@@ -80,6 +93,13 @@ public class ContentSession extends ViewModel {
     private ContentType mContentType;
     private String mCurseforgeKey;
 
+    /* The versions that match the filters (what the list shows by default) and every version
+     * (loaded the first time "Show incompatible" is switched on) */
+    private ModDetail mFilteredDetail;
+    private ModDetail mAllDetail;
+    private boolean mShowAll;
+    private boolean mCanShowAll;
+
     private ChangelogSource mChangelogSource;
     private final List<ContentInfo.ChangelogEntry> mChangelogEntries = new ArrayList<>();
     private boolean mChangelogStarted;
@@ -106,7 +126,12 @@ public class ContentSession extends ViewModel {
         mChangelogStarted = false;
         mChangelogLoading = false;
 
-        mVersions.setValue(new VersionsState(Status.LOADING, null));
+        mFilteredDetail = null;
+        mAllDetail = null;
+        mShowAll = false;
+        mCanShowAll = api instanceof UnfilteredVersionsProvider;
+
+        mVersions.setValue(versionsState(Status.LOADING));
         mInfo.setValue(new InfoState(Status.LOADING, null));
         mChangelog.setValue(new ChangelogState(Collections.emptyList(), false, true, false));
 
@@ -118,8 +143,13 @@ public class ContentSession extends ViewModel {
             } catch (Exception e) {
                 Log.w(TAG, "Failed to load the versions of " + item.id, e);
             }
+            final ModDetail loaded = detail;
             if (token == mToken) {
-                mVersions.postValue(new VersionsState(detail != null ? Status.READY : Status.ERROR, detail));
+                Tools.runOnUiThread(() -> {
+                    if (token != mToken) return;
+                    mFilteredDetail = loaded;
+                    mVersions.setValue(versionsState(loaded != null ? Status.READY : Status.ERROR));
+                });
             }
         });
         MojoApplication.sExecutorService.execute(() -> {
@@ -135,21 +165,71 @@ public class ContentSession extends ViewModel {
         });
     }
 
+    /** The state the version list should show right now */
+    private VersionsState versionsState(Status status) {
+        ModDetail shown = mShowAll ? mAllDetail : mFilteredDetail;
+        Set<String> compatible = new HashSet<>();
+        if (mFilteredDetail != null && mFilteredDetail.versionIds != null) {
+            Collections.addAll(compatible, mFilteredDetail.versionIds);
+        }
+        if (status == Status.READY && shown == null) status = Status.ERROR;
+        return new VersionsState(status, shown, mShowAll, mCanShowAll, compatible);
+    }
+
+    /**
+     * Switches the "Show incompatible" button of the version list. When it is on the list also has
+     * the versions that don't match the Minecraft version / loader filters. UI thread only.
+     */
+    public void toggleShowIncompatible() {
+        VersionsState current = mVersions.getValue();
+        if (!mCanShowAll || mItem == null || current == null || current.status == Status.LOADING) return;
+
+        mShowAll = !mShowAll;
+        if (!mShowAll || mAllDetail != null) {
+            mVersions.setValue(versionsState(Status.READY));
+            return;
+        }
+
+        mVersions.setValue(versionsState(Status.LOADING));
+        final int token = mToken;
+        final ModItem item = mItem;
+        final ModpackApi api = mApi;
+        MojoApplication.sExecutorService.execute(() -> {
+            ModDetail all = null;
+            try {
+                all = ((UnfilteredVersionsProvider) api).getAllVersions(item);
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to load all versions of " + item.id, e);
+            }
+            final ModDetail loaded = all;
+            Tools.runOnUiThread(() -> {
+                if (token != mToken) return;
+                mAllDetail = loaded;
+                mVersions.setValue(versionsState(loaded != null ? Status.READY : Status.ERROR));
+            });
+        });
+    }
+
     /** Re-checks which version is installed, call it after an installation finished */
     public void refreshInstalled() {
-        VersionsState current = mVersions.getValue();
         ModpackApi api = mApi;
-        if (current == null || current.detail == null || current.detail.isModpack
-                || !(api instanceof InstalledStateResolver)) return;
-        final ModDetail detail = current.detail;
+        if (!(api instanceof InstalledStateResolver)) return;
+        final List<ModDetail> details = new ArrayList<>();
+        if (mFilteredDetail != null && !mFilteredDetail.isModpack) details.add(mFilteredDetail);
+        if (mAllDetail != null && !mAllDetail.isModpack) details.add(mAllDetail);
+        if (details.isEmpty()) return;
         final int token = mToken;
         MojoApplication.sExecutorService.execute(() -> {
-            try {
-                ((InstalledStateResolver) api).resolveInstalledState(detail);
-            } catch (Exception e) {
-                Log.w(TAG, "Failed to refresh the installed version", e);
+            for (ModDetail detail : details) {
+                try {
+                    ((InstalledStateResolver) api).resolveInstalledState(detail);
+                } catch (Exception e) {
+                    Log.w(TAG, "Failed to refresh the installed version", e);
+                }
             }
-            if (token == mToken) mVersions.postValue(new VersionsState(Status.READY, detail));
+            Tools.runOnUiThread(() -> {
+                if (token == mToken) mVersions.setValue(versionsState(Status.READY));
+            });
         });
     }
 

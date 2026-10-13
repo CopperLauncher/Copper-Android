@@ -50,6 +50,7 @@ public class ContentVersionsFragment extends Fragment {
     private View mProgress;
     private TextView mCount;
     private TextView mStatus;
+    private TextView mToggle;
     private RecyclerView mList;
     private TaskCountListener mTaskCountListener;
     private boolean mTasksRunning;
@@ -65,6 +66,8 @@ public class ContentVersionsFragment extends Fragment {
         mProgress = view.findViewById(R.id.content_versions_progress);
         mCount = view.findViewById(R.id.content_versions_count);
         mStatus = view.findViewById(R.id.content_versions_status);
+        mToggle = view.findViewById(R.id.content_versions_toggle);
+        mToggle.setOnClickListener(v -> mSession.toggleShowIncompatible());
         mList = view.findViewById(R.id.content_versions_list);
 
         mAdapter = new VersionAdapter();
@@ -101,18 +104,28 @@ public class ContentVersionsFragment extends Fragment {
     }
 
     private void onVersions(@Nullable ContentSession.VersionsState state) {
+        // Same button as the switch version dialog of Manage Content
+        boolean canShowAll = state != null && state.canShowAll;
+        mToggle.setVisibility(canShowAll ? View.VISIBLE : View.GONE);
+        if (state != null) {
+            mToggle.setText(state.showingAll ? R.string.switch_mod_version_hide_incompatible
+                    : R.string.switch_mod_version_show_incompatible);
+        }
+
         if (state == null || state.status == ContentSession.Status.LOADING) {
+            mToggle.setEnabled(false);
             mProgress.setVisibility(View.VISIBLE);
             mStatus.setVisibility(View.GONE);
             mCount.setVisibility(View.GONE);
-            mAdapter.setDetail(null);
+            mAdapter.setDetail(null, null, false);
             return;
         }
+        mToggle.setEnabled(true);
         mProgress.setVisibility(View.GONE);
         ModDetail detail = state.detail;
         boolean empty = state.status == ContentSession.Status.ERROR
                 || detail == null || detail.versionNames == null || detail.versionNames.length == 0;
-        mAdapter.setDetail(empty ? null : detail);
+        mAdapter.setDetail(empty ? null : detail, state.compatibleIds, state.showingAll);
         if (empty) {
             mCount.setVisibility(View.GONE);
             mStatus.setText(R.string.content_versions_empty);
@@ -191,11 +204,21 @@ public class ContentVersionsFragment extends Fragment {
 
     private class VersionAdapter extends RecyclerView.Adapter<VersionAdapter.Holder> {
         private ModDetail mDetail;
+        private java.util.Set<String> mCompatibleIds = java.util.Collections.emptySet();
+        private boolean mShowingAll;
         private boolean mActionsEnabled = true;
 
-        void setDetail(@Nullable ModDetail detail) {
+        void setDetail(@Nullable ModDetail detail, @Nullable java.util.Set<String> compatibleIds, boolean showingAll) {
             mDetail = detail;
+            mCompatibleIds = compatibleIds != null ? compatibleIds : java.util.Collections.emptySet();
+            mShowingAll = showingAll;
             notifyDataSetChanged();
+        }
+
+        /** Only meaningful while incompatible versions are listed, they are dimmed and labeled */
+        boolean isIncompatible(ModDetail detail, int position) {
+            return mShowingAll && detail.versionIds != null && position < detail.versionIds.length
+                    && detail.versionIds[position] != null && !mCompatibleIds.contains(detail.versionIds[position]);
         }
 
         void setActionsEnabled(boolean enabled) {
@@ -239,7 +262,13 @@ public class ContentVersionsFragment extends Fragment {
                 String[] names = detail.baseVersionNames != null ? detail.baseVersionNames : detail.versionNames;
                 mName.setText(names[position]);
 
+                boolean incompatible = isIncompatible(detail, position);
                 String details = describe(detail, position);
+                if (incompatible) {
+                    String label = getString(R.string.content_version_incompatible);
+                    details = details.isEmpty() ? label : label + " · " + details;
+                }
+                itemView.setAlpha(incompatible ? 0.65f : 1f);
                 mDetails.setText(details);
                 mDetails.setVisibility(details.isEmpty() ? View.GONE : View.VISIBLE);
 

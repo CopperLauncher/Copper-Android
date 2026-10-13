@@ -199,7 +199,7 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
 
     // ── ModpackSearchApi ──────────────────────────────────────────────────────
 
-    private static class ModpackSearchApi extends CommonApi {
+    private static class ModpackSearchApi extends CommonApi implements git.artdeell.mojo.modding.modpacks.api.UnfilteredVersionsProvider {
         private final SearchFilters mFilters;
         private final ModrinthApi mModrinthApi = new ModrinthApi();
 
@@ -222,6 +222,14 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
                 return mModrinthApi.getModDetails(item, filterVer, filterLoader);
             }
             // CurseForge: delegate normally (CF search already filters by version/loader)
+            return super.getModDetails(item);
+        }
+
+        @Override
+        public ModDetail getAllVersions(ModItem item) {
+            if (item.apiSource == Constants.SOURCE_MODRINTH) {
+                return mModrinthApi.getModDetails(item, null, null);
+            }
             return super.getModDetails(item);
         }
     }
