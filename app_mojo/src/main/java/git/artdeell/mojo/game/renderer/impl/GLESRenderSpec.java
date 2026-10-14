@@ -87,37 +87,73 @@ public abstract class GLESRenderSpec implements RenderSpec {
         }
     }
 
-    /**
-     * SFPEW (Simple FPE Wrapper). Emulates the fixed function pipeline on top of MobileGlues,
-     * set up the same way as upstream PojavLauncher.
-     */
-    public static class SFPEWRenderSpec extends GLESRenderSpec {
-        public boolean compatibleDevice(Context context) {
-            return new File(Tools.NATIVE_LIB_DIR, this.library()).exists();
-        }
-        public String name() {
-            return "SFPEW";
-        }
-        public int displayName() {
-            return R.string.mcl_setting_renderer_sfpew;
-        }
-        public void setupEnvironment(Context context, Map<String, String> envMap) {
-            Instance instance = Instances.loadSelectedInstance();
-            boolean hasAngelica = instance != null && GameRunner.hasAngelica(instance.getGameDirectory());
-            // Angelica provides its own FPE, so SFPEW stays out of the way when it is present
-            if (!hasAngelica) {
-                envMap.put("SFPEW_EGL", "libmobileglues.so");
-                envMap.put("MG_DIR_PATH", Tools.DIR_DATA + "/MobileGlues");
-            }
-        }
-        public String tag() {
-            return Renderers.SFPEW_RENDERER;
-        }
-        public String library() {
-            return "libSimpleFPEWrapper.so";
-        }
-        protected int glesVersion() {
-            return 3;
-        }
-    }
+     public static class MgRenderSpec extends GLESRenderSpec {
+       public boolean compatibleDevice(Context context) {
+         return JREUtils.getDetectedVersion() >= 3 && new File(Tools.NATIVE_LIB_DIR, this.library()).exists(); 
+      }
+       public String name() {
+         return "MG-ES";
+       }
+
+       public int displayName() {
+         return R.string.mcl_setting_renderer_mobileglues;
+       }
+
+       public void setupEnvironment(Context context, Map<String, String> envMap) {
+          envMap.put("MG_DIR_PATH", Tools.DIR_DATA + "/MobileGlues");
+       }
+
+       public String tag() {
+         return Renderers.MOBILEGLUES_RENDERER;
+       }
+
+       public String library() {
+         return "libmobileglues.so";
+       }
+
+       protected int glesVersion() {
+        return 3;
+       }
+
+     }
+
+     public static class SFPEWRenderSpec extends GLESRenderSpec {
+       public boolean compatibleDevice(Context context) {
+         return new File(Tools.NATIVE_LIB_DIR, this.library()).exists();
+       }
+
+       public String name() {
+         return "SFPEW";
+       }
+
+       public int displayName() {
+         return R.string.mcl_setting_renderer_sfpew;
+       }
+
+       public void setupEnvironment(Context context, Map<String, String> envMap) {
+         // Check if Angelica mod is present
+         Instance instance = Instances.loadSelectedInstance();
+         File gamedir = instance.getGameDirectory();
+         boolean hasAngelica = GameRunner.hasAngelica(gamedir);
+
+         if (!hasAngelica) {
+           // SFPEW wraps MobileGlues for better stability but why not LTW? Idk
+           envMap.put("SFPEW_EGL", "libmobileglues.so");
+           envMap.put("MG_DIR_PATH", Tools.DIR_DATA + "/MobileGlues");
+         }
+         // If Angelica is present, don't set SFPEW_EGL (Angelica provides its own FPE)
+       }
+
+       public String tag() {
+         return Renderers.SFPEW_RENDERER;
+       }
+
+       public String library() {
+         return "libSimpleFPEWrapper.so";
+       }
+
+       protected int glesVersion() {
+         return 3;
+       }
+     }
 }

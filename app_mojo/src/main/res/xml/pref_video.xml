@@ -16,9 +16,6 @@
             android:key="renderer_settings"
             android:title="@string/mcl_setting_title_renderer_settings"
             android:icon="@drawable/ic_mg_renderer"
-            android:summary="@string/mcl_setting_title_renderer_subtitle"
-            android:fragment="git.artdeell.mojo.prefs.screens.LauncherPreferenceRendererSettingsFragment"
-            android:visible="false"
             />
 
         <androidx.preference.SwitchPreferenceCompat

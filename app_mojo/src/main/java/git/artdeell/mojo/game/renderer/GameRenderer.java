@@ -19,7 +19,6 @@ import git.artdeell.mojo.Logger;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.game.renderer.impl.GLESRenderSpec;
 import git.artdeell.mojo.game.renderer.impl.MesaRenderSpec;
-import git.artdeell.mojo.game.renderer.impl.MobileGluesRenderSpec;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 
 import java.util.HashMap;
@@ -73,7 +72,7 @@ public class GameRenderer {
             case MESA_RENDERER: return new MesaRenderSpec();
             case MESA_RENDERER_EXT: return new MesaRenderSpec.ExtMesaRenderSpec();
             case LEGACYZINK_RENDERER: return new MesaRenderSpec.LegacyZinkRenderSpec();
-            case MOBILEGLUES_RENDERER: return new MobileGluesRenderSpec();
+            case MOBILEGLUES_RENDERER: return new GLESRenderSpec.MgRenderSpec();
             case SFPEW_RENDERER: return new GLESRenderSpec.SFPEWRenderSpec();
             default:
                 Log.e(TAG, "Unknown renderer " + renderer);

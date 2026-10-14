@@ -240,32 +240,6 @@ public class LauncherPreferences {
         }
     }
 
-    /** Write the current MG-ES (MobileGlues) renderer settings to its config.json */
-    public static void writeMGRendererSettings() throws IOException {
-        LinkedHashMap<String, Object> MGConfigJson = new LinkedHashMap<>();
-        MGConfigJson.put("enableANGLE", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_angle", "0")));
-        MGConfigJson.put("enableNoError", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_errorSetting", "0")));
-        MGConfigJson.put("fsr1Setting", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_fsr", "0")));
-
-        int computeShaderext = DEFAULT_PREF.getBoolean("mg_renderer_computeShaderext", false) ? 1 : 0;
-        int angleDepthClearFixMode = DEFAULT_PREF.getBoolean("mg_renderer_setting_angleDepthClearFixMode", false) ? 1 : 0;
-        int timerQueryExt = DEFAULT_PREF.getBoolean("mg_renderer_setting_timerQueryExt", false) ? 1 : 0;
-        int dsaExt = DEFAULT_PREF.getBoolean("mg_renderer_dsaExt", false) ? 1 : 0;
-        MGConfigJson.put("enableExtComputeShader", computeShaderext);
-        MGConfigJson.put("angleDepthClearFixMode", angleDepthClearFixMode);
-        MGConfigJson.put("enableExtTimerQuery", timerQueryExt);
-        MGConfigJson.put("enableExtDirectStateAccess", dsaExt);
-        if (DEFAULT_PREF.getBoolean("mg_renderer_multidrawCompute", false)) {
-            MGConfigJson.put("multidrawMode", 5);
-        } else MGConfigJson.put("multidrawMode", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_multidraw", "0")));
-        MGConfigJson.put("maxGlslCacheSize", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_glsl_cache_size", "128")));
-
-        File configFile = new File(Tools.DIR_DATA + "/MobileGlues", "config.json");
-        FileUtils.ensureParentDirectory(configFile);
-        Tools.write(configFile.getAbsolutePath(), Tools.GLOBAL_GSON.toJson(MGConfigJson));
-        Logger.appendToLog("Writing MG-ES config to " + configFile.getAbsolutePath());
-    }
-
     /**
      * Resolves the CurseForge API key to use: the one the user entered in the experimental
      * settings if they've set one, otherwise the bundled default. Callers that can skip

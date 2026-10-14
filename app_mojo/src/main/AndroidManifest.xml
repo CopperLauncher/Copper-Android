@@ -129,6 +129,16 @@
             </intent-filter>
         </provider>
 
+        <activity
+            android:name="git.artdeell.mojo.mobileglues.MainActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme" />
+
+        <service
+            android:name="git.artdeell.mojo.mobileglues.MgQueryService"
+            android:exported="false"
+            android:process=":mgquery" />
+
         <service android:name=".services.ProgressService"
             android:foregroundServiceType="dataSync"/>
         <service android:name=".services.GameService" android:process=":game"

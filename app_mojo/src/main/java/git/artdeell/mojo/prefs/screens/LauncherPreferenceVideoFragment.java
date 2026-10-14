@@ -1,6 +1,7 @@
 package git.artdeell.mojo.prefs.screens;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -11,6 +12,7 @@ import androidx.preference.SwitchPreferenceCompat;
 
 import git.artdeell.mojo.R;
 
+import git.artdeell.mojo.mobileglues.MainActivity;
 import git.artdeell.mojo.game.renderer.RendererCache;
 import git.artdeell.mojo.game.renderer.def.Renderers;
 import git.artdeell.mojo.game.renderer.extra.GLESProvider;
@@ -80,6 +82,11 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
         RendererCache list = RendererCache.getCompatibleRenderers(getContext());
         rendererListPreference.setEntries(list.rendererDisplayNames);
         rendererListPreference.setEntryValues(list.rendererIds.toArray(new String[0]));
+
+        requirePreference("renderer_settings").setOnPreferenceClickListener(preference -> {
+            startActivity(new Intent(getContext(), MainActivity.class));
+            return true;
+        });
 
         computeVisibility();
     }
