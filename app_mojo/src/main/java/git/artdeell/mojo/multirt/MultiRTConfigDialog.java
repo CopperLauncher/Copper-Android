@@ -1,7 +1,10 @@
 package git.artdeell.mojo.multirt;
 
+import git.artdeell.mojo.utils.AnimationManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
+import android.app.Activity;
+import androidx.appcompat.app.AlertDialog;
 import android.content.Context;
 import android.widget.Button;
 
@@ -32,9 +35,13 @@ public class MultiRTConfigDialog {
         mDialogView = new RecyclerView(activity);
         mDialogView.setLayoutManager(new LinearLayoutManager(activity, LinearLayoutManager.VERTICAL, false));
         RTRecyclerViewAdapter adapter = new RTRecyclerViewAdapter();
+        if(activity instanceof Activity) {
+            adapter.setActivity((Activity) activity);
+        }
         mDialogView.setAdapter(adapter);
+        AnimationManager.applyListAnimation(mDialogView);
 
-        mDialog = new AlertDialog.Builder(activity)
+        mDialog = new MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.multirt_config_title)
                 .setView(mDialogView)
                 .setPositiveButton(R.string.multirt_config_add, (dialog, which) -> installJvmLauncher.launch(null))

@@ -24,4 +24,7 @@
 # Option screens
  -keep class git.artdeell.mojo.prefs.screens** {*;}
 
+# File dialog bridge: methods are looked up by name from native code
+ -keep class git.artdeell.mojo.game.platform.dialog.FileDialogBridge { *; }
+ -keep class git.artdeell.mojo.game.platform.dialog.SDLFileDialogHandler { *; }
 

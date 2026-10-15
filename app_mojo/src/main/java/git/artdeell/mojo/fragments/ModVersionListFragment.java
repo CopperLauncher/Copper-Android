@@ -1,5 +1,6 @@
 package git.artdeell.mojo.fragments;
 
+import git.artdeell.mojo.utils.AnimationManager;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -73,6 +74,7 @@ public abstract class ModVersionListFragment<T> extends Fragment implements Runn
             Tools.runOnUiThread(()->{
                 if(versions != null) {
                     mExpandableListView.setAdapter(createAdapter(versions, mInflater));
+                    AnimationManager.applyListAnimation(mExpandableListView);
                 }else{
                     mRetryView.setVisibility(View.VISIBLE);
                 }

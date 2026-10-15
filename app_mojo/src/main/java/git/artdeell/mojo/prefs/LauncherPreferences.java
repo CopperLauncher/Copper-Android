@@ -16,9 +16,13 @@ import git.artdeell.mojo.*;
 
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.multirt.MultiRTUtils;
+import git.artdeell.mojo.utils.FileUtils;
+import git.artdeell.mojo.utils.GpuUtils;
 import git.artdeell.mojo.utils.JREUtils;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
 import git.artdeell.mojo.R;
 
@@ -58,6 +62,7 @@ public class LauncherPreferences {
     public static boolean PREF_FORCE_VSYNC = false;
 
     public static boolean PREF_USE_ANGLE = false;
+    public static boolean PREF_USE_SYSTEM_ANGLE = false;
 
     public static boolean PREF_BUTTON_ALL_CAPS = true;
     public static boolean PREF_DUMP_SHADERS = false;
@@ -79,11 +84,19 @@ public class LauncherPreferences {
     public static boolean PREF_UBWC_WORKAROUND = false;
     public static boolean PREF_DISABLE_BLOCKLIST = false;
 
+    /** Experimental: when true, CurseForge is left out of content searches and Modrinth is used alone,
+     *  since its API can be noticeably slower than Modrinth's. */
+    public static boolean PREF_DISABLE_CURSEFORGE_API = false;
+    /** Experimental: user-supplied CurseForge API key, used instead of the bundled one when non-empty. */
+    public static String PREF_CURSEFORGE_API_KEY_OVERRIDE = "";
+
     public static void loadPreferences(Context ctx) {
         //Required for CTRLDEF_FILE and MultiRT
         Tools.initStorageConstants(ctx);
         boolean isDevicePowerful = isDevicePowerful(ctx);
 
+        PREF_DISABLE_CURSEFORGE_API = DEFAULT_PREF.getBoolean("disableCurseforgeApi", false);
+        PREF_CURSEFORGE_API_KEY_OVERRIDE = DEFAULT_PREF.getString("curseforgeApiKeyOverride", "");
         PREF_RENDERER = DEFAULT_PREF.getString("renderer", "opengles2");
         PREF_BUTTONSIZE = DEFAULT_PREF.getInt("buttonscale", 100);
         PREF_MOUSESCALE = DEFAULT_PREF.getInt("mousescale", 100)/100f;
@@ -109,6 +122,7 @@ public class LauncherPreferences {
         PREF_GYRO_INVERT_Y = DEFAULT_PREF.getBoolean("gyroInvertY", false);
         PREF_FORCE_VSYNC = DEFAULT_PREF.getBoolean("force_vsync", isDevicePowerful);
         PREF_USE_ANGLE = DEFAULT_PREF.getBoolean("use_angle", false);
+        PREF_USE_SYSTEM_ANGLE = DEFAULT_PREF.getBoolean("use_system_angle", false);
         PREF_BUTTON_ALL_CAPS = DEFAULT_PREF.getBoolean("buttonAllCaps", true);
         PREF_DUMP_SHADERS = DEFAULT_PREF.getBoolean("dump_shaders", false);
         PREF_DEADZONE_SCALE = ((float) DEFAULT_PREF.getInt("gamepad_deadzone_scale", 100))/100f;
@@ -226,5 +240,17 @@ public class LauncherPreferences {
             Log.i("NOTCH DETECTION", "No notch detected, or the device if in split screen mode");
             return false;
         }
+    }
+
+    /**
+     * Resolves the CurseForge API key to use: the one the user entered in the experimental
+     * settings if they've set one, otherwise the bundled default. Callers that can skip
+     * CurseForge entirely should check PREF_DISABLE_CURSEFORGE_API before resolving a key.
+     */
+    public static String resolveCurseforgeApiKey(Context ctx) {
+        if (PREF_CURSEFORGE_API_KEY_OVERRIDE != null && !PREF_CURSEFORGE_API_KEY_OVERRIDE.trim().isEmpty()) {
+            return PREF_CURSEFORGE_API_KEY_OVERRIDE.trim();
+        }
+        return ctx.getString(R.string.curseforge_api_key);
     }
 }

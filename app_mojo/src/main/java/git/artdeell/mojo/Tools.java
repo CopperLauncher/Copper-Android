@@ -1,5 +1,8 @@
 package git.artdeell.mojo;
 
+import git.artdeell.mojo.fragments.MainMenuFragment;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import git.artdeell.mojo.utils.ThemeColors;
 import static android.os.Build.VERSION.SDK_INT;
 import static git.artdeell.mojo.MojoApplication.sExecutorService;
 
@@ -29,12 +32,14 @@ import android.provider.DocumentsProvider;
 import android.provider.OpenableColumns;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -55,6 +60,7 @@ import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.utils.lifecycle.ContextExecutor;
 import git.artdeell.mojo.utils.lifecycle.ContextExecutorTask;
 import git.artdeell.mojo.utils.HashUtils;
+import git.artdeell.mojo.utils.McLogsApi;
 import git.artdeell.mojo.utils.maven.MavenName;
 import git.artdeell.mojo.utils.maven.MavenNameAdapter;
 import git.artdeell.mojo.utils.memory.MemoryHoleFinder;
@@ -260,7 +266,7 @@ public final class Tools {
         int bgColor;
         // The status bars are completely transparent and will take their color from the inset view
         // background drawable.
-        if(!noSystemBars) bgColor = activity.getResources().getColor(R.color.background_status_bar);
+        if(!noSystemBars) bgColor = ThemeColors.surfaceContainer(activity);
         else bgColor = Color.BLACK;
 
         // On API 35 onwards, apps are edge-to-edge by default and are controlled entirely though the
@@ -373,7 +379,7 @@ public final class Tools {
 
         Runnable runnable = () -> {
             final String errMsg = showMore ? printToString(e) : rolledMessage != null ? rolledMessage : e.getMessage();
-            AlertDialog.Builder builder = new AlertDialog.Builder(ctx)
+            AlertDialog.Builder builder = new MaterialAlertDialogBuilder(ctx)
                     .setTitle(titleId)
                     .setMessage(errMsg)
                     .setPositiveButton(android.R.string.ok, (p1, p2) -> {
@@ -442,7 +448,7 @@ public final class Tools {
     }
 
     public static void dialog(final Context context, final CharSequence title, final CharSequence message) {
-        new AlertDialog.Builder(context)
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, null)
@@ -450,7 +456,7 @@ public final class Tools {
     }
 
     public static void dialog(final Context context, final int title, final int message) {
-        new AlertDialog.Builder(context)
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, null)
@@ -732,11 +738,32 @@ public final class Tools {
         }
     }
 
-    /** Swap the main fragment with another */
+    /** @return the two-pane main menu if it is the current screen of the activity, null otherwise */
+    @Nullable
+    public static MainMenuFragment getTwoPaneMainMenu(FragmentActivity fragmentActivity) {
+        Fragment current = fragmentActivity.getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+        if(current instanceof MainMenuFragment && ((MainMenuFragment) current).isTwoPane()) {
+            return (MainMenuFragment) current;
+        }
+        return null;
+    }
+
+    /**
+     * Open a screen. In the two-pane landscape main menu it opens in the right pane,
+     * otherwise it swaps the main fragment with it.
+     */
     public static void swapFragment(FragmentActivity fragmentActivity , Class<? extends Fragment> fragmentClass,
                                     @Nullable String fragmentTag, @Nullable Bundle bundle) {
+        MainMenuFragment mainMenu = getTwoPaneMainMenu(fragmentActivity);
+        if(mainMenu != null && fragmentClass != MainMenuFragment.class
+                && mainMenu.openInPane(fragmentClass, fragmentTag, bundle)) return;
+        swapFragmentFullScreen(fragmentActivity, fragmentClass, fragmentTag, bundle);
+    }
+
+    /** Swap the main fragment with another, even if the main menu has a right pane to open it in */
+    public static void swapFragmentFullScreen(FragmentActivity fragmentActivity , Class<? extends Fragment> fragmentClass,
+                                    @Nullable String fragmentTag, @Nullable Bundle bundle) {
         // When people tab out, it might happen
-        //TODO handle custom animations
         fragmentActivity.getSupportFragmentManager().beginTransaction()
                 .setReorderingAllowed(true)
                 .addToBackStack(fragmentClass.getName())
@@ -744,12 +771,28 @@ public final class Tools {
     }
 
     public static void backToMainMenu(FragmentActivity fragmentActivity) {
+        MainMenuFragment mainMenu = getTwoPaneMainMenu(fragmentActivity);
+        if(mainMenu != null) mainMenu.clearRightPane();
         fragmentActivity.getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+    }
 
+    /** Show the main menu: closes the screens of the right pane, or opens a new main menu if there is none */
+    public static void swapToMainMenu(FragmentActivity fragmentActivity) {
+        MainMenuFragment mainMenu = getTwoPaneMainMenu(fragmentActivity);
+        if(mainMenu != null) {
+            mainMenu.clearRightPane();
+            return;
+        }
+        swapFragmentFullScreen(fragmentActivity, MainMenuFragment.class, MainMenuFragment.TAG, null);
     }
 
     /** Remove the current fragment */
     public static void removeCurrentFragment(FragmentActivity fragmentActivity){
+        MainMenuFragment mainMenu = getTwoPaneMainMenu(fragmentActivity);
+        if(mainMenu != null && mainMenu.isRightPaneActive()) {
+            mainMenu.popRightPane();
+            return;
+        }
         fragmentActivity.getSupportFragmentManager().popBackStack();
     }
 
@@ -801,9 +844,90 @@ public final class Tools {
         MAIN_HANDLER.post(runnable);
     }
 
-    /** Triggers the share intent chooser, with the latestlog file attached to it */
+    /** Shows a dialog letting the user pick between uploading the log to mclo.gs or sharing
+     *  the raw log file directly. */
     public static void shareLog(Context context){
+        shareLog(context, null);
+    }
+
+    /** Same as {@link #shareLog(Context)}, but invokes {@code onFinished} once the whole share
+     *  flow is over: the dialog was cancelled, the raw file share was started, or the mclo.gs
+     *  link was uploaded and handed to the share sheet. Meant for hosts that must finish()
+     *  afterwards (like ExitActivity), since finishing earlier would tear down the dialogs
+     *  and the upload this flow still needs the host for. If the mclo.gs upload fails and a
+     *  callback was given, the share dialog is shown again so the user can retry or cancel. */
+    public static void shareLog(Context context, @Nullable Runnable onFinished){
+        View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_share_log, null);
+        final boolean[] picked = {false};
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.share_log_dialog_title)
+                .setView(dialogView)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener(d -> {
+                    if(!picked[0] && onFinished != null) onFinished.run();
+                })
+                .create();
+
+        dialogView.findViewById(R.id.share_log_mclogs_button).setOnClickListener(v -> {
+            picked[0] = true;
+            dialog.dismiss();
+            shareLogToMcLogs(context, onFinished);
+        });
+        dialogView.findViewById(R.id.share_log_file_button).setOnClickListener(v -> {
+            picked[0] = true;
+            dialog.dismiss();
+            shareLogFile(context);
+            if(onFinished != null) onFinished.run();
+        });
+
+        dialog.show();
+    }
+
+    /** Triggers the share intent chooser, with the latestlog file attached to it */
+    private static void shareLogFile(Context context){
         openPath(context, new File(Tools.DIR_GAME_HOME, "latestlog.txt"), true);
+    }
+
+    /** Uploads the latest log file to mclo.gs and shares the resulting link, copying it to the
+     *  clipboard as well so it isn't lost if the share sheet gets dismissed. */
+    private static void shareLogToMcLogs(Context context, @Nullable Runnable onFinished){
+        final File logFile = new File(Tools.DIR_GAME_HOME, "latestlog.txt");
+        final AlertDialog progressDialog = new MaterialAlertDialogBuilder(context)
+                .setView(R.layout.dialog_share_log_progress)
+                .setCancelable(false)
+                .show();
+
+        sExecutorService.execute(() -> {
+            try {
+                String url = McLogsApi.upload(logFile);
+                Tools.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+
+                    ClipboardManager clipboardManager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if(clipboardManager != null) clipboardManager.setPrimaryClip(ClipData.newPlainText("mclo.gs", url));
+                    Toast.makeText(context, R.string.share_log_mclogs_copied, Toast.LENGTH_SHORT).show();
+
+                    Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                    shareIntent.setType("text/plain");
+                    shareIntent.putExtra(Intent.EXTRA_TEXT, url);
+                    Intent chooserIntent = Intent.createChooser(shareIntent, url);
+                    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(chooserIntent);
+                    if(onFinished != null) onFinished.run();
+                });
+            } catch (IOException e) {
+                Tools.runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    if(onFinished == null) {
+                        Tools.showError(context, R.string.share_log_mclogs_error, e);
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.share_log_mclogs_error) + ": " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        shareLog(context, onFinished);
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -873,7 +997,7 @@ public final class Tools {
     }
 
     public static void dialogForceClose(Context ctx) {
-        new android.app.AlertDialog.Builder(ctx)
+        new MaterialAlertDialogBuilder(ctx)
                 .setMessage(R.string.mcn_exit_confirm)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok, (p1, p2) -> {

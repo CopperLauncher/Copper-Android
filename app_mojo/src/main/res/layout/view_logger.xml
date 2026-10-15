@@ -1,72 +1,114 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merge xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
-    <View
-        android:id="@+id/top_log_view"
+    <!-- Header. A normal top item in the column, not an overlay - the console below is laid
+         out strictly underneath it, so it can never sit behind/under the header. -->
+    <LinearLayout
+        android:id="@+id/log_header"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
-        android:background="#555555"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/log_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="25dp"
-        android:text="@string/log_view_label_log_output"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
-        app:layout_constraintStart_toStartOf="@+id/top_log_view"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <ToggleButton
-        android:id="@+id/content_log_toggle_autoscroll"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="10dp"
-        android:textOff="@string/log_view_button_scroll_off"
-        android:textOn="@string/log_view_button_scroll_on"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
-        app:layout_constraintEnd_toStartOf="@+id/content_log_toggle_log"
-        app:layout_constraintTop_toTopOf="parent"/>
-
-    <ToggleButton
-        android:id="@+id/content_log_toggle_log"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginHorizontal="10dp"
-        android:textOff="@string/log_view_button_output_off"
-        android:textOn="@string/log_view_button_output_on"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
-        app:layout_constraintEnd_toStartOf="@+id/log_view_cancel"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <ImageButton
-        android:id="@+id/log_view_cancel"
-        android:layout_width="70dp"
-        android:layout_height="70dp"
-        android:scaleType="centerCrop"
-        android:src="@android:drawable/ic_delete"
-        app:layout_constraintBottom_toBottomOf="@+id/top_log_view"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <com.kdt.DefocusableScrollView
-        android:id="@+id/content_log_scroll"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:alpha="0.8"
-        android:background="#000000"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/top_log_view">
+        android:layout_height="56dp"
+        android:background="?attr/colorSurfaceContainer"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp">
 
         <TextView
-            android:id="@+id/content_log_view"
-            android:layout_width="match_parent"
+            android:id="@+id/log_title"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textIsSelectable="true"/>
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:text="@string/log_view_label_log_output"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textColor="?attr/colorOnSurface" />
 
-    </com.kdt.DefocusableScrollView>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/content_log_toggle_log"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="@string/log_view_toggle_output_label"
+            app:ensureMinTouchTargetSize="false" />
 
-</merge>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/content_log_toggle_autoscroll"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="4dp"
+            android:text="@string/log_view_toggle_autoscroll_label"
+            app:ensureMinTouchTargetSize="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/content_log_share"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/share_log_dialog_title"
+            app:icon="@drawable/ic_share"
+            app:iconTint="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/log_view_cancel"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:contentDescription="@string/log_view_close_description"
+            app:icon="@drawable/ic_close"
+            app:iconTint="?attr/colorOnSurfaceVariant" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?attr/colorOutlineVariant" />
+
+    <!-- Console panel. Its translucent surface-colored background is applied in LoggerView so
+         it follows light/dark mode and the dynamic color palette. -->
+    <FrameLayout
+        android:id="@+id/log_content_panel"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <com.kdt.DefocusableScrollView
+            android:id="@+id/content_log_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:overScrollMode="never">
+
+            <TextView
+                android:id="@+id/content_log_view"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="2dp"
+                android:padding="12dp"
+                android:textColor="?attr/colorOnSurface"
+                android:textIsSelectable="true"
+                android:textSize="11sp" />
+
+        </com.kdt.DefocusableScrollView>
+
+        <!-- Shown while output is toggled off -->
+        <TextView
+            android:id="@+id/content_log_empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="24dp"
+            android:text="@string/log_view_empty_state"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+    </FrameLayout>
+
+</LinearLayout>

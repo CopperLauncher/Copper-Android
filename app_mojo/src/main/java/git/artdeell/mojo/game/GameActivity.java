@@ -1,6 +1,7 @@
 package git.artdeell.mojo.game;
 
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import static git.artdeell.mojo.Tools.dialogForceClose;
 import static git.artdeell.mojo.game.platform.Platform.PLATFORM;
 import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_ENABLE_GYRO;
@@ -10,7 +11,7 @@ import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_VIRTUAL_MOUSE_STA
 import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_ZINK_PREFER_SYSTEM_DRIVER;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -67,6 +68,7 @@ import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.utils.lifecycle.ContextExecutor;
 import git.artdeell.mojo.game.platform.Platform;
 import git.artdeell.mojo.game.platform.backend.DummyBackend;
+import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.prefs.QuickSettingSideDialog;
 import git.artdeell.mojo.services.GameService;
@@ -74,6 +76,7 @@ import git.artdeell.mojo.tasks.AsyncAssetManager;
 import git.artdeell.mojo.utils.JREUtils;
 import git.artdeell.mojo.utils.MCOptionUtils;
 import git.artdeell.mojo.authenticator.accounts.Account;
+import git.artdeell.mojo.game.renderer.impl.GLESRenderSpec;
 import git.artdeell.mojo.utils.jre.GameRunner;
 
 import java.io.File;
@@ -364,6 +367,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     protected void onDestroy() {
         super.onDestroy();
         ContextExecutor.clearActivity();
+        FileDialogBridge.cancelAll();
     }
 
     @Override
@@ -395,6 +399,8 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
+        if(FileDialogBridge.handleActivityResult(requestCode, resultCode, data)) return;
+
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             // Reload PREF_DEFAULTCTRL_PATH
             // If the storage root got unmounted/unreadable we won't be able to load the file anyway,
@@ -413,13 +419,20 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         Logger.appendToLog("--------- Starting game with Launcher Debug!");
         Tools.printLauncherInfo(versionId, instance.getLaunchArgs(), mGameRenderer.getCurrentRenderer(), this);
         JREUtils.redirectAndPrintJRELog();
+
+        // Show Angelica + SFPEW notice
+        if (mGameRenderer.getCurrentRenderer() instanceof GLESRenderSpec.SFPEWRenderSpec
+                && GameRunner.hasAngelica(instance.getGameDirectory())) {
+            Tools.runOnUiThread(() -> Toast.makeText(this, R.string.angelica_found_sfpew_notice, Toast.LENGTH_LONG).show());
+        }
+
         GameRunner.launchGame(this, account, instance, versionId, classpath, mGameRenderer);
         //Note that we actually stall in the above function, even if the game crashes. But let's be safe.
         Tools.runOnUiThread(()-> mServiceBinder.isActive = false);
     }
 
     private void dialogSendCustomKey() {
-        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        AlertDialog.Builder dialog = new MaterialAlertDialogBuilder(this);
         dialog.setTitle(R.string.control_customkey);
         dialog.setItems(KeycodeUtils.generateKeyName(), (dInterface, position) -> KeycodeUtils.execKeyIndex(position));
         dialog.show();

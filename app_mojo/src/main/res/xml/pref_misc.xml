@@ -6,6 +6,7 @@
 
     <PreferenceCategory android:title="@string/preference_category_miscellaneous">
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="true"
             android:icon="@drawable/ic_px_hash"
             android:key="checkGameFiles"
@@ -13,6 +14,7 @@
             android:title="@string/preference_verify_game_files_title" />
 
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="true"
             android:icon="@drawable/ic_px_zap"
             android:key="fastStartupCheck"
@@ -28,6 +30,7 @@
             android:summary="@string/preference_download_source_description"
             app2:useSimpleSummaryProvider="true"/>
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="true"
             android:icon="@drawable/ic_px_verify_hash"
             android:key="verifyManifest"
@@ -48,6 +51,7 @@
             android:title="@string/preference_metadata_clear"
             android:summary="@string/preference_metadata_clear_summary" />
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="true"
             android:icon="@drawable/ic_px_memory_warning"
             android:key="showMemoryWarning"

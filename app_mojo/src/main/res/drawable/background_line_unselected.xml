@@ -2,15 +2,22 @@
 
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <shape android:shape="rectangle">
+        <shape
+            android:shape="rectangle" >
+
+            <corners android:radius="12dp" />
+
+
             <stroke
                 android:width="@dimen/_2sdp"
-                android:color="#909090"/>
+                android:color="?attr/colorOutline"/>
         </shape>
     </item>
     <item android:drawable="?attr/selectableItemBackground"/>
     <item>
-        <shape android:shape="rectangle">
+        <shape
+            android:shape="rectangle">
+
             <padding
                 android:bottom="@dimen/padding_input_bottom"
                 android:top="@dimen/padding_input_top" />

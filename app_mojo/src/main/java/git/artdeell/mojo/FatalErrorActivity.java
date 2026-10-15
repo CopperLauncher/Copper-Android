@@ -1,5 +1,6 @@
 package git.artdeell.mojo;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -28,7 +29,7 @@ public class FatalErrorActivity extends AppCompatActivity {
 			"Crash stack trace saved to " + strSavePath + "." :
 			"Storage permission is required to save crash stack trace!";
 		
-		new AlertDialog.Builder(this)
+		new MaterialAlertDialogBuilder(this)
 			.setTitle(R.string.error_fatal)
 			.setMessage(errHeader + "\n\n" + stackTrace)
 			.setPositiveButton(android.R.string.ok, (p1, p2) -> finish())

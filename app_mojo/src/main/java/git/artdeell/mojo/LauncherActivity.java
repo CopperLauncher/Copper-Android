@@ -1,5 +1,8 @@
 package git.artdeell.mojo;
 
+import git.artdeell.mojo.utils.AnimationManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import android.Manifest;
 import android.app.NotificationManager;
@@ -32,6 +35,7 @@ import git.artdeell.mojo.extra.ExtraListener;
 import git.artdeell.mojo.fragments.MainMenuFragment;
 import git.artdeell.mojo.fragments.MicrosoftLoginFragment;
 import git.artdeell.mojo.fragments.SelectAuthFragment;
+import git.artdeell.mojo.fragments.SettingsHostFragment;
 import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.InstanceInstaller;
 import git.artdeell.mojo.instances.Instances;
@@ -62,8 +66,8 @@ public class LauncherActivity extends BaseActivity {
     private final FragmentManager.FragmentLifecycleCallbacks mFragmentCallbackListener = new FragmentManager.FragmentLifecycleCallbacks() {
         @Override
         public void onFragmentResumed(@NonNull FragmentManager fm, @NonNull Fragment f) {
-            mSettingsButton.setImageDrawable(ContextCompat.getDrawable(getBaseContext(), f instanceof MainMenuFragment
-                    ? R.drawable.ic_px_sliders : R.drawable.ic_px_home));
+            // Also called for the screens of the right pane of the main menu
+            updateSettingsButton();
         }
     };
 
@@ -92,7 +96,17 @@ public class LauncherActivity extends BaseActivity {
         if(manager.isStateSaved()) return;
         Fragment fragment = manager.findFragmentById(mFragmentView.getId());
         if(fragment instanceof MainMenuFragment){
-            Tools.swapFragment(this, LauncherPreferenceFragment.class, SETTING_FRAGMENT_TAG, null);
+            MainMenuFragment mainMenu = (MainMenuFragment) fragment;
+            if(mainMenu.isRightPaneActive()) {
+                // Home button of the two-pane main menu: close the screen in the right pane
+                mainMenu.clearRightPane();
+                return;
+            }
+            // The settings replace the whole screen, they are not opened in the right pane.
+            // In landscape they have two panes of their own
+            Class<? extends Fragment> settingsClass = getResources().getConfiguration().orientation == ORIENTATION_LANDSCAPE
+                    ? SettingsHostFragment.class : LauncherPreferenceFragment.class;
+            Tools.swapFragmentFullScreen(this, settingsClass, SETTING_FRAGMENT_TAG, null);
         } else{
             // The setting button doubles as a home button now
             Tools.backToMainMenu(this);
@@ -148,14 +162,23 @@ public class LauncherActivity extends BaseActivity {
         }
         return false;
     };
+    /** The button is the settings button on the home screen, and the home button everywhere else */
+    private void updateSettingsButton() {
+        if(mSettingsButton == null) return;
+        Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+        boolean atHome = current instanceof MainMenuFragment && !((MainMenuFragment) current).isRightPaneActive();
+        mSettingsButton.setImageDrawable(ContextCompat.getDrawable(this,
+                atHome ? R.drawable.ic_px_sliders : R.drawable.ic_px_home));
+    }
+
     @Override
     protected boolean shouldIgnoreNotch() {
-        return getResources().getConfiguration().orientation == ORIENTATION_PORTRAIT;
+        return true;
     }
 
     @Override
     public boolean setFullscreen() {
-        return false;
+        return true;
     }
 
     @Override
@@ -224,6 +247,7 @@ public class LauncherActivity extends BaseActivity {
     protected void onStart() {
         super.onStart();
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(mFragmentCallbackListener, true);
+        AnimationManager.installFragmentTransitions(this);
     }
 
     @Override
@@ -255,9 +279,20 @@ public class LauncherActivity extends BaseActivity {
 
     @SuppressWarnings("SameParameterValue")
     private Fragment getVisibleFragment(String tag){
-        Fragment fragment = getSupportFragmentManager().findFragmentByTag(tag);
+        Fragment fragment = findFragmentByTag(getSupportFragmentManager(), tag);
         if(fragment != null && fragment.isVisible()) {
             return fragment;
+        }
+        return null;
+    }
+
+    /** Looks in the fragments nested in others too, like the ones in the right pane of the main menu */
+    private static Fragment findFragmentByTag(FragmentManager manager, String tag) {
+        Fragment fragment = manager.findFragmentByTag(tag);
+        if(fragment != null) return fragment;
+        for(Fragment child : manager.getFragments()) {
+            fragment = findFragmentByTag(child.getChildFragmentManager(), tag);
+            if(fragment != null) return fragment;
         }
         return null;
     }
@@ -298,7 +333,7 @@ public class LauncherActivity extends BaseActivity {
             Intent i = getPackageManager().getLaunchIntentForPackage(s);
             if(i == null) continue;
             Tools.runOnUiThread(() ->
-                    new AlertDialog.Builder(this)
+                    new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.migration_progress_warning_title)
                         .setMessage(R.string.migration_notice)
                         .setPositiveButton(android.R.string.ok, (d, button) -> LauncherPreferences.DEFAULT_PREF.edit().putBoolean("migrationNotice", false).apply())
@@ -309,7 +344,7 @@ public class LauncherActivity extends BaseActivity {
     }
 
     private void showNotificationPermissionReasoning() {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.notification_permission_dialog_title)
                 .setMessage(R.string.notification_permission_dialog_text)
                 .setPositiveButton(android.R.string.ok, (d, w) ->

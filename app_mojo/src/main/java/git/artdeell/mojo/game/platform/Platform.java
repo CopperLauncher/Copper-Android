@@ -21,6 +21,7 @@ import git.artdeell.mojo.game.platform.backend.GLFWBackend;
 import git.artdeell.mojo.game.platform.backend.PlatformBackend;
 import git.artdeell.mojo.game.platform.backend.SDLBackend;
 import git.artdeell.mojo.game.platform.clipboard.AndroidClipboard;
+import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 import git.artdeell.mojo.game.platform.cursor.PlatformCursor;
 import git.artdeell.mojo.game.platform.cursor.PlatformCursorImplementor;
 import git.artdeell.mojo.game.platform.input.PlatformGamepad;
@@ -65,6 +66,7 @@ public class Platform {
         Platform.mHostView = view;
         Platform.mInputManager = createRemapperManager(view);
         mClipboard = new AndroidClipboard(activity.getApplicationContext());
+        FileDialogBridge.setHostActivity(activity);
         GLFW.setInitCallback(() -> onInit(new GLFWBackend()));
         SDLActivity.setInitCallback(() -> onInit(new SDLBackend()));
         AWTBridge.setEnableCallback(() -> onInit(new AWTBackend()));

@@ -111,7 +111,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="+"
-            android:textColor="@color/primary_text"
+            android:textColor="?attr/colorOnSurface"
             app:layout_constraintBottom_toBottomOf="@id/controller_mapper_key_spinner1"
             app:layout_constraintEnd_toEndOf="@id/guideline3"
             app:layout_constraintStart_toStartOf="@id/guideline3"
@@ -123,7 +123,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="+"
-            android:textColor="@color/primary_text"
+            android:textColor="?attr/colorOnSurface"
             app:layout_constraintBottom_toBottomOf="@id/controller_mapper_key_spinner3"
             app:layout_constraintEnd_toEndOf="@id/guideline3"
             app:layout_constraintStart_toStartOf="@id/guideline3"
@@ -137,7 +137,7 @@
             android:orientation="vertical"
             app:layout_constraintGuide_percent="0.5" />
 
-        <androidx.appcompat.widget.SwitchCompat
+        <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/controller_mapper_toggleable_switch"
             android:layout_width="0dp"
             android:layout_height="48dp"

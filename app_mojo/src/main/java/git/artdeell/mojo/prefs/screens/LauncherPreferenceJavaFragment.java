@@ -15,6 +15,7 @@ import git.artdeell.mojo.contracts.OpenDocumentWithExtension;
 import git.artdeell.mojo.multirt.MultiRTConfigDialog;
 import git.artdeell.mojo.prefs.CustomSeekBarPreference;
 import git.artdeell.mojo.prefs.LauncherPreferences;
+import git.artdeell.mojo.prefs.RamInputDialog;
 
 public class LauncherPreferenceJavaFragment extends LauncherPreferenceFragment {
     private MultiRTConfigDialog mDialogScreen;
@@ -41,6 +42,12 @@ public class LauncherPreferenceJavaFragment extends LauncherPreferenceFragment {
         memorySeekbar.setMaxKeepIncrement(maxRAM);
         memorySeekbar.setValue(ramAllocation);
         memorySeekbar.setSuffix(" MB");
+
+        // Tapping the row lets the user type the amount of RAM instead of using the slider
+        final int finalMaxRAM = maxRAM;
+        memorySeekbar.setOnRowClickListener(preference ->
+                RamInputDialog.show(requireContext(), preference.getValue(),
+                        preference.getMinValue(), finalMaxRAM, preference::setValue));
 
         EditTextPreference editJVMArgs = findPreference("javaArgs");
         if (editJVMArgs != null) {

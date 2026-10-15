@@ -1,5 +1,6 @@
 package git.artdeell.mojo.prefs.screens;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.Manifest;
 import android.app.Activity;
 import android.net.Uri;
@@ -29,7 +30,7 @@ public class LauncherPreferenceMiscellaneousFragment extends LauncherPreferenceF
     private final ActivityResultLauncher<Uri> mMigrateLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenDocumentTree(), (uri) -> {
                 if(uri != null) {
-                    new AlertDialog.Builder(getLauncherActivity())
+                    new MaterialAlertDialogBuilder(getLauncherActivity())
                             .setTitle(R.string.migration_progress_warning_title)
                             .setMessage(R.string.migration_progress_warning_summary)
                             .setPositiveButton(android.R.string.ok, (d, w) -> new DataMigrator(getLauncherActivity(), uri).migrateData())

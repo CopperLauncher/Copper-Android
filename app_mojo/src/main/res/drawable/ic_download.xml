@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+  <!-- Pixel-art download arrow with a tray, used for download counts -->
+  <path
+      android:fillColor="?attr/colorOnSurface"
+      android:pathData="M10,2 h4 v2 h-4 z M10,4 h4 v2 h-4 z M10,6 h4 v2 h-4 z M10,8 h4 v2 h-4 z M4,10 h4 v2 h-4 z M10,10 h4 v2 h-4 z M16,10 h4 v2 h-4 z M6,12 h12 v2 h-12 z M8,14 h8 v2 h-8 z M10,16 h4 v2 h-4 z M2,18 h2 v2 h-2 z M20,18 h2 v2 h-2 z M2,20 h20 v2 h-20 z"/>
+</vector>

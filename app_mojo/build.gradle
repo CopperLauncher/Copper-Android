@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application' version '8.11.1'
+    id 'org.jetbrains.kotlin.android' version '2.2.10'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.2.10'
     id 'de.undercouch.download' version '5.6.0'
     id 'org.ajoberstar.grgit' version '5.3.2'
 }
@@ -27,7 +29,7 @@ def getVersionName = {
     }else {
         def branchName = currentBranch.getName()
         def commitAbbreviation = latestCommit.abbreviatedId
-        return "justicia-${dateToday}-${commitAbbreviation}-${branchName}"
+        return "1.0.1-${dateToday}-${commitAbbreviation}-${branchName}"
     }
 }
 
@@ -80,8 +82,8 @@ android {
     }
 
     defaultConfig {
-        applicationId "git.artdeell.mjlaunch"
-        minSdkVersion 21
+        applicationId "com.maxjubayeryt.copper"
+        minSdkVersion 23
         targetSdkVersion 36
         versionCode getDateSeconds()
         versionName getVersionName()
@@ -110,8 +112,8 @@ android {
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.customDebug
-            resValue 'string', 'application_package', 'git.artdeell.mjlaunch.debug'
-            resValue 'string', 'storageProviderAuthorities', 'git.artdeell.mjlaunch.scoped.gamefolder.debug'
+            resValue 'string', 'application_package', 'com.maxjubayeryt.copper.debug'
+            resValue 'string', 'storageProviderAuthorities', 'com.maxjubayeryt.copper.scoped.gamefolder.debug'
         }
         proguard {
             initWith debug
@@ -131,8 +133,8 @@ android {
             // defaultConfig already set
             // multiDexEnabled = true
             // debuggable = true
-            resValue 'string', 'storageProviderAuthorities', 'git.artdeell.mjlaunch.scoped.gamefolder'
-            resValue 'string', 'application_package', 'git.artdeell.mjlaunch'
+            resValue 'string', 'storageProviderAuthorities', 'com.maxjubayeryt.copper.scoped.gamefolder'
+            resValue 'string', 'application_package', 'com.maxjubayeryt.copper'
         }
         gplay {
             initWith release
@@ -159,6 +161,10 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+
     bundle {
         language {
             enableSplit = false
@@ -174,6 +180,8 @@ android {
 
     buildFeatures {
         buildConfig true
+        compose true
+        aidl true
     }
 }
 
@@ -298,6 +306,7 @@ afterEvaluate {
 
         registrar.projectJarDependency project(":forge_installer"), "components/forge_installer"
         registrar.projectJarDependency project(":NoBlocklist"), "components/noblocklist"
+        registrar.projectJarDependency project(":filedialog_bridge"), "components/filedialog_bridge"
 
 		if (variant.getName().toLowerCase().contains("full")) {
             registrar.jreRuntimeDependency 8, "components/jre"
@@ -313,10 +322,22 @@ afterEvaluate {
 }
 
 dependencies {
+    implementation 'androidx.documentfile:documentfile:1.1.0'
+    implementation platform('androidx.compose:compose-bom:2026.06.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.activity:activity-compose:1.10.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+
     implementation 'javax.annotation:javax.annotation-api:1.3.2'
     implementation 'commons-codec:commons-codec:1.19.0'
     // implementation 'com.wu-man:android-bsf-api:3.1.3'
     implementation 'androidx.preference:preference:1.2.1'
+    implementation 'com.google.android.material:material:1.12.0'
     //implementation 'androidx.core:core:1.7.0'
     implementation 'androidx.drawerlayout:drawerlayout:1.2.0'
     implementation 'androidx.viewpager2:viewpager2:1.1.0'
