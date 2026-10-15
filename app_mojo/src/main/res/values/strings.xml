@@ -708,6 +708,8 @@
     <string name="skin_editor_session_expired">Your session expired. Log in to this account again.</string>
     <string name="angelica_found_sfpew_notice">Angelica mod found, Simple FPE Wrapper not needed</string>
     <string name="bta_configuring">Configuring BTA…</string>
+    <string name="pref_blocklist_disable_title">Disable server blocklist</string>
+    <string name="pref_blocklist_disable_description">Prevent the MC server blocklist from loading. This allows you to play on blocked servers (like 6b6t.org)</string>
 
     <!-- Content detail screen (description / gallery / changelog + versions) -->
     <string name="content_kind_mod">Mod</string>

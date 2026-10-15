@@ -250,7 +250,7 @@ class AssetTaskRegistrar {
 	    mergeAssetsTask.dependsOn(onlineUnzipTask downloadUrl, name, assetDestination(relativePath))
     }
 
-    def projectJarDependency(Project project, String relativePath) {
+    def projectJarDependency(Project targetProject, String relativePath) {
         def assetTargetDir = assetDestination(relativePath)
         def jarTargetDir = new File(projectJarDir, relativePath)
         createDirectories assetTargetDir
@@ -260,19 +260,19 @@ class AssetTaskRegistrar {
         def copyTask = project.tasks.register(copyTaskName, Copy) {
             from jarTargetDir
             into assetTargetDir
-            // Nasty hack: explicitly reference project by name to force Gradle to configure it.
-            // Makes jar task search below work properly for fresh configurations.
-            dependsOn ":${project.name}:jar"
-        }
-
-        mergeAssetsTask.dependsOn copyTask
-
-        project.tasks.withType(org.gradle.jvm.tasks.Jar.class).configureEach {
-            it.destinationDirectory = jarTargetDir
             doLast {
                 if(!it.didWork) return
                 writeVersion jarTargetDir
             }
+            // Nasty hack: explicitly reference project by name to force Gradle to configure it.
+            // Makes task search below work properly for fresh configurations.
+            dependsOn ":${targetProject.name}:assemble"
+        }
+
+        mergeAssetsTask.dependsOn copyTask
+
+        targetProject.tasks.withType(org.gradle.jvm.tasks.Jar.class).configureEach {
+            it.destinationDirectory = jarTargetDir
         }
     }
 
@@ -305,6 +305,7 @@ afterEvaluate {
         registrar.setVariant(variant)
 
         registrar.projectJarDependency project(":forge_installer"), "components/forge_installer"
+        registrar.projectJarDependency project(":NoBlocklist"), "components/noblocklist"
         registrar.projectJarDependency project(":filedialog_bridge"), "components/filedialog_bridge"
 
 		if (variant.getName().toLowerCase().contains("full")) {

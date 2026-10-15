@@ -284,6 +284,7 @@ public class GameRunner {
         javaArgList.add("-Dorg.lwjgl.system.SharedLibraryExtractPath="+lwjglExtractDir.getAbsolutePath());
 
         addAuthlibInjectorArgs(javaArgList, account);
+        addNoBlocklistArgs(javaArgList);
 
         mergeMoJsonArgs(javaArgList, getMoJsonJvmArgs(versionId));
 
@@ -382,6 +383,11 @@ public class GameRunner {
         String injectorUrl = account.authType.injectorUrl;
         if(injectorUrl == null) return;
         javaArgList.add("-javaagent:"+Tools.DIR_DATA+"/authlib-injector/authlib-injector.jar="+injectorUrl);
+    }
+
+    private static void addNoBlocklistArgs(List<String> javaArgList) {
+        if(!LauncherPreferences.PREF_DISABLE_BLOCKLIST) return;
+        javaArgList.add("-javaagent:"+Tools.DIR_DATA+"/noblocklist/NoBlocklist-1.0-SNAPSHOT-all.jar");
     }
 
     // Skip setting essential flags from the version JSON as we already override them
