@@ -40,6 +40,11 @@ public class ContentSession extends ViewModel {
 
     public enum Status { LOADING, READY, ERROR }
 
+    public static final int TAB_DESCRIPTION = 0;
+    public static final int TAB_GALLERY = 1;
+    public static final int TAB_CHANGELOG = 2;
+    public static final int TAB_VERSIONS = 3;
+
     public static final class VersionsState {
         public final Status status;
         @Nullable public final ModDetail detail;
@@ -87,6 +92,8 @@ public class ContentSession extends ViewModel {
     private final MutableLiveData<VersionsState> mVersions = new MutableLiveData<>();
     private final MutableLiveData<InfoState> mInfo = new MutableLiveData<>();
     private final MutableLiveData<ChangelogState> mChangelog = new MutableLiveData<>();
+    /* The section shown in the right pane of the landscape layout, picked with the left pane buttons */
+    private final MutableLiveData<Integer> mSelectedTab = new MutableLiveData<>(TAB_VERSIONS);
 
     private ModItem mItem;
     private ModpackApi mApi;
@@ -131,6 +138,7 @@ public class ContentSession extends ViewModel {
         mShowAll = false;
         mCanShowAll = api instanceof UnfilteredVersionsProvider;
 
+        mSelectedTab.setValue(TAB_VERSIONS);
         mVersions.setValue(versionsState(Status.LOADING));
         mInfo.setValue(new InfoState(Status.LOADING, null));
         mChangelog.setValue(new ChangelogState(Collections.emptyList(), false, true, false));
@@ -289,4 +297,10 @@ public class ContentSession extends ViewModel {
     public LiveData<VersionsState> getVersions() { return mVersions; }
     public LiveData<InfoState> getInfo() { return mInfo; }
     public LiveData<ChangelogState> getChangelog() { return mChangelog; }
+    public LiveData<Integer> getSelectedTab() { return mSelectedTab; }
+
+    public void setSelectedTab(int tab) {
+        Integer current = mSelectedTab.getValue();
+        if (current == null || current != tab) mSelectedTab.setValue(tab);
+    }
 }

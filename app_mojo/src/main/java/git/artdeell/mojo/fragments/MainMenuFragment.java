@@ -227,9 +227,9 @@ public class MainMenuFragment extends Fragment {
 
     /**
      * Landscape: opens the content that was just put into the ContentSession. The description
-     * side (logo, description, gallery, changelog, back button) takes the left pane and the
-     * versions take the right pane. Whatever was showing in the two panes is hidden, not
-     * replaced, so Back brings the search results back exactly as they were, scroll position
+     * side (logo, back button and the Description / Gallery / Changelog / Versions buttons) takes
+     * the left pane and the section picked with those buttons takes the right pane, Versions first.
+     * Whatever was showing in the two panes is hidden, not replaced, so Back brings the search results back exactly as they were, scroll position
      * and query included. Both panes are in a single back stack entry.
      */
     public void openContentDetail() {
@@ -243,8 +243,10 @@ public class MainMenuFragment extends Fragment {
         if (left != null) transaction.hide(left);
         if (right != null) transaction.hide(right);
         transaction
-                .add(R.id.left_pane_container, ContentDetailFragment.class, null, ContentDetailFragment.TAG)
-                .add(R.id.right_pane_container, ContentVersionsFragment.class, null, ContentVersionsFragment.TAG)
+                .add(R.id.left_pane_container, ContentDetailFragment.class,
+                        ContentDetailFragment.args(ContentDetailFragment.MODE_LEFT), ContentDetailFragment.TAG)
+                .add(R.id.right_pane_container, ContentDetailFragment.class,
+                        ContentDetailFragment.args(ContentDetailFragment.MODE_RIGHT), ContentDetailFragment.TAG_RIGHT)
                 .addToBackStack(ContentDetailFragment.TAG)
                 .commit();
         // Visibility is updated by mBackStackListener once the transaction lands

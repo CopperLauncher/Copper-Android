@@ -21,6 +21,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.imageview.ShapeableImageView;
 
@@ -33,6 +34,7 @@ import git.artdeell.mojo.modding.modpacks.models.Constants;
 import git.artdeell.mojo.modding.modpacks.models.ContentInfo;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
+import git.artdeell.mojo.utils.ContentBody;
 import git.artdeell.mojo.utils.ContentTextRenderer;
 import git.artdeell.mojo.utils.CountFormatter;
 import git.artdeell.mojo.utils.RemoteImageLoader;
@@ -49,25 +51,32 @@ import java.util.concurrent.Future;
 /**
  * What opens when a mod, resource pack, shader pack or modpack is tapped in the content browser.
  * <ul>
- *   <li>Landscape: this is the left pane (logo, name, description, gallery, changelog and a back
- *   button) and {@link ContentVersionsFragment} takes the right pane, see
- *   {@link MainMenuFragment#openContentDetail()}.</li>
- *   <li>Portrait: it is a full screen with the same tabs plus a Versions tab.</li>
+ *   <li>Landscape: two instances of this fragment, see {@link MainMenuFragment#openContentDetail()}.
+ *   {@link #MODE_LEFT} is the left pane (back button, logo, name and the Description / Gallery /
+ *   Changelog / Versions buttons), {@link #MODE_RIGHT} is the right pane that shows what the
+ *   buttons picked, the versions by default. The picked section lives in {@link ContentSession}.</li>
+ *   <li>Portrait ({@link #MODE_FULL}): a full screen with the same sections as tabs.</li>
  * </ul>
  * The content itself lives in {@link ContentSession}.
  */
 public class ContentDetailFragment extends Fragment {
     public static final String TAG = "ContentDetailFragment";
+    public static final String TAG_RIGHT = "ContentDetailRightFragment";
+
+    public static final int MODE_FULL = 0;
+    public static final int MODE_LEFT = 1;
+    public static final int MODE_RIGHT = 2;
+    private static final String ARG_MODE = "mode";
 
     private static final String STATE_TAB = "tab";
-    private static final int TAB_DESCRIPTION = 0;
-    private static final int TAB_GALLERY = 1;
-    private static final int TAB_CHANGELOG = 2;
-    private static final int TAB_VERSIONS = 3;
+    private static final int TAB_DESCRIPTION = ContentSession.TAB_DESCRIPTION;
+    private static final int TAB_GALLERY = ContentSession.TAB_GALLERY;
+    private static final int TAB_CHANGELOG = ContentSession.TAB_CHANGELOG;
+    private static final int TAB_VERSIONS = ContentSession.TAB_VERSIONS;
 
     private ContentSession mSession;
-    private boolean mInPane;
-    private int mTab = TAB_DESCRIPTION;
+    private int mMode = MODE_FULL;
+    private int mTab = TAB_VERSIONS;
 
     private View mScroll;
     private View mVersionsContainer;
@@ -78,7 +87,10 @@ public class ContentDetailFragment extends Fragment {
 
     private View mDescriptionSection, mGallerySection, mChangelogSection;
     private View mDescriptionProgress;
-    private TextView mDescriptionNote, mDescriptionBody;
+    private TextView mDescriptionNote;
+    private ViewGroup mDescriptionBody;
+    private ContentBody mBody;
+    private int mBodyToken;
     private View mGalleryProgress;
     private TextView mGalleryEmpty;
     private ViewGroup mGalleryList;
@@ -110,33 +122,60 @@ public class ContentDetailFragment extends Fragment {
         }
     }
 
+    public static Bundle args(int mode) {
+        Bundle args = new Bundle();
+        args.putInt(ARG_MODE, mode);
+        return args;
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         Fragment parent = getParentFragment();
-        mInPane = parent instanceof MainMenuFragment && ((MainMenuFragment) parent).isTwoPane();
-        return inflater.inflate(mInPane ? R.layout.fragment_content_detail_pane
-                : R.layout.fragment_content_detail, container, false);
+        boolean twoPane = parent instanceof MainMenuFragment && ((MainMenuFragment) parent).isTwoPane();
+        Bundle arguments = getArguments();
+        mMode = twoPane && arguments != null ? arguments.getInt(ARG_MODE, MODE_FULL) : MODE_FULL;
+        int layout;
+        switch (mMode) {
+            case MODE_LEFT: layout = R.layout.fragment_content_detail_pane; break;
+            case MODE_RIGHT: layout = R.layout.fragment_content_detail_right; break;
+            default: layout = R.layout.fragment_content_detail; break;
+        }
+        return inflater.inflate(layout, container, false);
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        view.findViewById(R.id.content_detail_back).setOnClickListener(v -> goBack());
+        View back = view.findViewById(R.id.content_detail_back);
+        if (back != null) back.setOnClickListener(v -> goBack());
 
         mSession = new ViewModelProvider(requireActivity()).get(ContentSession.class);
         ModItem item = mSession.getItem();
         if (item == null) {
-            // The process was recreated while this screen was open, there is nothing to show anymore
-            Toast.makeText(requireContext(), R.string.content_session_lost, Toast.LENGTH_SHORT).show();
-            view.post(this::goBack);
+            // The process was recreated while this screen was open, there is nothing to show anymore.
+            // The left pane (or the full screen) is the one that leaves, the right pane goes with it.
+            if (mMode != MODE_RIGHT) {
+                Toast.makeText(requireContext(), R.string.content_session_lost, Toast.LENGTH_SHORT).show();
+                view.post(this::goBack);
+            }
+            return;
+        }
+
+        if (mMode != MODE_RIGHT) {
+            mLogo = view.findViewById(R.id.content_detail_logo);
+            mOpenPageButton = view.findViewById(R.id.content_detail_open_page);
+            bindHero(view, item);
+        }
+
+        if (mMode == MODE_LEFT) {
+            setupNav(view);
+            mSession.getInfo().observe(getViewLifecycleOwner(), state -> onInfo(item, state));
             return;
         }
 
         mScroll = view.findViewById(R.id.content_detail_scroll);
         mVersionsContainer = view.findViewById(R.id.content_detail_versions_container);
-        mLogo = view.findViewById(R.id.content_detail_logo);
-        mOpenPageButton = view.findViewById(R.id.content_detail_open_page);
 
         mDescriptionSection = view.findViewById(R.id.content_section_description);
         mGallerySection = view.findViewById(R.id.content_section_gallery);
@@ -155,20 +194,39 @@ public class ContentDetailFragment extends Fragment {
         mLoadedInfo = null;
         mGalleryBuilt = false;
 
-        mDescriptionBody.setMovementMethod(LinkMovementMethod.getInstance());
         mChangelogMore.setOnClickListener(v -> mSession.loadMoreChangelogs());
 
-        bindHero(view, item);
-        setupTabs(view);
-        // Portrait lands on the versions, that is what the screen is mostly opened for.
-        // Landscape has them in the right pane already and starts on the description.
-        if (savedInstanceState != null) mTab = savedInstanceState.getInt(STATE_TAB, TAB_DESCRIPTION);
-        else mTab = mInPane ? TAB_DESCRIPTION : TAB_VERSIONS;
-        if (mTab == TAB_VERSIONS && mInPane) mTab = TAB_DESCRIPTION;
-        selectTab(mTab);
+        if (mMode == MODE_FULL) {
+            setupTabs(view);
+            // The versions are what the screen is mostly opened for
+            if (savedInstanceState != null) mTab = savedInstanceState.getInt(STATE_TAB, TAB_VERSIONS);
+            else mTab = TAB_VERSIONS;
+            selectTab(mTab);
+        } else {
+            // The left pane buttons pick the section, it starts on the versions
+            mSession.getSelectedTab().observe(getViewLifecycleOwner(), tab -> {
+                if (tab != null) showSection(tab);
+            });
+        }
 
         mSession.getInfo().observe(getViewLifecycleOwner(), state -> onInfo(item, state));
         mSession.getChangelog().observe(getViewLifecycleOwner(), this::onChangelog);
+    }
+
+    /** The buttons of the left pane, they decide what the right pane shows */
+    private void setupNav(View view) {
+        final int[] buttons = {R.id.content_nav_description, R.id.content_nav_gallery,
+                R.id.content_nav_changelog, R.id.content_nav_versions};
+        MaterialButtonToggleGroup group = view.findViewById(R.id.content_nav_group);
+        group.addOnButtonCheckedListener((g, checkedId, isChecked) -> {
+            if (!isChecked) return;
+            for (int tab = 0; tab < buttons.length; tab++) {
+                if (buttons[tab] == checkedId) mSession.setSelectedTab(tab);
+            }
+        });
+        mSession.getSelectedTab().observe(getViewLifecycleOwner(), tab -> {
+            if (tab != null && tab >= 0 && tab < buttons.length) group.check(buttons[tab]);
+        });
     }
 
     @Override
@@ -182,6 +240,10 @@ public class ContentDetailFragment extends Fragment {
         super.onDestroyView();
         for (Future<?> load : mImageLoads) load.cancel(true);
         mImageLoads.clear();
+        mBodyToken++;
+        if (mBody != null) mBody.cancel();
+        mBody = null;
+        mDescriptionBody = null;
         mLogo = null;
         mGalleryList = null;
         mChangelogList = null;
@@ -256,8 +318,7 @@ public class ContentDetailFragment extends Fragment {
             final int tab = i;
             mTabs[i].setOnClickListener(v -> selectTab(tab));
         }
-        // In landscape the versions have a pane of their own
-        mTabs[TAB_VERSIONS].setVisibility(mInPane ? View.GONE : View.VISIBLE);
+        mTabs[TAB_VERSIONS].setVisibility(View.VISIBLE);
     }
 
     private void selectTab(int tab) {
@@ -270,7 +331,12 @@ public class ContentDetailFragment extends Fragment {
             mTabs[i].setSelected(i == tab);
             mTabs[i].setTextColor(i == tab ? selectedText : normalText);
         }
+        showSection(tab);
+    }
 
+    /** Shows one of the sections (or the versions) in the area below the tabs / in the right pane */
+    private void showSection(int tab) {
+        mTab = tab;
         mDescriptionSection.setVisibility(tab == TAB_DESCRIPTION ? View.VISIBLE : View.GONE);
         mGallerySection.setVisibility(tab == TAB_GALLERY ? View.VISIBLE : View.GONE);
         mChangelogSection.setVisibility(tab == TAB_CHANGELOG ? View.VISIBLE : View.GONE);
@@ -294,7 +360,29 @@ public class ContentDetailFragment extends Fragment {
     // ── Description and gallery ───────────────────────────────────────────────
 
     private void onInfo(ModItem item, @Nullable ContentSession.InfoState state) {
-        if (mDescriptionBody == null || state == null) return;
+        if (state == null) return;
+        if (mMode != MODE_RIGHT) updateHero(item, state);
+        if (mMode != MODE_LEFT) updateSections(item, state);
+    }
+
+    /** The project page knows the counts and the address even when the search result didn't have them */
+    private void updateHero(ModItem item, ContentSession.InfoState state) {
+        ContentInfo info = state.info;
+        View root = getView();
+        if (root == null || state.status != ContentSession.Status.READY || info == null) return;
+        if (item.downloads < 0 && info.downloads >= 0) {
+            item.downloads = info.downloads;
+            bindCount(root, R.id.content_detail_downloads_group, R.id.content_detail_downloads_text, item.downloads);
+        }
+        if (item.favorites < 0 && info.favorites >= 0) {
+            item.favorites = info.favorites;
+            bindCount(root, R.id.content_detail_favorites_group, R.id.content_detail_favorites_text, item.favorites);
+        }
+        if (info.websiteUrl != null && !info.websiteUrl.isEmpty()) showOpenPage(info.websiteUrl);
+    }
+
+    private void updateSections(ModItem item, ContentSession.InfoState state) {
+        if (mDescriptionBody == null) return;
         boolean loading = state.status == ContentSession.Status.LOADING;
         mDescriptionProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
         mGalleryProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
@@ -303,44 +391,57 @@ public class ContentDetailFragment extends Fragment {
         ContentInfo info = state.info;
         if (state.status == ContentSession.Status.ERROR || info == null) {
             // Only the summary of the search result is known
+            mBodyToken++;
             mDescriptionNote.setText(R.string.content_description_error);
             mDescriptionNote.setVisibility(View.VISIBLE);
-            mDescriptionBody.setText(item.description != null ? item.description : "");
+            showPlainDescription(item.description != null ? item.description : "");
             mGalleryEmpty.setVisibility(View.VISIBLE);
             return;
         }
 
         mDescriptionNote.setVisibility(View.GONE);
         mLoadedInfo = info;
-        // The project page knows the counts even when the search result didn't have them
-        View root = getView();
-        if (root != null) {
-            if (item.downloads < 0 && info.downloads >= 0) {
-                item.downloads = info.downloads;
-                bindCount(root, R.id.content_detail_downloads_group, R.id.content_detail_downloads_text, item.downloads);
-            }
-            if (item.favorites < 0 && info.favorites >= 0) {
-                item.favorites = info.favorites;
-                bindCount(root, R.id.content_detail_favorites_group, R.id.content_detail_favorites_text, item.favorites);
-            }
-        }
-        if (info.websiteUrl != null && !info.websiteUrl.isEmpty()) showOpenPage(info.websiteUrl);
-        // The gallery is only built once its tab is opened, it downloads pictures
+        // The gallery is only built once its section is opened, it downloads pictures
         if (mTab == TAB_GALLERY) ensureGallery();
         else mGalleryEmpty.setVisibility(View.GONE);
 
-        // Long descriptions take a while to turn into styled text, keep that off the UI thread
+        // Long descriptions take a while to turn into views, keep that off the UI thread
         mDescriptionProgress.setVisibility(View.VISIBLE);
-        final TextView target = mDescriptionBody;
+        final ViewGroup target = mDescriptionBody;
+        final int token = ++mBodyToken;
+        final float density = getResources().getDisplayMetrics().density;
+        final int width = bodyWidth(target);
         MojoApplication.sExecutorService.execute(() -> {
-            CharSequence body = ContentTextRenderer.render(info.body, info.bodyIsHtml, target);
+            ContentBody body = ContentBody.parse(info.body, info.bodyIsHtml, width, density);
             Tools.runOnUiThread(() -> {
-                if (!isAdded() || mDescriptionBody != target) return;
+                if (!isAdded() || mDescriptionBody != target || token != mBodyToken) {
+                    body.cancel();
+                    return;
+                }
                 mDescriptionProgress.setVisibility(View.GONE);
-                if (body.length() == 0) target.setText(R.string.content_description_empty);
-                else target.setText(body);
+                if (mBody != null) mBody.cancel();
+                mBody = body;
+                if (body.isEmpty()) showPlainDescription(getString(R.string.content_description_empty));
+                else body.bind(requireActivity(), target);
             });
         });
+    }
+
+    private int bodyWidth(View target) {
+        if (target.getWidth() > 0) return target.getWidth();
+        int screen = getResources().getDisplayMetrics().widthPixels;
+        int padding = getResources().getDimensionPixelSize(R.dimen.padding_heavy) * 2;
+        return Math.max(1, (mMode == MODE_RIGHT ? screen / 2 : screen) - padding);
+    }
+
+    private void showPlainDescription(CharSequence text) {
+        if (mBody != null) mBody.cancel();
+        mBody = null;
+        mDescriptionBody.removeAllViews();
+        TextView view = (TextView) LayoutInflater.from(requireContext())
+                .inflate(R.layout.item_content_text, mDescriptionBody, false);
+        view.setText(text);
+        mDescriptionBody.addView(view);
     }
 
     private void ensureGallery() {

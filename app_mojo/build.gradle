@@ -359,6 +359,7 @@ dependencies {
     // Our version of exp4j can be built from source at
     // https://github.com/PojavLauncherTeam/exp4j
     implementation 'net.sourceforge.htmlcleaner:htmlcleaner:2.29'
+    implementation 'com.caverock:androidsvg-aar:1.4'
     implementation 'com.bytedance:bytehook:1.1.1'
 
     implementation 'com.github.MojoLauncher:alsoft-android-aar:f369161d5f'

@@ -58,6 +58,7 @@
             android:title="@string/preference_show_memory_warning_title"
             android:summary="@string/preference_show_memory_warning_summary"/>
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="true"
             android:key="disableServerBlocklist"
             android:title="@string/pref_blocklist_disable_title"

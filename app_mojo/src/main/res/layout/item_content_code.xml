@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Code block of a content description, scrolls sideways instead of wrapping -->
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="@dimen/padding_medium"
+    android:background="@drawable/bg_content_code"
+    android:overScrollMode="never">
+
+    <TextView
+        android:id="@+id/content_code_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="monospace"
+        android:padding="@dimen/padding_moderate"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?attr/colorOnSurface"
+        android:textIsSelectable="true" />
+</HorizontalScrollView>

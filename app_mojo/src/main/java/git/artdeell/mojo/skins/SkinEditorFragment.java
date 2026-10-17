@@ -22,13 +22,13 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
 import git.artdeell.mojo.MojoApplication;
@@ -81,7 +81,7 @@ public class SkinEditorFragment extends Fragment {
             registerForActivityResult(new ActivityResultContracts.GetContent(), this::onSkinPicked);
 
     private PlayerPreviewView mPreview;
-    private SwitchCompat mSlimSwitch;
+    private MaterialSwitch mSlimSwitch;
     private GridLayoutManager mLayoutManager;
     private LinearProgressIndicator mProgress;
     private TextView mHint;

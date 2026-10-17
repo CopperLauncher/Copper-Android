@@ -722,6 +722,7 @@
     <string name="content_tab_versions">Versions</string>
     <string name="content_open_page">Open page</string>
     <string name="content_description_error">Could not load the full description, showing the summary instead.</string>
+    <string name="content_embed_youtube">Watch on YouTube</string>
     <string name="content_description_empty">This project has no description.</string>
     <string name="content_gallery_empty">No pictures in the gallery.</string>
     <string name="content_changelog_empty">No changelog available.</string>

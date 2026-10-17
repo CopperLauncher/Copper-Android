@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Left pane of the landscape two-pane main menu: back button on top, then everything scrolls
-     together so a short screen still has room for the text. The versions are shown in the right
-     pane by ContentVersionsFragment. -->
+<!-- Left pane of the landscape two-pane main menu: back button on top, then the header and the
+     buttons that pick what the right pane shows (Description, Gallery, Changelog, Versions).
+     The right pane is fragment_content_detail_right.xml. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -19,7 +20,6 @@
         android:layout_height="wrap_content" />
 
     <ScrollView
-        android:id="@+id/content_detail_scroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -32,9 +32,44 @@
 
             <include layout="@layout/content_detail_hero" />
 
-            <include layout="@layout/content_detail_tabs" />
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/content_nav_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_heavy"
+                android:layout_marginVertical="@dimen/padding_medium"
+                android:orientation="vertical"
+                app:selectionRequired="true"
+                app:singleSelection="true">
 
-            <include layout="@layout/content_detail_sections" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/content_nav_description"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/content_tab_description" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/content_nav_gallery"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/content_tab_gallery" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/content_nav_changelog"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/content_tab_changelog" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/content_nav_versions"
+                    style="?attr/materialButtonOutlinedStyle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/content_tab_versions" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

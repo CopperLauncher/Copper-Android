@@ -1,27 +1,38 @@
 package git.artdeell.mojo.utils;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.RectF;
+import android.net.Uri;
+import android.util.Base64;
 import android.util.LruCache;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.caverock.androidsvg.SVG;
+import com.caverock.androidsvg.SVGParseException;
+
 import git.artdeell.mojo.MojoApplication;
 import git.artdeell.mojo.Tools;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
 /**
- * Small downloader for the pictures of the content detail screen (logo and gallery).
- * Pictures are downsampled while decoding and kept in a memory cache, the callbacks always run
- * on the UI thread. The mod list keeps using its own disk backed icon cache.
+ * Small downloader for the pictures of the content detail screen (logo, gallery and the pictures
+ * of descriptions). Raster pictures are downsampled while decoding, SVG pictures (badges, logos)
+ * are drawn at their natural size for the screen density. Addresses can be {@code data:} URIs.
+ * Pictures are kept in a memory cache, the callbacks always run on the UI thread. The mod list keeps using its own disk backed icon cache.
  */
 public final class RemoteImageLoader {
     private static final int MAX_DOWNLOAD_BYTES = 12 * 1024 * 1024;
@@ -69,6 +80,28 @@ public final class RemoteImageLoader {
 
     @Nullable
     private static Bitmap download(String url, int maxDimension) {
+        byte[] data = url.startsWith("data:") ? decodeDataUri(url) : fetch(url);
+        if (data == null || data.length == 0 || Thread.currentThread().isInterrupted()) return null;
+        try {
+            BitmapFactory.Options bounds = new BitmapFactory.Options();
+            bounds.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(data, 0, data.length, bounds);
+            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return decodeSvg(data, maxDimension);
+
+            int sample = 1;
+            int longest = Math.max(bounds.outWidth, bounds.outHeight);
+            while (longest / (sample * 2) >= maxDimension) sample *= 2;
+
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inSampleSize = sample;
+            return BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        } catch (RuntimeException | OutOfMemoryError e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private static byte[] fetch(String url) {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
@@ -84,25 +117,60 @@ public final class RemoteImageLoader {
                     if (out.size() > MAX_DOWNLOAD_BYTES) return null;
                     if (Thread.currentThread().isInterrupted()) return null;
                 }
-                byte[] data = out.toByteArray();
-
-                BitmapFactory.Options bounds = new BitmapFactory.Options();
-                bounds.inJustDecodeBounds = true;
-                BitmapFactory.decodeByteArray(data, 0, data.length, bounds);
-                if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
-
-                int sample = 1;
-                int longest = Math.max(bounds.outWidth, bounds.outHeight);
-                while (longest / (sample * 2) >= maxDimension) sample *= 2;
-
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inSampleSize = sample;
-                return BitmapFactory.decodeByteArray(data, 0, data.length, options);
+                return out.toByteArray();
             }
         } catch (IOException | RuntimeException e) {
             return null;
         } finally {
             if (connection != null) connection.disconnect();
+        }
+    }
+
+    @Nullable
+    private static byte[] decodeDataUri(String uri) {
+        int comma = uri.indexOf(',');
+        if (comma < 0) return null;
+        try {
+            String payload = uri.substring(comma + 1);
+            if (uri.substring(0, comma).toLowerCase().contains(";base64")) {
+                return Base64.decode(payload, Base64.DEFAULT);
+            }
+            return Uri.decode(payload).getBytes(StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** SVG has no pixel size, it is drawn at its document size times the screen density */
+    @Nullable
+    private static Bitmap decodeSvg(byte[] data, int maxDimension) {
+        try {
+            SVG svg = SVG.getFromInputStream(new ByteArrayInputStream(data));
+            float width = svg.getDocumentWidth();
+            float height = svg.getDocumentHeight();
+            RectF box = svg.getDocumentViewBox();
+            if (width <= 0 || height <= 0) {
+                if (box != null && box.width() > 0 && box.height() > 0) {
+                    width = box.width();
+                    height = box.height();
+                } else {
+                    width = 300;
+                    height = 150;
+                }
+            }
+            if (box == null) svg.setDocumentViewBox(0, 0, width, height);
+
+            float scale = Resources.getSystem().getDisplayMetrics().density;
+            float longest = Math.max(width, height) * scale;
+            if (longest > maxDimension) scale *= maxDimension / longest;
+            int bitmapWidth = Math.max(1, Math.round(width * scale));
+            int bitmapHeight = Math.max(1, Math.round(height * scale));
+
+            Bitmap bitmap = Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888);
+            svg.renderToCanvas(new Canvas(bitmap), new RectF(0, 0, bitmapWidth, bitmapHeight));
+            return bitmap;
+        } catch (SVGParseException | RuntimeException | OutOfMemoryError e) {
+            return null;
         }
     }
 }
