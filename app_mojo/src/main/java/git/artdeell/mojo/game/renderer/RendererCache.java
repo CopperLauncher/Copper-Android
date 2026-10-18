@@ -11,7 +11,10 @@ import static git.artdeell.mojo.game.renderer.def.Renderers.SFPEW_RENDERER;
 import static git.artdeell.mojo.game.renderer.def.Renderers.ZINK_RENDERER;
 
 import android.content.Context;
-import android.content.res.Resources;
+
+import git.artdeell.mojo.game.renderer.impl.PluginRenderSpec;
+import git.artdeell.mojo.utils.plugins.PluginManager;
+import git.artdeell.mojo.utils.plugins.RendererPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +42,6 @@ public class RendererCache {
      */
     public static RendererCache getCompatibleRenderers(Context context) {
         if (sCompatibleRenderers != null) return sCompatibleRenderers;
-        Resources resources = context.getResources();
         // This is the list that controls em all!
         String[] renderers = {
                 GL4ES_RENDERER, ZINK_RENDERER, LTW_RENDERER, MOBILEGLUES_RENDERER, SFPEW_RENDERER, FREEDRENO_RENDERER, MESA_RENDERER, MESA_RENDERER_EXT, LEGACYZINK_RENDERER
@@ -51,7 +53,13 @@ public class RendererCache {
             assert r != null;
             if (!r.compatibleDevice(context)) continue;
             rendererIds.add(renderer);
-            rendererNames.add(resources.getString(r.displayName()));
+            rendererNames.add(r.getDisplayName(context));
+        }
+        for (RendererPlugin plugin : PluginManager.getRendererPlugins(context)) {
+            RenderSpec r = new PluginRenderSpec(plugin.packageName);
+            if (!r.compatibleDevice(context)) continue;
+            rendererIds.add(r.tag());
+            rendererNames.add(r.getDisplayName(context));
         }
         rendererIds.trimToSize();
         rendererNames.trimToSize();

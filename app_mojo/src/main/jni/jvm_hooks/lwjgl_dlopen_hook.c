@@ -37,6 +37,19 @@ static jlong ndlopen_bugfix(__attribute__((unused)) JNIEnv *env,
         return (jlong) mojoexec_acq_egl_handle();
     }
 
+    // Mods that link against glibc request versioned sonames that are absent on
+    // Android. bionic exposes the unversioned names and folds pthread/rt into
+    // libc, so point the glibc spelling at its bionic counterpart.
+    if(strcmp(filename, "libc.so.6") == 0) {
+        filename = "libc.so";
+    } else if(strcmp(filename, "libm.so.6") == 0) {
+        filename = "libm.so";
+    } else if(strcmp(filename, "libdl.so.2") == 0) {
+        filename = "libdl.so";
+    } else if(strcmp(filename, "libpthread.so.0") == 0 || strcmp(filename, "librt.so.1") == 0) {
+        filename = "libc.so";
+    }
+
     // This hook also serves the task of mitigating a bug: the idea is that since, on Android 10 and
     // earlier, the linker doesn't really do namespace nesting.
     // It is not a problem as most of the libraries are in the launcher path, but when you try to run

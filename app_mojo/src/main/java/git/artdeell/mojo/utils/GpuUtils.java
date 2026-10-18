@@ -211,5 +211,55 @@ public class GpuUtils {
         public boolean isArm() {
             return (renderer.contains("Mali") || renderer.contains("Immortalis")) && vendor.equals("ARM");
         }
+
+        /**
+         * Check if this GLInfo belongs to a ARM Mali/Immortalis graphics adapter.
+         * Only the renderer string is checked, as some OEM drivers report a
+         * different GL_VENDOR while still being a Mali GPU. Used by the PanVK
+         * driver manager, which must be reachable even when the system has no
+         * Vulkan driver.
+         *
+         * @return
+         */
+        public boolean isMali() {
+            return renderer.contains("Mali") || renderer.contains("Immortalis");
+        }
+
+        /**
+         * Detect the Mali GPU architecture version from the renderer string.
+         * Only Valhall-generation GPUs are listed, since PanVK Kbase supports
+         * Mali v9-v13:
+         *  - v9:  Mali-G57, G68, G77, G78
+         *  - v10: Mali-G310, G610, G510, G710
+         *  - v11: Mali-G615, G715
+         *  - v12: Mali-G620, G720
+         *  - v13: Mali-G725, G925
+         *
+         * @return architecture version (9-13) or 0 if unknown/not a Mali GPU
+         */
+        public int getMaliArchVersion() {
+            if(!isMali()) return 0;
+            String r = renderer.toLowerCase(java.util.Locale.ROOT);
+            int gIdx = r.indexOf("mali-g");
+            int prefixLen = "mali-g".length();
+            if(gIdx == -1) {
+                gIdx = r.indexOf("immortalis-g");
+                prefixLen = "immortalis-g".length();
+            }
+            if(gIdx == -1) return 0;
+            gIdx += prefixLen;
+            int endIdx = gIdx;
+            while(endIdx < r.length() && Character.isDigit(r.charAt(endIdx))) endIdx++;
+            if(endIdx == gIdx) return 0;
+            int model = Integer.parseInt(r.substring(gIdx, endIdx));
+            switch(model) {
+                case 57: case 68: case 77: case 78: return 9;
+                case 310: case 510: case 610: case 710: return 10;
+                case 615: case 715: return 11;
+                case 620: case 720: return 12;
+                case 725: case 925: return 13;
+                default: return 0;
+            }
+        }
     }
 }

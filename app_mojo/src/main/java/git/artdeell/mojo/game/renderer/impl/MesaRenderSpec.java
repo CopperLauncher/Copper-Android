@@ -63,6 +63,8 @@ public class MesaRenderSpec implements RenderSpec {
             // We don't care much about passing CTS hence this is fine
             envMap.put("MESA_GLSL_VERSION_OVERRIDE", "460");
             envMap.put("MESA_GL_VERSION_OVERRIDE", "4.6");
+            // Mali only offers 512 workgroup invocations, which hides ARB_compute_shader
+            envMap.put("MESA_EXTENSION_OVERRIDE", "+GL_ARB_compute_shader");
             super.setupEnvironment(context, envMap);
         }
         public boolean setupRenderer() {

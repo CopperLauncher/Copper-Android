@@ -18,6 +18,12 @@
             android:icon="@drawable/ic_mg_renderer"
             />
 
+        <androidx.preference.MultiSelectListPreference
+            android:key="enabledNativePlugins"
+            android:title="@string/preference_native_plugins_title"
+            android:summary="@string/preference_native_plugins_summary"
+            android:dialogTitle="@string/preference_native_plugins_dialog_title" />
+
         <androidx.preference.SwitchPreferenceCompat
             android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="false"
@@ -74,12 +80,18 @@
             android:summary="@string/preference_use_angle_description"
             android:title="@string/preference_use_system_angle_title"
             />
-        <SwitchPreferenceCompat
-            android:widgetLayout="@layout/preference_widget_material_switch"
-            android:defaultValue="false"
+        <androidx.preference.ListPreference
+            android:defaultValue="custom"
             android:icon="@drawable/ic_px_volcano"
-            android:key="zinkPreferSystemDriver"
-            android:summary="@string/preference_vulkan_driver_system_description"
-            android:title="@string/preference_vulkan_driver_system_title"/>
+            android:key="vulkanDriver"
+            android:title="@string/preference_vulkan_driver_title"
+            app2:useSimpleSummaryProvider="true"/>
+
+        <androidx.preference.Preference
+            android:key="panvkDriverManager"
+            android:title="@string/preference_panvk_driver_manager_title"
+            android:summary="@string/preference_panvk_driver_manager_summary"
+            android:fragment="git.artdeell.mojo.prefs.screens.PanVkDriverManagerFragment"
+            android:icon="@drawable/ic_sharp_settings_24"/>
     </PreferenceCategory>
 </PreferenceScreen>

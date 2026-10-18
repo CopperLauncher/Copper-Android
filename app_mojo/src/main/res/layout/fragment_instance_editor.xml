@@ -244,6 +244,38 @@
                 app:layout_constraintEnd_toEndOf="@id/vprof_editor_instance_renderer"
                 app:layout_constraintTop_toTopOf="@id/vprof_editor_instance_renderer" />
 
+            <TextView
+                android:id="@+id/vprof_editor_backend_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/pedit_graphics_backend"
+                app:layout_constraintBottom_toTopOf="@+id/vprof_editor_instance_backend"
+                app:layout_constraintStart_toStartOf="@+id/vprof_editor_instance_backend" />
+
+            <Spinner
+                android:id="@+id/vprof_editor_instance_backend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:background="@drawable/background_line"
+                android:dropDownWidth="match_parent"
+                android:paddingVertical="0px"
+
+                app:layout_constraintTop_toBottomOf="@+id/vprof_editor_instance_renderer"
+                tools:paddingVertical="@dimen/_12sdp" />
+
+            <ImageView
+                android:id="@+id/vprof_editor_backend_arrow"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/_8sdp"
+                android:paddingHorizontal="@dimen/_8sdp"
+                android:rotation="180"
+                android:src="@drawable/spinner_arrow"
+
+                app:layout_constraintBottom_toBottomOf="@id/vprof_editor_instance_backend"
+                app:layout_constraintEnd_toEndOf="@id/vprof_editor_instance_backend"
+                app:layout_constraintTop_toTopOf="@id/vprof_editor_instance_backend" />
+
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

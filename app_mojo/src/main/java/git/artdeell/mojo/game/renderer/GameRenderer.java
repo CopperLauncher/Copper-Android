@@ -19,8 +19,12 @@ import git.artdeell.mojo.Logger;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.game.renderer.impl.GLESRenderSpec;
 import git.artdeell.mojo.game.renderer.impl.MesaRenderSpec;
+import git.artdeell.mojo.game.renderer.impl.PluginRenderSpec;
 import git.artdeell.mojo.prefs.LauncherPreferences;
+import git.artdeell.mojo.utils.PanVkDriverManager;
+import git.artdeell.mojo.utils.plugins.PluginManager;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +51,11 @@ public class GameRenderer {
     private final static String FALLBACK_RENDERER = GL4ES_RENDERER;
     private RenderSpec currentRenderer;
     private Map<String, String> environment = new HashMap<>();
+
+    // Directory holding the downloaded PanVK driver for this device's Mali
+    // architecture. Prepended to the native library search path so the
+    // matching binary is found before the bundled one.
+    private static String sPanvkDriverDir = null;
 
     public GameRenderer(String currentRenderer) {
         this.currentRenderer = getKnownRenderer(currentRenderer);
@@ -75,6 +84,9 @@ public class GameRenderer {
             case MOBILEGLUES_RENDERER: return new GLESRenderSpec.MgRenderSpec();
             case SFPEW_RENDERER: return new GLESRenderSpec.SFPEWRenderSpec();
             default:
+                if (renderer != null && renderer.startsWith(PluginManager.RENDERER_TAG_PREFIX)) {
+                    return new PluginRenderSpec(renderer.substring(PluginManager.RENDERER_TAG_PREFIX.length()));
+                }
                 Log.e(TAG, "Unknown renderer " + renderer);
                 return null;
         }
@@ -88,6 +100,7 @@ public class GameRenderer {
      */
     public static void setRendererLibraryPath(String mainPath, String additionalPath) {
         if (additionalPath != null) mainPath = additionalPath + ":" + mainPath;
+        if (sPanvkDriverDir != null) mainPath = sPanvkDriverDir + ":" + mainPath;
         MojoExec.setNativeLibraryDir(mainPath);
     }
 
@@ -167,5 +180,34 @@ public class GameRenderer {
         if(LauncherPreferences.PREF_FREEDRENO_SYSMEM) environment.put("TU_DEBUG", "sysmem");
         if(LauncherPreferences.PREF_UBWC_WORKAROUND) environment.put("FD_DEV_FEATURES", "enable_tp_ubwc_flag_hint=1");
         MojoExec.setUseTurnip(true);
+    }
+
+    /**
+     * Enable custom Vulkan driver (PanVK Kbase) usage.
+     * The driver is not shipped with the launcher, so it is only used when the
+     * user downloaded it through the PanVK driver manager for the detected Mali
+     * GPU architecture. Otherwise the native loader falls back to the system
+     * Vulkan driver.
+     *
+     * @param context application context
+     */
+    public void overridePanvkDriver(Context context) {
+        environment.put("PAN_I_WANT_A_BROKEN_VULKAN_DRIVER", "1");
+        try {
+            PanVkDriverManager manager = new PanVkDriverManager(context);
+            int arch = manager.detectMaliArchVersion();
+            if(arch > 0) {
+                File archDriver = manager.getArchDriverFile(arch);
+                if(archDriver.exists()) {
+                    sPanvkDriverDir = manager.getArchDriverDir(arch).getAbsolutePath();
+                    Log.i(TAG, "PanVK driver for Mali v" + arch + ": " + archDriver.getAbsolutePath());
+                }else {
+                    Log.i(TAG, "No PanVK driver downloaded for Mali v" + arch + ", using system Vulkan");
+                }
+            }
+        }catch (Throwable t) {
+            Log.w(TAG, "PanVK driver selection failed, using system Vulkan", t);
+        }
+        MojoExec.setUsePanvk(true);
     }
 }

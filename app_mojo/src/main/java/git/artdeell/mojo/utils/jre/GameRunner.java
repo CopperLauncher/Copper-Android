@@ -25,9 +25,11 @@ import git.artdeell.mojo.utils.FileUtils;
 import git.artdeell.mojo.utils.GpuUtils;
 import git.artdeell.mojo.utils.GameOptionsUtils;
 import git.artdeell.mojo.utils.JREUtils;
+import git.artdeell.mojo.utils.MinecraftVersion;
 import git.artdeell.mojo.utils.JSONUtils;
 import git.artdeell.mojo.utils.MCOptionUtils;
 import git.artdeell.mojo.utils.OldVersionsUtils;
+import git.artdeell.mojo.utils.plugins.PluginManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -149,6 +151,27 @@ public class GameRunner {
         }
     }
 
+    /**
+     * Write the instance's Graphics API choice into options.txt. The value is only written when
+     * it differs from what the launcher previously applied, so the game's own fallback (which it
+     * sets after a startup crash) is preserved instead of being overwritten on every launch.
+     */
+    private static void applyGraphicsBackend(Instance instance, String versionId) {
+        String desired = instance.graphicsBackend;
+        if(desired == null) return;
+        if(!MinecraftVersion.supportsGraphicsBackend(versionId)) return;
+        if(desired.equals(instance.appliedGraphicsBackend)) return;
+        try {
+            MCOptionUtils.load();
+            MCOptionUtils.set(GameOptionsUtils.OPTION_GRAPHICS_BACKEND, desired);
+            MCOptionUtils.save();
+            instance.appliedGraphicsBackend = desired;
+            instance.maybeWrite();
+        }catch (Exception e) {
+            Log.e("GameRunner", "Failed to apply graphics backend", e);
+        }
+    }
+
     public static void launchGame(final AppCompatActivity activity, Account account,
                                   Instance instance, String versionId, File[] classpath, GameRenderer gameRenderer) throws Throwable {
         int freeDeviceMemory = Tools.getFreeDeviceMemory(activity);
@@ -227,6 +250,7 @@ public class GameRunner {
         }
 
         GameOptionsUtils.fixOptions(isLtw);
+        applyGraphicsBackend(instance, versionId);
 
         if(isLtw && GpuUtils.getGlInfo().forcedMsaa) {
             if(showDialog(activity, R.string.ltw_4x_msaa_warning_msg)) return;
@@ -271,12 +295,20 @@ public class GameRunner {
         versionInfo.logging = null;
 
         File versionSpecificNativesDir = new File(Tools.DIR_CACHE, "natives/"+versionId);
-        if(versionSpecificNativesDir.exists()) {
-            String dirPath = versionSpecificNativesDir.getAbsolutePath();
-            javaArgList.add("-Djava.library.path="+dirPath+":"+Tools.NATIVE_LIB_DIR);
-            javaArgList.add("-Djna.boot.library.path="+dirPath);
-            // Sometimes, the game can extract natives itself onto this path
-            javaArgList.add("-Dorg.lwjgl.librarypath="+dirPath);
+        List<String> pluginLibraryDirs = PluginManager.getNativePluginLibraryDirs(activity);
+        boolean hasVersionNatives = versionSpecificNativesDir.exists();
+        if(hasVersionNatives || !pluginLibraryDirs.isEmpty()) {
+            List<String> libraryPath = new ArrayList<>();
+            if(hasVersionNatives) {
+                String dirPath = versionSpecificNativesDir.getAbsolutePath();
+                libraryPath.add(dirPath);
+                javaArgList.add("-Djna.boot.library.path="+dirPath);
+                // Sometimes, the game can extract natives itself onto this path
+                javaArgList.add("-Dorg.lwjgl.librarypath="+dirPath);
+            }
+            libraryPath.add(Tools.NATIVE_LIB_DIR);
+            libraryPath.addAll(pluginLibraryDirs);
+            javaArgList.add("-Djava.library.path="+String.join(":", libraryPath));
         }
 
         File lwjglExtractDir = new File(Tools.DIR_CACHE, "lwjgl_native/"+versionId);
@@ -294,6 +326,10 @@ public class GameRunner {
         versionInfo.assetIndex = null;
 
         javaArgList.addAll(JREUtils.parseJavaArguments(instance.getLaunchArgs()));
+
+        for (String pluginArg : PluginManager.getNativePluginJvmArgs(activity)) {
+            javaArgList.add(pluginArg);
+        }
 
         Map<String, String> versionEnvMap = versionInfo.environment;
 

@@ -191,6 +191,10 @@
     <string name="global_delete">Удалить</string>
     <string name="pedit_java_runtime">Среда выполнения Java</string>
     <string name="pedit_renderer">Визуализатор</string>
+    <string name="pedit_graphics_backend">Графический бэкенд</string>
+    <string name="graphics_backend_default">По умолчанию</string>
+    <string name="graphics_backend_vulkan">Предпочитать Vulkan</string>
+    <string name="graphics_backend_opengl">Предпочитать OpenGL</string>
     <string name="notif_channel_name">Общее</string>
     <string name="lazy_service_default_title">Активная служба Copper</string>
     <string name="mcl_setting_veroption_installed">Установленные</string>

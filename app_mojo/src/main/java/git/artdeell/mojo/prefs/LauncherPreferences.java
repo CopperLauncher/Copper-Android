@@ -68,7 +68,9 @@ public class LauncherPreferences {
     public static boolean PREF_DUMP_SHADERS = false;
     public static float PREF_DEADZONE_SCALE = 1f;
     public static boolean PREF_BIG_CORE_AFFINITY = false;
-    public static boolean PREF_ZINK_PREFER_SYSTEM_DRIVER = false;
+    public static final String PREF_VULKAN_DRIVER_SYSTEM = "system";
+    public static final String PREF_VULKAN_DRIVER_CUSTOM = "custom";
+    public static String PREF_VULKAN_DRIVER = PREF_VULKAN_DRIVER_CUSTOM;
     public static boolean PREF_VERIFY_MANIFEST = true;
     public static String PREF_DOWNLOAD_SOURCE = "default";
     public static boolean PREF_SKIP_NOTIFICATION_PERMISSION_CHECK = false;
@@ -127,7 +129,13 @@ public class LauncherPreferences {
         PREF_DUMP_SHADERS = DEFAULT_PREF.getBoolean("dump_shaders", false);
         PREF_DEADZONE_SCALE = ((float) DEFAULT_PREF.getInt("gamepad_deadzone_scale", 100))/100f;
         PREF_BIG_CORE_AFFINITY = DEFAULT_PREF.getBoolean("bigCoreAffinity", false);
-        PREF_ZINK_PREFER_SYSTEM_DRIVER = DEFAULT_PREF.getBoolean("zinkPreferSystemDriver", false);
+        // Bring the old "use system Vulkan driver" switch over to the driver list
+        if (!DEFAULT_PREF.contains("vulkanDriver") && DEFAULT_PREF.contains("zinkPreferSystemDriver")) {
+            DEFAULT_PREF.edit().putString("vulkanDriver",
+                    DEFAULT_PREF.getBoolean("zinkPreferSystemDriver", false)
+                            ? PREF_VULKAN_DRIVER_SYSTEM : PREF_VULKAN_DRIVER_CUSTOM).apply();
+        }
+        PREF_VULKAN_DRIVER = DEFAULT_PREF.getString("vulkanDriver", PREF_VULKAN_DRIVER_CUSTOM);
         PREF_DOWNLOAD_SOURCE = DEFAULT_PREF.getString("downloadSource", "default");
         PREF_VERIFY_MANIFEST = DEFAULT_PREF.getBoolean("verifyManifest", true);
         PREF_SKIP_NOTIFICATION_PERMISSION_CHECK = DEFAULT_PREF.getBoolean(PREF_KEY_SKIP_NOTIFICATION_CHECK, false);

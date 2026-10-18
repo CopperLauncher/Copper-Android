@@ -34,6 +34,7 @@ import git.artdeell.mojo.multirt.Runtime;
 import git.artdeell.mojo.instances.InstanceIconProvider;
 import git.artdeell.mojo.utils.profiles.VersionSelectorDialog;
 import git.artdeell.mojo.utils.CropperUtils;
+import git.artdeell.mojo.utils.MinecraftVersion;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,13 +44,15 @@ import java.util.List;
 public class InstanceEditorFragment extends Fragment implements CropperUtils.CropperReceiver {
     public static final String TAG = "InstanceEditorFragment";
 
+    private static final String[] BACKEND_VALUES = {"default", "vulkan", "opengl"};
+
     private Instance mInstance;
     private String mSelectedControlLayout;
     private Button mSaveButton, mDeleteButton, mControlSelectButton, mVersionSelectButton;
-    private Spinner mDefaultRuntime, mDefaultRenderer;
+    private Spinner mDefaultRuntime, mDefaultRenderer, mDefaultBackend;
     private EditText mDefaultName, mDefaultJvmArgument;
-    private TextView mDefaultVersion, mDefaultControl;
-    private ImageView mInstanceIcon;
+    private TextView mDefaultVersion, mDefaultControl, mBackendLabel;
+    private ImageView mInstanceIcon, mBackendArrow;
     private CheckBox mSharedDataCheckbox;
     private int mRecommendedIconSize;
     private final ActivityResultLauncher<?> mCropperLauncher = CropperUtils.registerCropper(this, this);
@@ -81,6 +84,11 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         renderList.addAll(Arrays.asList(list.rendererDisplayNames));
         renderList.add(view.getContext().getString(R.string.global_default));
         mDefaultRenderer.setAdapter(new ArrayAdapter<>(view.getContext(), R.layout.item_simple_list_1, renderList));
+
+        mDefaultBackend.setAdapter(new ArrayAdapter<>(view.getContext(), R.layout.item_simple_list_1, new String[]{
+                view.getContext().getString(R.string.graphics_backend_default),
+                view.getContext().getString(R.string.graphics_backend_vulkan),
+                view.getContext().getString(R.string.graphics_backend_opengl)}));
 
         // Set up behaviors
         mSaveButton.setOnClickListener(v -> {
@@ -139,7 +147,10 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
     }
 
     private View.OnClickListener getVersionSelectListener() {
-        return v -> VersionSelectorDialog.open(v.getContext(), false, (id, snapshot)-> mDefaultVersion.setText(id));
+        return v -> VersionSelectorDialog.open(v.getContext(), false, (id, snapshot) -> {
+            mDefaultVersion.setText(id);
+            updateBackendVisibility(id);
+        });
     }
 
     private static String nullToEmpty(String in) {
@@ -171,10 +182,24 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         mDefaultRenderer.setSelection(rendererIndex);
 
         mDefaultVersion.setText(instance.versionId);
+
+        // Graphics backend spinner (only meaningful on versions with the Vulkan backend)
+        int backendIndex = Arrays.asList(BACKEND_VALUES).indexOf(instance.graphicsBackend);
+        if(backendIndex == -1) backendIndex = 0;
+        mDefaultBackend.setSelection(backendIndex);
+        updateBackendVisibility(instance.versionId);
+
         mDefaultJvmArgument.setText(nullToEmpty(instance.jvmArgs));
         mDefaultName.setText(nullToEmpty(instance.name));
         mDefaultControl.setText(mSelectedControlLayout == null ? nullToEmpty(instance.controlLayout) : mSelectedControlLayout);
         mSharedDataCheckbox.setChecked(instance.sharedData);
+    }
+
+    private void updateBackendVisibility(String versionId) {
+        int visibility = MinecraftVersion.supportsGraphicsBackend(versionId) ? View.VISIBLE : View.GONE;
+        mBackendLabel.setVisibility(visibility);
+        mDefaultBackend.setVisibility(visibility);
+        mBackendArrow.setVisibility(visibility);
     }
 
     private void bindViews(@NonNull View view){
@@ -182,6 +207,10 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         mDefaultRuntime = view.findViewById(R.id.vprof_editor_spinner_runtime);
         mDefaultRenderer = view.findViewById(R.id.vprof_editor_instance_renderer);
         mDefaultVersion = view.findViewById(R.id.vprof_editor_version_spinner);
+
+        mDefaultBackend = view.findViewById(R.id.vprof_editor_instance_backend);
+        mBackendLabel = view.findViewById(R.id.vprof_editor_backend_label);
+        mBackendArrow = view.findViewById(R.id.vprof_editor_backend_arrow);
 
         mDefaultName = view.findViewById(R.id.vprof_editor_instance_name);
         mDefaultJvmArgument = view.findViewById(R.id.vprof_editor_jre_args);
@@ -210,6 +239,13 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
 
         if(mDefaultRenderer.getSelectedItemPosition() == mRenderNames.size()) mInstance.renderer = null;
         else mInstance.renderer = mRenderNames.get(mDefaultRenderer.getSelectedItemPosition());
+
+        if(MinecraftVersion.supportsGraphicsBackend(mInstance.versionId)) {
+            mInstance.graphicsBackend = BACKEND_VALUES[mDefaultBackend.getSelectedItemPosition()];
+        } else {
+            mInstance.graphicsBackend = null;
+            mInstance.appliedGraphicsBackend = null;
+        }
 
         try {
             if(!newName.isEmpty() && !newName.equals(mInstance.name))

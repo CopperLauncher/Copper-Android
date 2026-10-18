@@ -72,6 +72,8 @@
     <string name="mcl_setting_renderer_mesa_desktop_ext">Mesa (DRM, external) - all versions</string>
     <string name="mcl_setting_renderer_mobileglues">MobileGlues (OpenGL ES) - (1.17+ only)</string>
     <string name="mcl_setting_renderer_sfpew">SFPEW/MobileGlues (OpenGL ES) - (all versions)</string>
+    <string name="mcl_setting_renderer_plugin">Renderer plugin</string>
+    <string name="mcl_setting_renderer_from_plugins">Plugin: %1$s</string>
     <string name="mcl_setting_veroption_release">Release</string>
     <string name="mcl_setting_veroption_snapshot">Snapshot</string>
     <string name="mcl_setting_veroption_oldalpha">Old-alpha</string>
@@ -258,6 +260,10 @@
     <string name="global_delete">Delete</string>
     <string name="pedit_java_runtime">Java Runtime</string>
     <string name="pedit_renderer">Renderer</string>
+    <string name="pedit_graphics_backend">Graphics backend</string>
+    <string name="graphics_backend_default">Default</string>
+    <string name="graphics_backend_vulkan">Prefer Vulkan</string>
+    <string name="graphics_backend_opengl">Prefer OpenGL</string>
     <string name="color_default_hex" translatable="false">FFFF0000</string>
     <string name="notif_channel_name">General</string>
     <string name="notif_channel_id" translatable="false">channel_id</string>
@@ -350,7 +356,41 @@
     <string name="hint_search_modpack">Search for modpacks</string>
 
     <string name="preference_vulkan_driver_system_title">Use system Vulkan driver</string>
-    <string name="preference_vulkan_driver_system_description">Force the launcher to use the system Vulkan driver instead of Turnip on Adreno GPUs. Only affects Zink and mods that use Vulkan.</string>
+    <string name="preference_vulkan_driver_system_description">Force the launcher to use the system Vulkan driver instead of Turnip on Adreno or PanVK Kbase on Mali GPUs. Only affects Zink and mods that use Vulkan.</string>
+    <string name="preference_vulkan_driver_title">Vulkan driver</string>
+    <string name="preference_vulkan_driver_system">System Vulkan driver</string>
+    <string name="preference_vulkan_driver_custom_adreno">Turnip (Adreno)</string>
+    <string name="preference_vulkan_driver_custom_mali">PanVK Kbase (Mali)</string>
+    <string name="preference_panvk_driver_manager_title">PanVK driver manager</string>
+    <string name="preference_panvk_driver_manager_summary">Install the PanVK Kbase driver for your Mali GPU from a repository or a local file</string>
+    <string name="panvk_driver_manager_installed_title">Installed drivers</string>
+    <string name="panvk_driver_manager_install_category_title">Install driver</string>
+    <string name="panvk_driver_manager_install_github">Install from GitHub</string>
+    <string name="panvk_driver_manager_install_github_summary">Pick a driver from the repository for Mali %1$s</string>
+    <string name="panvk_driver_manager_install_local">Install from file</string>
+    <string name="panvk_driver_manager_install_local_summary">Import an adrenotools package or a local .so file</string>
+    <string name="panvk_driver_manager_none_installed">No drivers installed</string>
+    <string name="panvk_driver_manager_none_available">No drivers available in the repository</string>
+    <string name="panvk_driver_manager_available_title">Available drivers</string>
+    <string name="panvk_driver_manager_fetching">Fetching drivers…</string>
+    <string name="panvk_driver_manager_repo_hint">owner/repo</string>
+    <string name="panvk_driver_manager_set_repo">Driver repository</string>
+    <string name="panvk_driver_manager_repo_saved">Repository saved</string>
+    <string name="panvk_driver_manager_status_unsupported">This GPU is not supported by PanVK Kbase</string>
+    <string name="panvk_driver_manager_installing">Installing PanVK driver…</string>
+    <string name="panvk_driver_manager_installed">PanVK driver installed</string>
+    <string name="panvk_driver_manager_uninstall">Uninstall</string>
+    <string name="panvk_driver_manager_uninstalled">PanVK driver uninstalled</string>
+    <string name="panvk_driver_manager_uninstall_failed">Failed to uninstall driver</string>
+    <string name="panvk_driver_manager_download_failed">Failed: %1$s</string>
+    <string name="panvk_driver_manager_import_local">Local driver (.so)</string>
+    <string name="panvk_driver_manager_import_package">Adrenotools package (.zip)</string>
+    <string name="panvk_driver_manager_importing">Importing driver…</string>
+    <string name="panvk_driver_manager_imported">Driver imported</string>
+
+    <string name="preference_native_plugins_title">Native library plugins</string>
+    <string name="preference_native_plugins_summary">Choose which installed native library plugins are loaded when the game starts.</string>
+    <string name="preference_native_plugins_dialog_title">Native library plugins</string>
 
     <string name="generic_install">Install</string>
     <string name="generic_apply">Apply</string>

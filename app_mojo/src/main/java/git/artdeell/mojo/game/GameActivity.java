@@ -8,7 +8,8 @@ import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_ENABLE_GYRO;
 import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_SUSTAINED_PERFORMANCE;
 import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_USE_ALTERNATE_SURFACE;
 import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_VIRTUAL_MOUSE_START;
-import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_ZINK_PREFER_SYSTEM_DRIVER;
+import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_VULKAN_DRIVER;
+import static git.artdeell.mojo.prefs.LauncherPreferences.PREF_VULKAN_DRIVER_SYSTEM;
 
 import android.app.Activity;
 import androidx.appcompat.app.AlertDialog;
@@ -129,8 +130,10 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         }
         mGameRenderer = new GameRenderer(instance.getLaunchRenderer());
 
-        if(GpuUtils.getGlInfo().isAdreno() && !PREF_ZINK_PREFER_SYSTEM_DRIVER) {
-            mGameRenderer.overrideVulkanDriver();
+        if(!PREF_VULKAN_DRIVER_SYSTEM.equals(PREF_VULKAN_DRIVER)) {
+            GpuUtils.GLInfo glInfo = GpuUtils.getGlInfo();
+            if(glInfo.isAdreno()) mGameRenderer.overrideVulkanDriver();
+            else if(glInfo.isArm()) mGameRenderer.overridePanvkDriver(this);
         }
 
         AsyncAssetManager.extractDefaultSettings(this, instance.getGameDirectory());

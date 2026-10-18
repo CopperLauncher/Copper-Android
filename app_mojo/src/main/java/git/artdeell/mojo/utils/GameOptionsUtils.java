@@ -3,6 +3,9 @@ package git.artdeell.mojo.utils;
 import android.util.Log;
 
 public class GameOptionsUtils {
+    /** options.txt key for the 26.2+ Graphics API selector. Values: "default", "vulkan", "opengl". */
+    public static final String OPTION_GRAPHICS_BACKEND = "preferredGraphicsBackend";
+
     /**
      * Parse an integer. If the input value is null or not a valid integer, return the default value.
      * @param value the String to parse

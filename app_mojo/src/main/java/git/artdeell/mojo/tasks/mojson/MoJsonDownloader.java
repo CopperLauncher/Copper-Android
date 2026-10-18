@@ -59,6 +59,13 @@ public class MoJsonDownloader extends Downloader {
 
     private final String mNativeName = "android-"+Architecture.archAsString(Architecture.getDeviceArchitecture());
 
+    private static final String[] VULKAN_BINDINGS = {
+            "lwjgl-vulkan",
+            "lwjgl-vma",
+            "lwjgl-shaderc",
+            "lwjgl-spvc"
+    };
+
     private static Future<SubstitutionMap> sSubstitutionMapFuture;
 
     private ArrayList<TaskMetadata> mScheduledDownloadTasks;
@@ -225,6 +232,45 @@ public class MoJsonDownloader extends Downloader {
             if(dependentLibrary.downloads != null) processLibraryWithDownloads(dependentLibrary);
             else processRawLibrary(dependentLibrary);
         }
+
+        appendVulkanBindings(processedLibraries);
+    }
+
+    /**
+     * Add LWJGL's Vulkan artifacts to the classpath when a version uses LWJGL 3.4 but does not
+     * declare them itself. Mods that render through Vulkan need these, and on Android they have
+     * to come from the substituted Android builds. Versions that already declare the libraries
+     * (or whose LWJGL version has no substitution) are left alone.
+     */
+    private void appendVulkanBindings(HashSet<MavenName> processedLibraries) throws PresentableException {
+        String lwjglVersion = findLwjglVersion();
+        if(lwjglVersion == null) return;
+
+        for(String module : VULKAN_BINDINGS) {
+            MavenName name = new MavenName("org.lwjgl", module, lwjglVersion);
+            if(!processedLibraries.add(name.anyVersion())) continue;
+
+            LibrarySubstitution substitution = mSubstitutionMap.findSubstitution(name);
+            if(substitution == null || substitution.skip) {
+                Log.i("MoJsonDownloader", "No Android build for "+ name +", skipping");
+                continue;
+            }
+
+            Log.i("MoJsonDownloader", "Adding Vulkan binding "+ name);
+            if(substitution.downloads != null) processLibraryWithDownloads(substitution);
+            else processRawLibrary(substitution);
+        }
+    }
+
+    private String findLwjglVersion() {
+        for(DependentLibrary library : mAllLibraries) {
+            MavenName name = library.name;
+            if(name == null) continue;
+            if(!name.provider.equals("org.lwjgl") || !name.module.equals("lwjgl")) continue;
+            if(name.extra != null || name.version == null) continue;
+            return name.version;
+        }
+        return null;
     }
 
     private void extractNatives(String versionName) throws IOException {

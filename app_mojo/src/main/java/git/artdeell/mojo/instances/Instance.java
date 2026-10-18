@@ -28,6 +28,10 @@ public class Instance extends DisplayInstance {
     public String selectedRuntime;
     public String controlLayout;
     public boolean sharedData;
+    /** Preferred Graphics API for 26.2+: "default", "vulkan" or "opengl". */
+    public String graphicsBackend;
+    /** The value last written to options.txt, so the game's own fallback isn't undone. */
+    public String appliedGraphicsBackend;
 
     protected Instance() {
     }
