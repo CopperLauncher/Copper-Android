@@ -2,6 +2,7 @@ package git.artdeell.mojo.downloader;
 
 import com.kdt.mcgui.ProgressLayout;
 
+import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.tasks.SpeedCalculator;
 import git.artdeell.mojo.utils.DownloadUtils;
 
@@ -25,10 +26,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import git.artdeell.mojo.R;
+import git.artdeell.mojo.utils.FileUtils;
 
 public class Downloader {
     private static final double ONE_MEGABYTE = (1024d * 1024d);
     private static final ThreadLocal<byte[]> sThreadLocalBuffer = new ThreadLocal<>();
+    protected static final File sPartFileDir = new File(Tools.DIR_EXT_CACHE, "partfiles");
     private final String mProgressKey;
     private final AtomicReference<IOException> mThreadException = new AtomicReference<>();
     private final AtomicInteger mDownloadedFileCounter = new AtomicInteger();
@@ -44,6 +47,7 @@ public class Downloader {
     }
 
     protected void runDownloads(ArrayList<? extends TaskMetadata> downloads) throws IOException, InterruptedException {
+        FileUtils.ensureDirectory(sPartFileDir);
         insertMetadata(downloads);
         performDownloads(downloads);
     }
@@ -52,8 +56,8 @@ public class Downloader {
         mThreadException.set(null);
         mDownloadedFileCounter.set(0);
         mDownloadedSizeCounter.set(0);
-        mDownloadService = Executors.newFixedThreadPool(3);
-        int verifyThreads = Math.max(2, Runtime.getRuntime().availableProcessors() - 2);
+        mDownloadService = Executors.newFixedThreadPool(6);
+        int verifyThreads = Math.max(2, Runtime.getRuntime().availableProcessors());
         mVerifyService = Executors.newFixedThreadPool(verifyThreads, r -> {
             Thread thread = new Thread(r);
             thread.setPriority(10);

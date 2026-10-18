@@ -107,6 +107,7 @@ public final class Tools {
     public static String NATIVE_LIB_DIR;
     public static String DIR_DATA; //Initialized later to get context
     public static File DIR_CACHE;
+    public static File DIR_EXT_CACHE;
     public static String MULTIRT_HOME;
     public static int DEVICE_ARCHITECTURE;
 
@@ -191,6 +192,7 @@ public final class Tools {
         File appStorageRoot = getAppStorageRoot(ctx);
         if(appStorageRoot == null) throw new RuntimeException("Whoops! You have to put the SD into your phone.");
         DIR_GAME_HOME = appStorageRoot.getAbsolutePath();
+        DIR_EXT_CACHE = ctx.getExternalCacheDir();
         DIR_GAME_NEW = DIR_GAME_HOME + "/.minecraft";
         DIR_HOME_VERSION = DIR_GAME_NEW + "/versions";
         DIR_HOME_LIBRARY = DIR_GAME_NEW + "/libraries";
