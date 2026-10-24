@@ -38,6 +38,17 @@ public class GsonJsonUtils {
         return element;
     }
 
+    /** @return the number at memberName, or defaultValue if it is missing, null or not a number */
+    public static long getLongSafe(JsonObject jsonObject, String memberName, long defaultValue) {
+        JsonElement element = getElementSafe(jsonObject, memberName);
+        if(element == null || !element.isJsonPrimitive()) return defaultValue;
+        try {
+            return element.getAsLong();
+        } catch (NumberFormatException | ClassCastException e) {
+            return defaultValue;
+        }
+    }
+
     /**
      * Safely gets a JsonObject from a JsonObject
      * @param jsonObject the input JsonObject

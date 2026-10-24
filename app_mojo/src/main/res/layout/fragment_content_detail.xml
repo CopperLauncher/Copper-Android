@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Full screen detail (portrait): header and tabs stay on top, the Versions tab swaps the
+     scrolling sections for the version list. The landscape two-pane version is
+     fragment_content_detail_pane.xml (left) and fragment_content_detail_right.xml (right). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical">
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_detail_back"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_arrow_back_white"
+        android:text="@string/preference_back_title" />
+
+    <com.google.android.material.divider.MaterialDivider
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <include layout="@layout/content_detail_hero" />
+
+    <include layout="@layout/content_detail_tabs" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:id="@+id/content_detail_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
+            <include layout="@layout/content_detail_sections" />
+        </ScrollView>
+
+        <FrameLayout
+            android:id="@+id/content_detail_versions_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

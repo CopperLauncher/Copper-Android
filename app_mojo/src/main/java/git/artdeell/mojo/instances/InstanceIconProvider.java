@@ -32,11 +32,20 @@ public class InstanceIconProvider {
 
     /**
      * Fetch an icon from the cache, or load it if it's not cached.
+     * Every call returns its own Drawable, because views resize the bounds of the Drawable they
+     * show. A shared one would be resized by whichever view was set up last (the instance bar,
+     * the dropdown entries, the instance editor), leaving the others with the wrong icon size.
      * @param resources the Resources object, used for creating drawables
      * @param instance the instance
      * @return an icon drawable
      */
     public static @NonNull Drawable fetchIcon(Resources resources, @NonNull DisplayInstance instance) {
+        Drawable cachedIcon = fetchCachedIcon(resources, instance);
+        Drawable.ConstantState state = cachedIcon.getConstantState();
+        return state != null ? state.newDrawable(resources) : cachedIcon;
+    }
+
+    private static @NonNull Drawable fetchCachedIcon(Resources resources, @NonNull DisplayInstance instance) {
         int identityHashCode = System.identityHashCode(instance);
 
         Drawable cachedIcon = sIconCache.get(identityHashCode);

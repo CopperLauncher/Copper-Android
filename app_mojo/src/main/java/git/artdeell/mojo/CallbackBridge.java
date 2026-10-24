@@ -11,6 +11,7 @@ import androidx.annotation.Keep;
 
 import git.artdeell.mojo.utils.lifecycle.ContextExecutor;
 import git.artdeell.mojo.game.platform.Platform;
+import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 
 import java.io.File;
 
@@ -133,6 +134,7 @@ public class CallbackBridge {
     static {
         System.loadLibrary("mojort");
         minibridgeInit();
+        FileDialogBridge.nativeInit();
     }
 }
 

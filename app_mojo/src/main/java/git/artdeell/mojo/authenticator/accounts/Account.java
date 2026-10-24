@@ -60,6 +60,25 @@ public class Account {
         }
     }
 
+    /**
+     * Re-renders the face from a skin PNG the user has just uploaded. The skin face services cache
+     * for a while, so downloading it again right after an upload would still give the old head.
+     */
+    public void updateSkinFace(byte[] skinPng) {
+        if(authType.skinUrl == null) return;
+        Bitmap skinBitmap = BitmapFactory.decodeByteArray(skinPng, 0, skinPng.length);
+        if(skinBitmap == null) return;
+        Bitmap skinFace = new SkinHeadRenderer().render(100, skinBitmap);
+        skinBitmap.recycle();
+        if(skinFace == null) return;
+        try(FileOutputStream fileOutputStream = new FileOutputStream(getSkinFaceFile())) {
+            skinFace.compress(Bitmap.CompressFormat.WEBP, 90, fileOutputStream);
+            mFaceCache = null;
+        } catch (IOException e) {
+            Log.w("SkinLoader", "Could not save the new skin face", e);
+        }
+    }
+
     public boolean isLocal(){
         return accessToken.equals("0");
     }

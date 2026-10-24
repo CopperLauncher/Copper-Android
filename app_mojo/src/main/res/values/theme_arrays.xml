@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="theme_mode_names">
+        <item>Follow system</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="theme_mode_values">
+        <item>system</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+    <string-array name="color_source_names">
+        <item>Wallpaper colors (Android 12+)</item>
+        <item>Copper</item>
+        <item>Custom color</item>
+    </string-array>
+    <string-array name="color_source_values">
+        <item>dynamic</item>
+        <item>default</item>
+        <item>custom</item>
+    </string-array>
+    <string-array name="animation_type_names">
+        <item>None</item>
+        <item>Screen transitions</item>
+        <item>Dialogs and popups</item>
+        <item>Button press effects</item>
+        <item>Lists and content</item>
+    </string-array>
+    <string-array name="animation_type_values">
+        <item>none</item>
+        <item>screens</item>
+        <item>dialogs</item>
+        <item>buttons</item>
+        <item>content</item>
+    </string-array>
+    <string-array name="animation_type_defaults">
+        <item>screens</item>
+        <item>dialogs</item>
+        <item>buttons</item>
+        <item>content</item>
+    </string-array>
+</resources>

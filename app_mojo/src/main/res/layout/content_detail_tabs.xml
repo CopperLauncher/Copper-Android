@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The tab row of the detail screen. The Versions tab only exists when the versions do not
+     have a pane of their own, the fragment hides it otherwise. Scrolls sideways in narrow panes. -->
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:overScrollMode="never"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/padding_heavy"
+        android:paddingVertical="@dimen/padding_medium">
+
+        <TextView
+            android:id="@+id/content_tab_description"
+            style="@style/ContentTabChip"
+            android:text="@string/content_tab_description" />
+
+        <TextView
+            android:id="@+id/content_tab_gallery"
+            style="@style/ContentTabChip"
+            android:text="@string/content_tab_gallery" />
+
+        <TextView
+            android:id="@+id/content_tab_changelog"
+            style="@style/ContentTabChip"
+            android:text="@string/content_tab_changelog" />
+
+        <TextView
+            android:id="@+id/content_tab_versions"
+            style="@style/ContentTabChip"
+            android:text="@string/content_tab_versions"
+            android:visibility="gone" />
+    </LinearLayout>
+</HorizontalScrollView>

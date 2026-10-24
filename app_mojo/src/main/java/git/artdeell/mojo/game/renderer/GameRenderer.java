@@ -6,6 +6,8 @@ import static git.artdeell.mojo.game.renderer.def.Renderers.LEGACYZINK_RENDERER;
 import static git.artdeell.mojo.game.renderer.def.Renderers.LTW_RENDERER;
 import static git.artdeell.mojo.game.renderer.def.Renderers.MESA_RENDERER;
 import static git.artdeell.mojo.game.renderer.def.Renderers.MESA_RENDERER_EXT;
+import static git.artdeell.mojo.game.renderer.def.Renderers.MOBILEGLUES_RENDERER;
+import static git.artdeell.mojo.game.renderer.def.Renderers.SFPEW_RENDERER;
 import static git.artdeell.mojo.game.renderer.def.Renderers.ZINK_RENDERER;
 
 import android.content.Context;
@@ -73,6 +75,8 @@ public class GameRenderer {
             case MESA_RENDERER: return new MesaRenderSpec();
             case MESA_RENDERER_EXT: return new MesaRenderSpec.ExtMesaRenderSpec();
             case LEGACYZINK_RENDERER: return new MesaRenderSpec.LegacyZinkRenderSpec();
+            case MOBILEGLUES_RENDERER: return new GLESRenderSpec.MgRenderSpec();
+            case SFPEW_RENDERER: return new GLESRenderSpec.SFPEWRenderSpec();
             default:
                 Log.e(TAG, "Unknown renderer " + renderer);
                 return null;

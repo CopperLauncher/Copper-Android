@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingTop="8dp">
+
+    <!-- Upload the log to mclo.gs and share the resulting link -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/share_log_mclogs_button"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="56dp"
+        android:text="@string/share_log_mclogs_option"
+        app:icon="@drawable/ic_share_link"
+        app:iconGravity="textStart"
+        app:iconSize="28dp"
+        app:iconTint="@null" />
+
+    <!-- Share the raw log file, same behaviour as before this dialog existed -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/share_log_file_button"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:minHeight="56dp"
+        android:text="@string/main_share_logs"
+        app:icon="@drawable/ic_share"
+        app:iconGravity="textStart" />
+
+</LinearLayout>

@@ -1,5 +1,6 @@
 package git.artdeell.mojo.awt;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.annotation.SuppressLint;
 import android.net.Uri;
 import android.os.Bundle;
@@ -271,7 +272,7 @@ public class AWTActivity extends BaseActivity implements View.OnTouchListener {
     }
 
     private void finalErrorDialog(CharSequence msg) {
-        runOnUiThread(()-> new AlertDialog.Builder(this)
+        runOnUiThread(()-> new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.global_error)
                 .setMessage(msg)
                 .setPositiveButton(android.R.string.ok, (d,w)->this.finish())

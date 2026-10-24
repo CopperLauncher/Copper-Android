@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Embedded video / page of a content description: a thumbnail when there is one, a link card otherwise -->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="@dimen/padding_medium"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+    app:cardElevation="0dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/embed_thumb"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@android:color/black"
+            android:contentDescription="@null"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            app:layout_constraintDimensionRatio="16:9"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/embed_play"
+            android:layout_width="@dimen/_40sdp"
+            android:layout_height="@dimen/_40sdp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_content_embed_play"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/embed_thumb"
+            app:layout_constraintEnd_toEndOf="@id/embed_thumb"
+            app:layout_constraintStart_toStartOf="@id/embed_thumb"
+            app:layout_constraintTop_toTopOf="@id/embed_thumb" />
+
+        <ImageView
+            android:id="@+id/embed_icon"
+            android:layout_width="@dimen/_20sdp"
+            android:layout_height="@dimen/_20sdp"
+            android:layout_marginStart="@dimen/padding_heavy"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_open_in_new"
+            app:layout_constraintBottom_toBottomOf="@id/embed_label"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/embed_label"
+            app:tint="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:id="@+id/embed_label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/padding_moderate"
+            android:layout_marginEnd="@dimen/padding_heavy"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:paddingVertical="@dimen/padding_moderate"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/embed_icon"
+            app:layout_constraintTop_toBottomOf="@id/embed_thumb" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

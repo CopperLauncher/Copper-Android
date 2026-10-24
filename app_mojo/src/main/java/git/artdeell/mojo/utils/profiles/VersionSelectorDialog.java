@@ -1,5 +1,7 @@
 package git.artdeell.mojo.utils.profiles;
 
+import git.artdeell.mojo.utils.AnimationManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import static git.artdeell.mojo.extra.ExtraCore.getValue;
 
 import android.content.Context;
@@ -14,7 +16,7 @@ import git.artdeell.mojo.extra.ExtraConstants;
 
 public class VersionSelectorDialog {
     public static void open(Context context, boolean hideCustomVersions, VersionSelectorListener listener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(context);
         ExpandableListView expandableListView = (ExpandableListView) LayoutInflater.from(context)
                 .inflate(R.layout.dialog_expendable_list_view , null);
         JVersionList jVersionList = (JVersionList) getValue(ExtraConstants.RELEASE_TABLE);
@@ -24,6 +26,7 @@ public class VersionSelectorDialog {
         VersionListAdapter adapter = new VersionListAdapter(versionArray, hideCustomVersions, context);
 
         expandableListView.setAdapter(adapter);
+        AnimationManager.applyListAnimation(expandableListView);
         builder.setView(expandableListView);
         AlertDialog dialog = builder.show();
 

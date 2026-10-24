@@ -1,8 +1,11 @@
 package com.kdt.mcgui;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import git.artdeell.mojo.utils.ThemeColors;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -10,9 +13,12 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Bundle;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -24,6 +30,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.AppCompatSpinner;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
 
@@ -38,6 +46,7 @@ import git.artdeell.mojo.extra.ExtraConstants;
 import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.extra.ExtraListener;
 import git.artdeell.mojo.progresskeeper.ProgressKeeper;
+import git.artdeell.mojo.skins.SkinEditorFragment;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -53,6 +62,9 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
     private final ValueAnimator mLoginStepAnimator = ValueAnimator.ofFloat(mMaxSteps);
     private final Paint mLoginBarPaint = new Paint();
     private float mLoginStep;
+    /* Tap-only touch handling: swipes must not open the account popup */
+    private float mTouchDownX, mTouchDownY;
+    private boolean mTouchMoved;
 
     class LoginExtraListener implements ExtraListener<String> {
         private final AuthType mAuthType;
@@ -63,7 +75,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
 
         @Override
         public boolean onValueSet(String key, @NonNull String value) {
-            mLoginBarPaint.setColor(getResources().getColor(R.color.minebutton_color));
+            mLoginBarPaint.setColor(ThemeColors.primary(getContext()));
             BackgroundLogin backgroundLogin = mAuthType.createAuth();
             backgroundLogin.createAccount(AccountSpinner.this, value);
             return false;
@@ -127,8 +139,8 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
         setOnItemSelectedListener(this);
         reload();
 
-        setBackgroundColor(getResources().getColor(R.color.background_status_bar));
-        mLoginBarPaint.setColor(getResources().getColor(R.color.minebutton_color));
+        setBackgroundColor(ThemeColors.surfaceContainer(getContext()));
+        mLoginBarPaint.setColor(ThemeColors.primary(getContext()));
         mLoginBarPaint.setStrokeWidth(getResources().getDimensionPixelOffset(R.dimen._2sdp));
         mLoginStepAnimator.addUpdateListener(this);
         mLoginStep = mMaxSteps;
@@ -184,10 +196,69 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
         onAttachedToWindow();
     }
 
+    /** Opens the skin/cape editor for a Microsoft account */
+    private void openSkinEditor(@NonNull Account account) {
+        FragmentActivity activity = findActivity(getContext());
+        if(activity == null || account.mSaveLocation == null) return;
+        FragmentManager manager = activity.getSupportFragmentManager();
+        if(manager.isStateSaved()) return;
+        if(ProgressKeeper.hasProgressKey(ProgressLayout.AUTHENTICATE)) {
+            // The session is being refreshed, the editor would fight it for the tokens
+            Toast.makeText(getContext(), R.string.tasks_ongoing, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        dismissPopup();
+        Bundle args = new Bundle();
+        args.putString(SkinEditorFragment.ARG_ACCOUNT_FILE, account.mSaveLocation.getName());
+        Tools.swapFragmentFullScreen(activity, SkinEditorFragment.class, SkinEditorFragment.TAG, args);
+    }
+
+    @Nullable
+    private static FragmentActivity findActivity(Context context) {
+        while(context instanceof ContextWrapper) {
+            if(context instanceof FragmentActivity) return (FragmentActivity) context;
+            context = ((ContextWrapper) context).getBaseContext();
+        }
+        return null;
+    }
+
     private void createAccount() {
         setSelection(0);
         dismissPopup();
         ExtraCore.setValue(ExtraConstants.SELECT_AUTH_METHOD, true);
+    }
+
+    /**
+     * Only open the account popup on a real tap. The default Spinner opens it as soon as the
+     * finger has been down for a moment, which made swiping down to open the notification
+     * panel pop up the account list instead.
+     */
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if(!isEnabled()) return super.onTouchEvent(event);
+        switch(event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                mTouchDownX = event.getX();
+                mTouchDownY = event.getY();
+                mTouchMoved = false;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if(!mTouchMoved) {
+                    int slop = ViewConfiguration.get(getContext()).getScaledTouchSlop();
+                    if(Math.abs(event.getX() - mTouchDownX) > slop
+                            || Math.abs(event.getY() - mTouchDownY) > slop) {
+                        mTouchMoved = true;
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if(!mTouchMoved) performClick();
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                mTouchMoved = true;
+                break;
+        }
+        return true;
     }
 
     @Override
@@ -211,7 +282,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
 
     @Override
     public void onLoginError(Throwable errorMessage) {
-        mLoginBarPaint.setColor(Color.RED);
+        mLoginBarPaint.setColor(ThemeColors.error(getContext()));
         invalidate();
 
         Context context = getContext();
@@ -297,6 +368,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
 
             ExtendedTextView textview = view.findViewById(R.id.account_item);
             ImageView deleteButton = view.findViewById(R.id.delete_account_button);
+            ImageView editButton = view.findViewById(R.id.edit_account_button);
 
             if(position == 0) {
                 // "Add account" button
@@ -304,6 +376,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
                 textview.setCompoundDrawables(plusDrawable, null, null, null);
                 textview.setText(R.string.main_add_account);
                 deleteButton.setVisibility(View.GONE);
+                editButton.setVisibility(View.GONE);
                 // Only activate the listener behaviour when in drop-down mode
                 // or when there's no accounts
                 if(isDropDown || getCount() == 1) view.setOnClickListener(v-> createAccount());
@@ -319,6 +392,15 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
 
 
             Account account = Objects.requireNonNull(getItem(position));
+
+            // Skins and capes live on the Minecraft account, so only Microsoft ones can edit them
+            if(account.authType == AuthType.MICROSOFT) {
+                editButton.setVisibility(View.VISIBLE);
+                editButton.setOnClickListener(v -> openSkinEditor(account));
+            }else {
+                editButton.setVisibility(View.GONE);
+                editButton.setOnClickListener(null);
+            }
 
             int authTypeResource = account.authType.iconResource;
 
@@ -340,7 +422,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
         }
 
         private void showDeleteDialog(Context context, int position) {
-            new AlertDialog.Builder(context)
+            new MaterialAlertDialogBuilder(context)
                     .setMessage(R.string.warning_remove_account)
                     .setPositiveButton(android.R.string.cancel, null)
                     .setNeutralButton(R.string.global_delete, (dialog, which) -> {

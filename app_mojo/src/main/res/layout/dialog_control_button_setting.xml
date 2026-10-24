@@ -281,46 +281,46 @@
         app:layout_constraintTop_toBottomOf="@+id/editOrientation_textView" />
 
     <!-- TOGGLE SECTION -->
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/checkboxToggle"
         android:layout_width="match_parent"
         android:layout_height="@dimen/_36sdp"
         android:text="@string/customctrl_toggle"
 
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/editOrientation_spinner"/>
+        app:layout_constraintTop_toBottomOf="@id/editOrientation_spinner" />
 
     <!-- MOUSE PASS THROUGH SECTION -->
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/checkboxPassThrough"
         android:layout_width="match_parent"
         android:layout_height="@dimen/_36sdp"
         android:text="@string/customctrl_passthru"
 
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/checkboxToggle"/>
+        app:layout_constraintTop_toBottomOf="@id/checkboxToggle" />
 
     <!-- SWIPEABLE BUTTON SECTION -->
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/checkboxSwipeable"
         android:layout_width="match_parent"
         android:layout_height="@dimen/_36sdp"
         android:text="@string/customctrl_swipeable"
 
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/checkboxPassThrough"/>
+        app:layout_constraintTop_toBottomOf="@id/checkboxPassThrough" />
 
     <!-- FORWARD LOCK SECTION -->
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/checkboxForwardLock"
         android:layout_width="match_parent"
         android:layout_height="@dimen/_36sdp"
         android:text="@string/customctrl_forward_lock"
 
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/checkboxSwipeable"/>
+        app:layout_constraintTop_toBottomOf="@id/checkboxSwipeable" />
 
-    <androidx.appcompat.widget.SwitchCompat
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/checkboxAbsoluteFingerTracking"
         android:layout_width="match_parent"
         android:layout_height="@dimen/_36sdp"
