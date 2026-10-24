@@ -21,9 +21,12 @@ import git.artdeell.mojo.game.renderer.impl.GLESRenderSpec;
 import git.artdeell.mojo.game.renderer.impl.MesaRenderSpec;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import git.artdeell.mojo.vulkan.DriverManager;
+import git.artdeell.mojo.vulkan.driver.Driver;
 import git.artdeell.mojoexec.MojoExec;
 
 /*
@@ -166,6 +169,9 @@ public class GameRenderer {
         // In most cases we load Turnip so use Turnip environment variables
         if(LauncherPreferences.PREF_FREEDRENO_SYSMEM) environment.put("TU_DEBUG", "sysmem");
         if(LauncherPreferences.PREF_UBWC_WORKAROUND) environment.put("FD_DEV_FEATURES", "enable_tp_ubwc_flag_hint=1");
-        MojoExec.setUseTurnip(true);
+
+        Driver driver = DriverManager.getPreferredDriver();
+        File root = DriverManager.getDriverRoot(driver);
+        MojoExec.configureCustomVulkanDriver(driver.getMainLibrary(), root == null ? null : root.getAbsolutePath());
     }
 }

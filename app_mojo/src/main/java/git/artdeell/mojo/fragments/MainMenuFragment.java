@@ -25,6 +25,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
+import com.kdt.mcgui.ProgressLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.kdt.mcgui.mcVersionSpinner;
 
@@ -38,7 +39,6 @@ import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
-import git.artdeell.mojo.progresskeeper.ProgressKeeper;
 import git.artdeell.mojo.utils.FileUtils;
 
 import java.io.File;
@@ -474,8 +474,7 @@ public class MainMenuFragment extends Fragment {
     }
 
     private void runInstallerWithConfirmation() {
-        if (ProgressKeeper.getTaskCount() == 0) {
-            mModInstallerLauncher.launch(null);
-        } else Toast.makeText(requireContext(), R.string.tasks_ongoing, Toast.LENGTH_LONG).show();
+        if(!ProgressLayout.ensureNoOngoingTasks(requireContext())) return;
+        mModInstallerLauncher.launch(null);
     }
 }

@@ -107,7 +107,6 @@ public final class Tools {
     public static String NATIVE_LIB_DIR;
     public static String DIR_DATA; //Initialized later to get context
     public static File DIR_CACHE;
-    public static File DIR_EXT_CACHE;
     public static String MULTIRT_HOME;
     public static int DEVICE_ARCHITECTURE;
 
@@ -192,7 +191,6 @@ public final class Tools {
         File appStorageRoot = getAppStorageRoot(ctx);
         if(appStorageRoot == null) throw new RuntimeException("Whoops! You have to put the SD into your phone.");
         DIR_GAME_HOME = appStorageRoot.getAbsolutePath();
-        DIR_EXT_CACHE = ctx.getExternalCacheDir();
         DIR_GAME_NEW = DIR_GAME_HOME + "/.minecraft";
         DIR_HOME_VERSION = DIR_GAME_NEW + "/versions";
         DIR_HOME_LIBRARY = DIR_GAME_NEW + "/libraries";
@@ -550,7 +548,7 @@ public final class Tools {
         android.os.Process.killProcess(android.os.Process.myPid());
     }
 
-    public static void printLauncherInfo(String gameVersion, String javaArguments, RenderSpec renderer, Context ctx) {
+    public static void printLauncherInfo(String gameVersion, String javaArguments, RenderSpec renderer, String runtimeName, Context ctx) {
         Logger.appendToLog("Info: Launcher version: " + BuildConfig.VERSION_NAME);
         Logger.appendToLog("Info: Build type: " + BuildConfig.BUILD_TYPE);
         Logger.appendToLog("Info: Architecture: " + Architecture.archAsString(DEVICE_ARCHITECTURE));
@@ -563,6 +561,7 @@ public final class Tools {
         Logger.appendToLog("Info: RAM allocated: " + LauncherPreferences.PREF_RAM_ALLOCATION + " Mb");
         Logger.appendToLog("Info: Graphics device: "+info.vendor+ " "+info.renderer+" (OpenGL ES "+info.glesMajorVersion+")");
         Logger.appendToLog("Info: Selected renderer: " + renderer.tag() + " (" + renderer.name() + ")");
+        Logger.appendToLog("Info: Selected runtime: " + runtimeName);
     }
 
     public static JVersionList.Version getVersionInfo(String versionName) {

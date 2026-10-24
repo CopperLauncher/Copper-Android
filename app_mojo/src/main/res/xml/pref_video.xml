@@ -67,6 +67,11 @@
             android:summary="@string/preference_use_angle_description"
             android:title="@string/preference_use_angle_title"
             />
+        <Preference
+            android:key="manageDrivers"
+            android:persistent="false"
+            android:summary="@string/driver_config_pref_subtitle"
+            android:title="@string/driver_config_pref_title"/>
         <androidx.preference.SwitchPreferenceCompat
             android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="false"
@@ -81,5 +86,6 @@
             android:key="zinkPreferSystemDriver"
             android:summary="@string/preference_vulkan_driver_system_description"
             android:title="@string/preference_vulkan_driver_system_title"/>
+
     </PreferenceCategory>
 </PreferenceScreen>
