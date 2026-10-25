@@ -19,7 +19,11 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.DrawableRes;
+import androidx.annotation.StringRes;
 import androidx.fragment.app.Fragment;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
@@ -52,6 +56,8 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
     private ImageView mInstanceIcon;
     private CheckBox mSharedDataCheckbox;
     private int mRecommendedIconSize;
+    /** Name of the static icon picked in the icon dialog, applied on save. Null when none was picked */
+    private String mPendingStaticIcon;
     private final ActivityResultLauncher<?> mCropperLauncher = CropperUtils.registerCropper(this, this);
 
     private List<String> mRenderNames;
@@ -107,7 +113,7 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         mInstanceIcon.setOnClickListener(v -> {
             // Fill recommended size on click to ge the most up to date data
             mRecommendedIconSize = Math.max(v.getWidth(), v.getHeight());
-            CropperUtils.startCropper(mCropperLauncher);
+            showIconDialog(v.getContext());
         });
 
         mSharedDataCheckbox.setOnCheckedChangeListener((v,checked) ->{
@@ -125,6 +131,60 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         }else {
             loadValues(selectedInstance, context);
         }
+    }
+
+    /** One choice of the icon dialog, a null name stands for the gallery */
+    private static final class IconOption {
+        @Nullable final String name;
+        @StringRes final int label;
+        @DrawableRes final int icon;
+
+        IconOption(@Nullable String name, @StringRes int label, @DrawableRes int icon) {
+            this.name = name;
+            this.label = label;
+            this.icon = icon;
+        }
+    }
+
+    private void showIconDialog(@NonNull Context context) {
+        List<IconOption> options = new ArrayList<>();
+        options.add(new IconOption(null, R.string.instance_icon_gallery, R.drawable.ic_nav_gallery));
+        options.add(staticIconOption("fabric", R.string.search_filter_fabric));
+        options.add(staticIconOption("forge", R.string.search_filter_forge));
+        options.add(staticIconOption("quilt", R.string.search_filter_quilt));
+        options.add(staticIconOption("neoforge", R.string.search_filter_neoforge));
+        options.add(staticIconOption(InstanceIconProvider.FALLBACK_ICON_NAME, R.string.global_default));
+
+        ArrayAdapter<IconOption> adapter = new ArrayAdapter<IconOption>(context, 0, options) {
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                View row = convertView != null ? convertView : LayoutInflater.from(getContext())
+                        .inflate(R.layout.item_instance_icon_option, parent, false);
+                IconOption option = getItem(position);
+                ((ImageView) row.findViewById(R.id.instance_icon_option_image)).setImageResource(option.icon);
+                ((TextView) row.findViewById(R.id.instance_icon_option_label)).setText(option.label);
+                return row;
+            }
+        };
+
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.instance_icon_dialog_title)
+                .setAdapter(adapter, (dialog, which) -> {
+                    IconOption option = options.get(which);
+                    if(option.name == null) CropperUtils.startCropper(mCropperLauncher);
+                    else pickStaticIcon(option.name);
+                })
+                .show();
+    }
+
+    private IconOption staticIconOption(String name, @StringRes int label) {
+        return new IconOption(name, label, InstanceIconProvider.getStaticIconResource(name));
+    }
+
+    private void pickStaticIcon(@NonNull String name) {
+        mPendingStaticIcon = name;
+        mInstanceIcon.setImageDrawable(InstanceIconProvider.fetchStaticIconByName(getResources(), name));
     }
 
     private View.OnClickListener getControlSelectListener() {
@@ -212,6 +272,7 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         else mInstance.renderer = mRenderNames.get(mDefaultRenderer.getSelectedItemPosition());
 
         try {
+            if(mPendingStaticIcon != null) mInstance.useStaticIcon(mPendingStaticIcon);
             if(!newName.isEmpty() && !newName.equals(mInstance.name))
                 Instances.renameInstanceDirectory(mInstance, newName);
             mInstance.name = newName;
@@ -233,6 +294,8 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
 
     @Override
     public void onCropped(Bitmap contentBitmap) {
+        // The new file icon wins over any static icon picked before
+        mPendingStaticIcon = null;
         mInstanceIcon.setImageBitmap(contentBitmap);
         Log.i("bitmap", "w="+contentBitmap.getWidth() +" h="+contentBitmap.getHeight());
         try {

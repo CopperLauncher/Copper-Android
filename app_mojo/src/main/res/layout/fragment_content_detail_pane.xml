@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Left pane of the landscape two-pane main menu: back button on top, then the header and the
-     buttons that pick what the right pane shows (Description, Gallery, Changelog, Versions).
-     The right pane is fragment_content_detail_right.xml. -->
+<!-- Left pane of the landscape two-pane main menu: back button on top, then the header card and
+     the navigation items that pick what the right pane shows (Description, Gallery, Changelog,
+     Versions). The right pane is fragment_content_detail_right.xml. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -30,46 +30,138 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <include layout="@layout/content_detail_hero" />
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.Material3.CardView.Filled"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/padding_moderate"
+                app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
 
-            <com.google.android.material.button.MaterialButtonToggleGroup
+                <include layout="@layout/content_detail_hero" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
                 android:id="@+id/content_nav_group"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="@dimen/padding_heavy"
-                android:layout_marginVertical="@dimen/padding_medium"
                 android:orientation="vertical"
-                app:selectionRequired="true"
-                app:singleSelection="true">
+                android:paddingHorizontal="@dimen/padding_moderate"
+                android:paddingVertical="@dimen/padding_medium">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/content_nav_description"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/content_tab_description" />
+            <LinearLayout
+                android:id="@+id/content_nav_description"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_44sdp"
+                android:layout_marginVertical="@dimen/padding_small"
+                android:background="@drawable/bg_nav_item"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/padding_large">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/content_nav_gallery"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/content_tab_gallery" />
+                <ImageView
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_nav_description" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/content_nav_changelog"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/content_tab_changelog" />
+                    android:layout_marginStart="@dimen/padding_heavy"
+                    android:layout_weight="1"
+                    android:maxLines="1"
+                    android:text="@string/content_tab_description"
+                    android:textAppearance="?attr/textAppearanceLabelLarge" />
+            </LinearLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/content_nav_versions"
-                    style="?attr/materialButtonOutlinedStyle"
-                    android:layout_width="match_parent"
+            <LinearLayout
+                android:id="@+id/content_nav_gallery"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_44sdp"
+                android:layout_marginVertical="@dimen/padding_small"
+                android:background="@drawable/bg_nav_item"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/padding_large">
+
+                <ImageView
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_nav_gallery" />
+
+                <TextView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/content_tab_versions" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
+                    android:layout_marginStart="@dimen/padding_heavy"
+                    android:layout_weight="1"
+                    android:maxLines="1"
+                    android:text="@string/content_tab_gallery"
+                    android:textAppearance="?attr/textAppearanceLabelLarge" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/content_nav_changelog"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_44sdp"
+                android:layout_marginVertical="@dimen/padding_small"
+                android:background="@drawable/bg_nav_item"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/padding_large">
+
+                <ImageView
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_nav_changelog" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_heavy"
+                    android:layout_weight="1"
+                    android:maxLines="1"
+                    android:text="@string/content_tab_changelog"
+                    android:textAppearance="?attr/textAppearanceLabelLarge" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/content_nav_versions"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/_44sdp"
+                android:layout_marginVertical="@dimen/padding_small"
+                android:background="@drawable/bg_nav_item"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/padding_large">
+
+                <ImageView
+                    android:layout_width="@dimen/_20sdp"
+                    android:layout_height="@dimen/_20sdp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_nav_versions" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/padding_heavy"
+                    android:layout_weight="1"
+                    android:maxLines="1"
+                    android:text="@string/content_tab_versions"
+                    android:textAppearance="?attr/textAppearanceLabelLarge" />
+            </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

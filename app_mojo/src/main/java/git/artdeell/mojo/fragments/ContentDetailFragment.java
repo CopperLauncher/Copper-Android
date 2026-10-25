@@ -1,6 +1,7 @@
 package git.artdeell.mojo.fragments;
 
 import android.app.Dialog;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.text.method.LinkMovementMethod;
@@ -21,7 +22,6 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.imageview.ShapeableImageView;
 
@@ -53,7 +53,7 @@ import java.util.concurrent.Future;
  * <ul>
  *   <li>Landscape: two instances of this fragment, see {@link MainMenuFragment#openContentDetail()}.
  *   {@link #MODE_LEFT} is the left pane (back button, logo, name and the Description / Gallery /
- *   Changelog / Versions buttons), {@link #MODE_RIGHT} is the right pane that shows what the
+ *   Changelog / Versions navigation items), {@link #MODE_RIGHT} is the right pane that shows what the
  *   buttons picked, the versions by default. The picked section lives in {@link ContentSession}.</li>
  *   <li>Portrait ({@link #MODE_FULL}): a full screen with the same sections as tabs.</li>
  * </ul>
@@ -213,20 +213,34 @@ public class ContentDetailFragment extends Fragment {
         mSession.getChangelog().observe(getViewLifecycleOwner(), this::onChangelog);
     }
 
-    /** The buttons of the left pane, they decide what the right pane shows */
+    /** The navigation items of the left pane, they decide what the right pane shows */
     private void setupNav(View view) {
-        final int[] buttons = {R.id.content_nav_description, R.id.content_nav_gallery,
+        final int[] ids = {R.id.content_nav_description, R.id.content_nav_gallery,
                 R.id.content_nav_changelog, R.id.content_nav_versions};
-        MaterialButtonToggleGroup group = view.findViewById(R.id.content_nav_group);
-        group.addOnButtonCheckedListener((g, checkedId, isChecked) -> {
-            if (!isChecked) return;
-            for (int tab = 0; tab < buttons.length; tab++) {
-                if (buttons[tab] == checkedId) mSession.setSelectedTab(tab);
-            }
-        });
+        final ViewGroup[] items = new ViewGroup[ids.length];
+        for (int tab = 0; tab < ids.length; tab++) {
+            final int picked = tab;
+            items[tab] = view.findViewById(ids[tab]);
+            items[tab].setOnClickListener(v -> mSession.setSelectedTab(picked));
+        }
         mSession.getSelectedTab().observe(getViewLifecycleOwner(), tab -> {
-            if (tab != null && tab >= 0 && tab < buttons.length) group.check(buttons[tab]);
+            if (tab != null && tab >= 0 && tab < items.length) markNav(items, tab);
         });
+    }
+
+    /** Fills the picked item with the secondary container, same as a Material 3 navigation drawer */
+    private static void markNav(ViewGroup[] items, int tab) {
+        int selectedColor = MaterialColors.getColor(items[0],
+                com.google.android.material.R.attr.colorOnSecondaryContainer);
+        int normalColor = MaterialColors.getColor(items[0],
+                com.google.android.material.R.attr.colorOnSurfaceVariant);
+        for (int i = 0; i < items.length; i++) {
+            boolean picked = i == tab;
+            int color = picked ? selectedColor : normalColor;
+            items[i].setSelected(picked);
+            ((ImageView) items[i].getChildAt(0)).setImageTintList(ColorStateList.valueOf(color));
+            ((TextView) items[i].getChildAt(1)).setTextColor(color);
+        }
     }
 
     @Override
@@ -430,7 +444,8 @@ public class ContentDetailFragment extends Fragment {
     private int bodyWidth(View target) {
         if (target.getWidth() > 0) return target.getWidth();
         int screen = getResources().getDisplayMetrics().widthPixels;
-        int padding = getResources().getDimensionPixelSize(R.dimen.padding_heavy) * 2;
+        int padding = getResources().getDimensionPixelSize(
+                mMode == MODE_RIGHT ? R.dimen.padding_large : R.dimen.padding_heavy) * 2;
         return Math.max(1, (mMode == MODE_RIGHT ? screen / 2 : screen) - padding);
     }
 

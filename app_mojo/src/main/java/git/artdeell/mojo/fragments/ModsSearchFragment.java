@@ -231,9 +231,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         mModItemAdapter.performSearchQuery(mSearchFilters);
     }
 
-    /** Public so {@link ContentPickerFragment}'s left-pane filter button (landscape only)
-     *  can trigger the same dialog as this fragment's own (now hidden in landscape)
-     *  search_mod_filter button. */
+    /** Opens the filter dialog, the search_mod_filter button of the search bar calls it. */
     public void displayFilterDialog() {
         boolean showLoaderFilter = supportsLoaderFilter();
 
@@ -257,7 +255,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 (engine, version, loader) -> applyFilters(engine, version, loader));
     }
 
-    // ── Filter access, used by the inline filter cards of ContentPickerFragment ──
+    // ── Filter access ─────────────────────────────────────────────────────────
 
     public int getEngine() { return mSearchFilters.engine; }
 

@@ -86,6 +86,20 @@ public class Instance extends DisplayInstance {
         }
     }
 
+    /**
+     * Switch the instance to one of the static icons. The custom icon file takes priority over
+     * the static icon, so it is deleted.
+     * @param name the static icon name, see {@link InstanceIconProvider}
+     * @throws IOException when the custom icon file can't be deleted
+     */
+    public void useStaticIcon(String name) throws IOException {
+        File customIcon = getInstanceIconLocation();
+        if(customIcon.exists() && !customIcon.delete()) {
+            throw new IOException("Failed to delete the custom icon " + customIcon);
+        }
+        icon = name;
+    }
+
     public String getLaunchRenderer() {
         if(Tools.isValidString(renderer)) return renderer;
         return LauncherPreferences.PREF_RENDERER;

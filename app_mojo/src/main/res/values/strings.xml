@@ -772,4 +772,6 @@
     <string name="filter_change">Change</string>
     <string name="filter_clear_version">Clear the version</string>
     <string name="filter_reset">Reset</string>
+    <string name="instance_icon_dialog_title">Instance icon</string>
+    <string name="instance_icon_gallery">Choose from gallery</string>
 </resources>

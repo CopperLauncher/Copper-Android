@@ -101,10 +101,28 @@ public class InstanceIconProvider {
         return ResourcesCompat.getDrawable(resources, staticIconResource, null);
     }
 
-    private static int getStaticIconResource(String icon) {
+    /**
+     * Get the drawable resource of a static icon.
+     * @param icon static icon name
+     * @return the drawable resource id, -1 when there is no such static icon
+     */
+    public static int getStaticIconResource(String icon) {
         Integer iconResource = sStaticIcons.get(icon);
         if(iconResource == null) return -1;
         return iconResource;
+    }
+
+    /**
+     * Fetch a static icon by its name. Every call returns its own Drawable, see {@link #fetchIcon}.
+     * @param resources the Resources object, used for creating drawables
+     * @param name static icon name
+     * @return the icon drawable, the fallback icon when there is no such static icon
+     */
+    public static @NonNull Drawable fetchStaticIconByName(Resources resources, @NonNull String name) {
+        Drawable icon = getStaticIcon(resources, name);
+        if(icon == null) icon = fetchFallbackIcon(resources);
+        Drawable.ConstantState state = icon.getConstantState();
+        return state != null ? state.newDrawable(resources) : icon;
     }
 
     /**
