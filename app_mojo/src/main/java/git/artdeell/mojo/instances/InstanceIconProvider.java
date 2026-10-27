@@ -42,7 +42,7 @@ public class InstanceIconProvider {
     public static @NonNull Drawable fetchIcon(Resources resources, @NonNull DisplayInstance instance) {
         Drawable cachedIcon = fetchCachedIcon(resources, instance);
         Drawable.ConstantState state = cachedIcon.getConstantState();
-        return state != null ? state.newDrawable(resources) : cachedIcon;
+        return new RoundedIconDrawable(state != null ? state.newDrawable(resources) : cachedIcon);
     }
 
     private static @NonNull Drawable fetchCachedIcon(Resources resources, @NonNull DisplayInstance instance) {
@@ -122,7 +122,7 @@ public class InstanceIconProvider {
         Drawable icon = getStaticIcon(resources, name);
         if(icon == null) icon = fetchFallbackIcon(resources);
         Drawable.ConstantState state = icon.getConstantState();
-        return state != null ? state.newDrawable(resources) : icon;
+        return new RoundedIconDrawable(state != null ? state.newDrawable(resources) : icon);
     }
 
     /**

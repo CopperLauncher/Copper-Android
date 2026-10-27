@@ -231,7 +231,8 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         mModItemAdapter.performSearchQuery(mSearchFilters);
     }
 
-    /** Opens the filter dialog, the search_mod_filter button of the search bar calls it. */
+    /** Opens the filter dialog. The search bar button calls it in portrait, in landscape the filter
+     *  button of ContentPickerFragment's left pane does (layout-land hides the search bar button). */
     public void displayFilterDialog() {
         boolean showLoaderFilter = supportsLoaderFilter();
 
@@ -250,6 +251,11 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 if (showLoaderFilter && !info.loader.isEmpty()) options.loader = info.loader;
             }
         }
+
+        options.showCategories = true;
+        options.category = mSearchFilters.category;
+        options.categoryProvider = engine -> mModpackApi.getCategories(mSearchFilters.forCategories(engine));
+        options.onCategoryApply = category -> mSearchFilters.category = category;
 
         SearchFilterDialog.show(requireContext(), options,
                 (engine, version, loader) -> applyFilters(engine, version, loader));

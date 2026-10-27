@@ -54,8 +54,16 @@ public class ContentPickerFragment extends Fragment {
                     });
                 });
             } else {
-                // Browse mode: the filter button is in the search bar of the results
-                filterButton.setVisibility(View.GONE);
+                // Browse mode: same button, same place, it opens the filters of the open browser
+                filterButton.setOnClickListener(v -> {
+                    Fragment results = getParentFragmentManager().findFragmentById(R.id.right_pane_container);
+                    if (results instanceof ModsSearchFragment) {
+                        ((ModsSearchFragment) results).displayFilterDialog();
+                    } else {
+                        Toast.makeText(requireContext(), R.string.content_picker_filter_pick_type,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         }
 

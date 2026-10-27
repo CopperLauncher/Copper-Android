@@ -26,4 +26,16 @@ public class SearchFilters {
      */
     public ContentType contentType = ContentType.MOD;
 
+    /** Only content in this category, null for any category */
+    @Nullable public ContentCategory category;
+
+    /** Filters that describe which categories exist for this kind of content on the given engine */
+    public SearchFilters forCategories(int categoryEngine) {
+        SearchFilters filters = new SearchFilters();
+        filters.isModpack = isModpack;
+        filters.contentType = contentType;
+        filters.engine = categoryEngine;
+        return filters;
+    }
+
 }

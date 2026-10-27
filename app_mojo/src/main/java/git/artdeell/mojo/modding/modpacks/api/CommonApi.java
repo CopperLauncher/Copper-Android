@@ -9,6 +9,7 @@ import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.modding.modpacks.api.modloader.LoaderInstaller;
 import git.artdeell.mojo.modding.modpacks.models.Constants;
+import git.artdeell.mojo.modding.modpacks.models.ContentCategory;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
 import git.artdeell.mojo.modding.modpacks.models.SearchFilters;
@@ -20,7 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.zip.ZipEntry;
@@ -72,6 +75,34 @@ public class CommonApi implements ModpackApi {
             case Constants.ENGINE_BOTH:
             default:                          return true;
         }
+    }
+
+    /**
+     * The categories of every engine the filters ask for. A category both engines have shows up
+     * once and filters both, the ones that only one engine has stay in the list after them.
+     */
+    @Override
+    public List<ContentCategory> getCategories(SearchFilters searchFilters) {
+        Future<List<ContentCategory>>[] futures = new Future[mModpackApis.length];
+        for (int i = 0; i < mModpackApis.length; i++) {
+            if (!isEngineIncluded(mModpackApiSources[i], searchFilters.engine)) continue;
+            final ModpackApi api = mModpackApis[i];
+            futures[i] = MojoApplication.sExecutorService.submit(() -> api.getCategories(searchFilters));
+        }
+        Map<String, ContentCategory> merged = new LinkedHashMap<>();
+        for (Future<List<ContentCategory>> future : futures) {
+            if (future == null) continue;
+            try {
+                for (ContentCategory category : future.get()) {
+                    ContentCategory known = merged.get(category.getKey());
+                    merged.put(category.getKey(), known == null ? category : known.merge(category));
+                }
+            } catch (Exception e) {
+                // The categories of the other engine are still good
+                e.printStackTrace();
+            }
+        }
+        return new ArrayList<>(merged.values());
     }
 
     @Override

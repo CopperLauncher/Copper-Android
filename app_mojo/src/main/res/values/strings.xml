@@ -774,4 +774,9 @@
     <string name="filter_reset">Reset</string>
     <string name="instance_icon_dialog_title">Instance icon</string>
     <string name="instance_icon_gallery">Choose from gallery</string>
+    <string name="filter_section_category">Category</string>
+    <string name="filter_category_any">Any</string>
+    <string name="filter_category_loading">Loading categories…</string>
+    <string name="filter_category_unavailable">Couldn\'t load the categories</string>
+    <string name="content_picker_filter_pick_type">Pick mods, resource packs or shader packs first</string>
 </resources>

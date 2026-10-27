@@ -13,7 +13,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import git.artdeell.mojo.Tools;
@@ -26,6 +29,7 @@ import git.artdeell.mojo.modding.modpacks.api.modloader.FabriclikeLoaderInstalle
 import git.artdeell.mojo.modding.modpacks.api.modloader.ForgelikeLoaderInstaller;
 import git.artdeell.mojo.modding.modpacks.api.modloader.LoaderInstaller;
 import git.artdeell.mojo.modding.modpacks.models.Constants;
+import git.artdeell.mojo.modding.modpacks.models.ContentCategory;
 import git.artdeell.mojo.modding.modpacks.models.CurseManifest;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
@@ -59,6 +63,14 @@ public class CurseforgeApi implements ModpackApi{
     public SearchResult searchMod(SearchFilters searchFilters, SearchResult previousPageResult) {
         CurseforgeSearchResult curseforgeSearchResult = (CurseforgeSearchResult) previousPageResult;
 
+        // A category CurseForge doesn't have can't match anything here
+        if (searchFilters.category != null && searchFilters.category.curseforgeId == 0) {
+            CurseforgeSearchResult emptyResult = curseforgeSearchResult != null ? curseforgeSearchResult : new CurseforgeSearchResult();
+            emptyResult.results = new ModItem[0];
+            emptyResult.totalResultCount = 0;
+            return emptyResult;
+        }
+
         HashMap<String, Object> params = new HashMap<>();
         params.put("gameId", CURSEFORGE_MINECRAFT_GAME_ID);
         params.put("classId", searchFilters.isModpack
@@ -66,6 +78,8 @@ public class CurseforgeApi implements ModpackApi{
         params.put("searchFilter", searchFilters.name);
         params.put("sortField", CURSEFORGE_SORT_RELEVANCY);
         params.put("sortOrder", "desc");
+        if(searchFilters.category != null)
+            params.put("categoryId", searchFilters.category.curseforgeId);
         if(searchFilters.mcVersion != null && !searchFilters.mcVersion.isEmpty())
             params.put("gameVersion", searchFilters.mcVersion);
         if(searchFilters.modLoader != null && !searchFilters.modLoader.isEmpty()) {
@@ -130,6 +144,42 @@ public class CurseforgeApi implements ModpackApi{
         curseforgeSearchResult.previousOffset += dataArray.size();
         return curseforgeSearchResult;
 
+    }
+
+    private static final Map<Integer, List<ContentCategory>> sCategoryCache = new HashMap<>();
+
+    @Override
+    public List<ContentCategory> getCategories(SearchFilters searchFilters) {
+        int classId = searchFilters.isModpack
+                ? CURSEFORGE_MODPACK_CLASS_ID : searchFilters.contentType.curseforgeClassId;
+        synchronized (sCategoryCache) {
+            List<ContentCategory> cached = sCategoryCache.get(classId);
+            if (cached != null) return cached;
+        }
+        HashMap<String, Object> params = new HashMap<>();
+        params.put("gameId", CURSEFORGE_MINECRAFT_GAME_ID);
+        params.put("classId", classId);
+        JsonObject response = mApiHandler.get("categories", params, JsonObject.class);
+        if (response == null) return Collections.emptyList();
+        JsonArray data = response.getAsJsonArray("data");
+        if (data == null) return Collections.emptyList();
+        List<ContentCategory> categories = new ArrayList<>(data.size());
+        for (JsonElement element : data) {
+            if (!element.isJsonObject()) continue;
+            JsonObject category = element.getAsJsonObject();
+            // The class itself ("Mods", "Modpacks") comes back too, it is not a category
+            JsonElement isClass = category.get("isClass");
+            if (isClass != null && !isClass.isJsonNull() && isClass.getAsBoolean()) continue;
+            String name = GsonJsonUtils.getStringSafe(category, "name");
+            long id = GsonJsonUtils.getLongSafe(category, "id", 0);
+            if (name == null || name.isEmpty() || id <= 0) continue;
+            categories.add(new ContentCategory(name, null, (int) id));
+        }
+        Collections.sort(categories, (a, b) -> a.name.compareToIgnoreCase(b.name));
+        synchronized (sCategoryCache) {
+            sCategoryCache.put(classId, categories);
+        }
+        return categories;
     }
 
     @Override

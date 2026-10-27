@@ -2,6 +2,7 @@ package git.artdeell.mojo.fragments;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -36,6 +37,7 @@ import git.artdeell.mojo.multirt.MultiRTUtils;
 import git.artdeell.mojo.multirt.RTSpinnerAdapter;
 import git.artdeell.mojo.multirt.Runtime;
 import git.artdeell.mojo.instances.InstanceIconProvider;
+import git.artdeell.mojo.instances.RoundedIconDrawable;
 import git.artdeell.mojo.utils.profiles.VersionSelectorDialog;
 import git.artdeell.mojo.utils.CropperUtils;
 
@@ -296,7 +298,7 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
     public void onCropped(Bitmap contentBitmap) {
         // The new file icon wins over any static icon picked before
         mPendingStaticIcon = null;
-        mInstanceIcon.setImageBitmap(contentBitmap);
+        mInstanceIcon.setImageDrawable(new RoundedIconDrawable(new BitmapDrawable(getResources(), contentBitmap)));
         Log.i("bitmap", "w="+contentBitmap.getWidth() +" h="+contentBitmap.getHeight());
         try {
             mInstance.encodeNewIcon(contentBitmap);

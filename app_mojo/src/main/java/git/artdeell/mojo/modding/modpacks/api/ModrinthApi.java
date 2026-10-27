@@ -25,6 +25,7 @@ import git.artdeell.mojo.modding.modpacks.api.modloader.ForgelikeLoaderInstaller
 import git.artdeell.mojo.modding.modpacks.api.modloader.LoaderInstaller;
 import git.artdeell.mojo.modding.modpacks.api.modloader.Lwjgl3ifyLoaderInstaller;
 import git.artdeell.mojo.modding.modpacks.models.Constants;
+import git.artdeell.mojo.modding.modpacks.models.ContentCategory;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
 import git.artdeell.mojo.modding.modpacks.models.ModrinthIndex;
@@ -55,6 +56,14 @@ public class ModrinthApi implements ModpackApi{
         }
 
 
+        // A category Modrinth doesn't have can't match anything here
+        if (searchFilters.category != null && searchFilters.category.modrinthId == null) {
+            ModrinthSearchResult emptyResult = modrinthSearchResult != null ? modrinthSearchResult : new ModrinthSearchResult();
+            emptyResult.results = new ModItem[0];
+            emptyResult.totalResultCount = 0;
+            return emptyResult;
+        }
+
         // Build the facets filters
         HashMap<String, Object> params = new HashMap<>();
         StringBuilder facetString = new StringBuilder();
@@ -65,6 +74,8 @@ public class ModrinthApi implements ModpackApi{
             facetString.append(String.format(",[\"versions:%s\"]", searchFilters.mcVersion));
         if(searchFilters.modLoader != null && !searchFilters.modLoader.isEmpty())
             facetString.append(String.format(",[\"categories:%s\"]", searchFilters.modLoader));
+        if(searchFilters.category != null)
+            facetString.append(String.format(",[\"categories:%s\"]", searchFilters.category.modrinthId));
         facetString.append("]");
         params.put("facets", facetString.toString());
         params.put("query", searchFilters.name);
@@ -97,6 +108,33 @@ public class ModrinthApi implements ModpackApi{
         modrinthSearchResult.results = items;
         modrinthSearchResult.totalResultCount = response.get("total_hits").getAsInt();
         return modrinthSearchResult;
+    }
+
+    private static final Map<String, List<ContentCategory>> sCategoryCache = new HashMap<>();
+
+    @Override
+    public List<ContentCategory> getCategories(SearchFilters searchFilters) {
+        String projectType = searchFilters.isModpack ? "modpack" : searchFilters.contentType.modrinthType;
+        synchronized (sCategoryCache) {
+            List<ContentCategory> cached = sCategoryCache.get(projectType);
+            if (cached != null) return cached;
+        }
+        // Every category of every kind of project, the ones of this kind are picked out below
+        JsonArray response = mApiHandler.get("tag/category", JsonArray.class);
+        if (response == null) return new ArrayList<>();
+        List<ContentCategory> categories = new ArrayList<>();
+        for (JsonElement element : response) {
+            if (!element.isJsonObject()) continue;
+            JsonObject category = element.getAsJsonObject();
+            String type = GsonJsonUtils.getStringSafe(category, "project_type");
+            String slug = GsonJsonUtils.getStringSafe(category, "name");
+            if (slug == null || slug.isEmpty() || !projectType.equals(type)) continue;
+            categories.add(new ContentCategory(ContentCategory.prettify(slug), slug, 0));
+        }
+        synchronized (sCategoryCache) {
+            sCategoryCache.put(projectType, categories);
+        }
+        return categories;
     }
 
     @Override
