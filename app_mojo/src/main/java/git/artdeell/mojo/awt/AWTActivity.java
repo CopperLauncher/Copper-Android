@@ -3,6 +3,7 @@ package git.artdeell.mojo.awt;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.annotation.SuppressLint;
 import android.net.Uri;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -32,6 +33,7 @@ import git.artdeell.mojo.multirt.MultiRTUtils;
 import git.artdeell.mojo.multirt.Runtime;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.utils.JREUtils;
+import git.artdeell.mojo.utils.cursor.CursorStyle;
 import git.artdeell.mojo.utils.MathUtils;
 import git.artdeell.mojo.utils.jre.JavaRunner;
 import git.artdeell.mojo.utils.jre.classfile.ClassFormatException;
@@ -106,9 +108,11 @@ public class AWTActivity extends BaseActivity implements View.OnTouchListener {
         findViewById(R.id.installmod_window_moveright).setOnTouchListener(this);
 
         mMousePointerImageView.post(() -> {
+            Drawable pointer = CursorStyle.load(this);
+            mMousePointerImageView.setImageDrawable(pointer);
             ViewGroup.LayoutParams params = mMousePointerImageView.getLayoutParams();
-            params.width = (int) (36 * LauncherPreferences.PREF_MOUSESCALE);
-            params.height = (int) (54 * LauncherPreferences.PREF_MOUSESCALE);
+            params.width = (int) (pointer.getBounds().width() * LauncherPreferences.PREF_MOUSESCALE);
+            params.height = (int) (pointer.getBounds().height() * LauncherPreferences.PREF_MOUSESCALE);
         });
 
         mTouchPad.setOnTouchListener(new View.OnTouchListener() {

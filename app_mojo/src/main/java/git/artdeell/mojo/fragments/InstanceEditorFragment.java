@@ -32,7 +32,9 @@ import git.artdeell.mojo.extra.ExtraConstants;
 import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.game.renderer.RendererCache;
 import git.artdeell.mojo.instances.Instance;
+import git.artdeell.mojo.instances.InstanceShortcut;
 import git.artdeell.mojo.instances.Instances;
+import git.artdeell.mojo.modding.modpacks.ExportMrpackDialog;
 import git.artdeell.mojo.multirt.MultiRTUtils;
 import git.artdeell.mojo.multirt.RTSpinnerAdapter;
 import git.artdeell.mojo.multirt.Runtime;
@@ -51,7 +53,7 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
 
     private Instance mInstance;
     private String mSelectedControlLayout;
-    private Button mSaveButton, mDeleteButton, mControlSelectButton, mVersionSelectButton;
+    private Button mSaveButton, mDeleteButton, mControlSelectButton, mVersionSelectButton, mExportButton, mShortcutButton;
     private Spinner mDefaultRuntime, mDefaultRenderer;
     private EditText mDefaultName, mDefaultJvmArgument;
     private TextView mDefaultVersion, mDefaultControl;
@@ -96,6 +98,12 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
             save();
             Tools.backToMainMenu(requireActivity());
         });
+
+        mExportButton.setOnClickListener(v -> {
+            if(mInstance != null) ExportMrpackDialog.show(requireActivity(), mInstance);
+        });
+
+        mShortcutButton.setOnClickListener(v -> InstanceShortcut.create(requireContext(), mInstance));
 
         mDeleteButton.setOnClickListener(v -> {
             DeleteConfirmDialogFragment dialogFragment = new DeleteConfirmDialogFragment();
@@ -250,6 +258,8 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
 
         mSaveButton = view.findViewById(R.id.vprof_editor_save_button);
         mDeleteButton = view.findViewById(R.id.vprof_editor_delete_button);
+        mExportButton = view.findViewById(R.id.vprof_editor_export_button);
+        mShortcutButton = view.findViewById(R.id.vprof_editor_shortcut_button);
         mControlSelectButton = view.findViewById(R.id.vprof_editor_ctrl_button);
         mVersionSelectButton = view.findViewById(R.id.vprof_editor_version_button);
         mInstanceIcon = view.findViewById(R.id.vprof_editor_instance_icon);

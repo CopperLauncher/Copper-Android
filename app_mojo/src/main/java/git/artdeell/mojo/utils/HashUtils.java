@@ -7,6 +7,7 @@ import org.apache.commons.codec.binary.Hex;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -56,5 +57,30 @@ public class HashUtils {
         }catch (DecoderException e) {
             throw new IOException("Bad SHA-1 hash: "+sourceSHA+" for file "+f.getName());
         }
+    }
+
+    /** Computes the lowercase hex SHA-1 digest of a file. */
+    public static String sha1Hex(File file) throws IOException {
+        return hashHex(file, "SHA-1");
+    }
+
+    /** Computes the lowercase hex SHA-512 digest of a file. */
+    public static String sha512Hex(File file) throws IOException {
+        return hashHex(file, "SHA-512");
+    }
+
+    private static String hashHex(File file, String algorithm) throws IOException {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance(algorithm);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException("Hash algorithm not available: " + algorithm, e);
+        }
+        byte[] buffer = new byte[8192];
+        try (InputStream inputStream = new FileInputStream(file)) {
+            int read;
+            while ((read = inputStream.read(buffer)) != -1) digest.update(buffer, 0, read);
+        }
+        return Hex.encodeHexString(digest.digest());
     }
 }

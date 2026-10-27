@@ -38,6 +38,7 @@ import git.artdeell.mojo.fragments.SelectAuthFragment;
 import git.artdeell.mojo.fragments.SettingsHostFragment;
 import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.InstanceInstaller;
+import git.artdeell.mojo.instances.InstanceShortcut;
 import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.utils.lifecycle.ContextAwareDoneListener;
 import git.artdeell.mojo.utils.lifecycle.ContextExecutor;
@@ -55,6 +56,7 @@ import git.artdeell.mojo.utils.NotificationUtils;
 public class LauncherActivity extends BaseActivity {
     public static final String SETTING_FRAGMENT_TAG = "SETTINGS_FRAGMENT";
 
+    private static final long SHORTCUT_LAUNCH_DELAY_MS = 500L;
     private FragmentContainerView mFragmentView;
     private ImageButton mSettingsButton;
     private ProgressLayout mProgressLayout;
@@ -181,6 +183,7 @@ public class LauncherActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        boolean launchFromShortcut = savedInstanceState == null && selectShortcutInstance(getIntent());
         setContentView(R.layout.activity_mojo_ui);
         MoJsonDownloader.prepareSubstitutionMap(getAssets());
 
@@ -225,6 +228,22 @@ public class LauncherActivity extends BaseActivity {
         mProgressLayout.observe(ProgressLayout.DOWNLOAD_VERSION_LIST);
         mProgressLayout.observe(ProgressLayout.INSTANCE_INSTALL);
         mProgressLayout.observe(ProgressLayout.DATA_MIGRATION);
+
+        if(launchFromShortcut) {
+            mFragmentView.postDelayed(() -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true), SHORTCUT_LAUNCH_DELAY_MS);
+        }
+    }
+
+    /**
+     * Selects the instance requested by an instance shortcut intent.
+     * @return true if an instance was selected and should be launched
+     */
+    private static boolean selectShortcutInstance(Intent intent) {
+        if(intent == null || !InstanceShortcut.ACTION_LAUNCH_INSTANCE.equals(intent.getAction())) return false;
+        Instance instance = Instances.loadInstance(intent.getStringExtra(InstanceShortcut.EXTRA_INSTANCE_KEY));
+        if(instance == null) return false;
+        Instances.setSelectedInstance(instance);
+        return true;
     }
 
     @Override
