@@ -17,10 +17,9 @@ import java.io.File;
 public final class CursorStyle {
     public static final String PREF_PATH = "custom_cursor_path";
     public static final String PREF_STYLE_KEY = "custom_cursor_style_key";
+    public static final String KEY_CUSTOM = "custom";
     public static final String KEY_STANDARD = "standard";
-    public static final String KEY_ANI = "ani";
     public static final String KEY_CUSTOM_ANI = "custom_ani";
-    public static final String ASSET_ANI = "01-normal-select.ani";
 
     private static final int DEFAULT_WIDTH = 36;
     private static final int DEFAULT_HEIGHT = 54;
@@ -53,7 +52,6 @@ public final class CursorStyle {
         String key = LauncherPreferences.DEFAULT_PREF.getString(PREF_STYLE_KEY, KEY_STANDARD);
         String path = LauncherPreferences.DEFAULT_PREF.getString(PREF_PATH, null);
         if(KEY_STANDARD.equals(key)) return null;
-        if(KEY_ANI.equals(key)) return new AnimatedCursorDrawable(context, ASSET_ANI, true);
         if(path == null || !new File(path).isFile()) return null;
         if(KEY_CUSTOM_ANI.equals(key)) return new AnimatedCursorDrawable(context, path, false);
         return Drawable.createFromPath(path);

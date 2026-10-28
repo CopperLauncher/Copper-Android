@@ -1,25 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:minHeight="@dimen/_32sdp"
     android:paddingStart="@dimen/padding_medium"
-    android:paddingEnd="@dimen/padding_medium"
-    android:background="?attr/selectableItemBackground">
+    android:paddingEnd="@dimen/padding_medium">
 
     <View
         android:id="@+id/export_entry_indent"
         android:layout_width="0dp"
         android:layout_height="1dp" />
 
-    <CheckBox
+    <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/export_entry_checkbox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/padding_heavy"
-        android:buttonTint="?attr/colorPrimary" />
+        android:layout_marginEnd="@dimen/padding_medium"
+        app:buttonIconTint="?attr/colorSurface"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:saveEnabled="false" />
 
     <TextView
         android:id="@+id/export_entry_name"

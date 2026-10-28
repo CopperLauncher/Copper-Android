@@ -13,12 +13,39 @@
         android:gravity="center_horizontal"
         android:layout_marginBottom="40dp">
 
+        <LinearLayout
+            android:id="@+id/cursor_back_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:orientation="horizontal"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:layout_width="@dimen/_14sdp"
+                android:layout_height="@dimen/_14sdp"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_px_arrow_left" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_large"
+                android:text="@string/preference_back_title"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="@dimen/_12ssp" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/cursor_title"
             style="@style/TextAppearance.AppCompat.Title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/cursor_store_title"
+            android:text="@string/cursor_screen_title"
             android:textColor="?attr/colorOnSurface"
             android:layout_marginTop="@dimen/padding_large" />
 
@@ -27,7 +54,7 @@
             style="@style/TextAppearance.AppCompat.Subhead"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/cursor_store_subtitle"
+            android:text="@string/cursor_screen_subtitle"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:layout_marginTop="@dimen/padding_small"
             android:layout_marginBottom="@dimen/padding_large" />
@@ -37,116 +64,28 @@
             android:layout_width="match_parent"
             android:layout_marginBottom="@dimen/padding_large" />
 
-        <!-- Grid of Cursor Cards (4 Presets) -->
-        <GridLayout
+        <LinearLayout
+            android:id="@+id/card_cursor_standard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:columnCount="2"
-            android:rowCount="2"
-            android:useDefaultMargins="true"
-            android:alignmentMode="alignBounds"
+            android:background="@drawable/background_card"
+            android:orientation="vertical"
+            android:padding="@dimen/padding_medium"
+            android:gravity="center_horizontal"
             android:layout_marginBottom="@dimen/padding_medium">
-
-            <!-- Preset 1: Standard -->
-            <LinearLayout
-                android:id="@+id/card_cursor_standard"
-                android:layout_width="0dp"
+            <ImageView
+                android:id="@+id/preview_standard"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginBottom="8dp" />
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:background="@drawable/background_card"
-                android:orientation="vertical"
-                android:padding="@dimen/padding_medium"
-                android:gravity="center_horizontal"
-                android:layout_margin="4dp">
-                <ImageView
-                    android:id="@+id/preview_standard"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginBottom="8dp" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/cursor_preset_standard"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Preset 2: Sci-Fi Neon -->
-            <LinearLayout
-                android:id="@+id/card_cursor_scifi"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:background="@drawable/background_card"
-                android:orientation="vertical"
-                android:padding="@dimen/padding_medium"
-                android:gravity="center_horizontal"
-                android:layout_margin="4dp">
-                <ImageView
-                    android:id="@+id/preview_scifi"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginBottom="8dp" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/cursor_preset_neon"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Preset 3: Normal Select v3.0 (.cur) -->
-            <LinearLayout
-                android:id="@+id/card_cursor_v3"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:background="@drawable/background_card"
-                android:orientation="vertical"
-                android:padding="@dimen/padding_medium"
-                android:gravity="center_horizontal"
-                android:layout_margin="4dp">
-                <ImageView
-                    android:id="@+id/preview_v3"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginBottom="8dp" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/cursor_preset_v3"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Preset 4: Animated Select (.ani) -->
-            <LinearLayout
-                android:id="@+id/card_cursor_ani"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_columnWeight="1"
-                android:background="@drawable/background_card"
-                android:orientation="vertical"
-                android:padding="@dimen/padding_medium"
-                android:gravity="center_horizontal"
-                android:layout_margin="4dp">
-                <ImageView
-                    android:id="@+id/preview_ani"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginBottom="8dp" />
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/cursor_preset_animated"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </GridLayout>
+                android:text="@string/cursor_default_label"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <!-- Custom Card with upload and inline edit buttons -->
         <LinearLayout
@@ -194,8 +133,16 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:layout_marginStart="4dp"
+                    android:layout_marginHorizontal="4dp"
                     android:text="@string/cursor_btn_edit" />
+
+                <com.kdt.mcgui.MineButton
+                    android:id="@+id/btn_custom_reset"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="4dp"
+                    android:text="@string/cursor_btn_reset" />
             </LinearLayout>
         </LinearLayout>
 

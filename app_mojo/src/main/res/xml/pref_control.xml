@@ -101,7 +101,15 @@
             android:key="cursor_style_setting"
             android:title="@string/pref_cursor_style_title"
             android:summary="@string/pref_cursor_style_summary"
-            android:fragment="git.artdeell.mojo.fragments.CursorStoreFragment"
+            android:fragment="git.artdeell.mojo.fragments.CursorFragment"
+            android:icon="@drawable/ic_px_virtual_mouse"
+            />
+
+        <Preference
+            android:key="cursor_style_setting"
+            android:title="@string/pref_cursor_style_title"
+            android:summary="@string/pref_cursor_style_summary"
+            android:fragment="git.artdeell.mojo.fragments.CursorFragment"
             android:icon="@drawable/ic_px_virtual_mouse"
             />
 

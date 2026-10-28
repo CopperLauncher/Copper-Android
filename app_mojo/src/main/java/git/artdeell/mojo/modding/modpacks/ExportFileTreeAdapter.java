@@ -3,12 +3,13 @@ package git.artdeell.mojo.modding.modpacks;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.checkbox.MaterialCheckBox;
 
 import git.artdeell.mojo.R;
 
@@ -165,7 +166,7 @@ public class ExportFileTreeAdapter extends RecyclerView.Adapter<ExportFileTreeAd
 
     class RowHolder extends RecyclerView.ViewHolder {
         final View indentSpacer;
-        final CheckBox checkBox;
+        final MaterialCheckBox checkBox;
         final TextView nameView;
         final ImageView chevron;
 
@@ -186,6 +187,7 @@ public class ExportFileTreeAdapter extends RecyclerView.Adapter<ExportFileTreeAd
 
             checkBox.setOnCheckedChangeListener(null);
             checkBox.setChecked(effectiveChecked(node.relPath));
+            checkBox.jumpDrawablesToCurrentState();
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 setCheckedCascading(node, isChecked);
                 refreshVisibleDescendants(node);
@@ -200,7 +202,7 @@ public class ExportFileTreeAdapter extends RecyclerView.Adapter<ExportFileTreeAd
             } else {
                 chevron.setVisibility(View.INVISIBLE);
                 chevron.setOnClickListener(null);
-                itemView.setOnClickListener(null);
+                itemView.setOnClickListener(v -> checkBox.toggle());
             }
         }
     }

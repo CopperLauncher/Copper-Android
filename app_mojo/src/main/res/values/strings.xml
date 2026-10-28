@@ -797,12 +797,6 @@
     <string name="create_shortcut">Create shortcut</string>
     <string name="shortcut_created_toast">Shortcut created</string>
     <string name="shortcut_not_supported_toast">Shortcuts are not supported by this launcher</string>
-    <string name="cursor_store_title">Cursor Store</string>
-    <string name="cursor_store_subtitle">Select and customize the cursor for virtual mouse</string>
-    <string name="cursor_preset_standard">Standard</string>
-    <string name="cursor_preset_neon">Neon Ray</string>
-    <string name="cursor_preset_v3">Retro Sci-Fi Static</string>
-    <string name="cursor_preset_animated">Animated</string>
     <string name="cursor_user_custom">Custom (PNG/CUR/ANI)</string>
     <string name="cursor_btn_upload">Upload file</string>
     <string name="cursor_btn_edit">Edit</string>
@@ -820,7 +814,6 @@
     <string name="cursor_store_selected_standard">Standard cursor selected!</string>
     <string name="cursor_store_success">Cursor updated successfully!</string>
     <string name="cursor_store_error">Cursor selection error: </string>
-    <string name="cursor_store_fail_preset">Failed to load preset</string>
     <string name="cursor_store_file_empty">File is empty</string>
     <string name="cursor_store_invalid_format">Unsupported or invalid format. Please choose a valid PNG, CUR, or ANI file.</string>
     <string name="cursor_store_action_undone">Action undone</string>
@@ -834,6 +827,12 @@
     <string name="cursor_editor_flood_threshold_title">Flood threshold</string>
     <string name="cursor_editor_eraser_size_title">Eraser size</string>
     <string name="cursor_editor_pixels_cut">Cut pixels: %1$d</string>
-    <string name="pref_cursor_style_title">Cursor style</string>
-    <string name="pref_cursor_style_summary">Choose, upload and edit the virtual mouse pointer (PNG, CUR, ANI)</string>
+    <string name="pref_cursor_style_title">Custom cursor</string>
+    <string name="pref_cursor_style_summary">Upload, edit, test and reset your own virtual mouse pointer</string>
+    <string name="cursor_screen_title">Custom cursor</string>
+    <string name="cursor_screen_subtitle">Upload a PNG, CUR or ANI file, edit it and test it</string>
+    <string name="cursor_default_label">Default</string>
+    <string name="cursor_btn_reset">Reset</string>
+    <string name="cursor_reset_done">Default cursor restored</string>
+    <string name="cursor_no_custom">No custom cursor uploaded yet</string>
 </resources>

@@ -25,10 +25,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import git.artdeell.mojo.R;
+import git.artdeell.mojo.extra.ExtraConstants;
+import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.prefs.LauncherPreferences;
+import git.artdeell.mojo.utils.cursor.AnimatedCursorDrawable;
 import git.artdeell.mojo.utils.cursor.CursorParser;
+import git.artdeell.mojo.utils.cursor.CursorStyle;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -37,22 +43,16 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Stack;
 
-public class CursorStoreFragment extends Fragment {
-    public static final String TAG = "CursorStoreFragment";
+public class CursorFragment extends Fragment {
+    public static final String TAG = "CursorFragment";
 
-    // 4 Preset Cards
-    private View mCardStandard, mCardScifi, mCardV3, mCardAni;
-    private ImageView mPreviewStandard, mPreviewScifi, mPreviewV3, mPreviewAni;
+    private View mCardStandard;
+    private ImageView mPreviewStandard;
 
     // Custom Card
     private View mCardCustom;
     private ImageView mPreviewCustom;
-    private com.kdt.mcgui.MineButton mBtnCustomUpload, mBtnCustomEditCurrent;
-
-    // Generated bitmaps
-    private Bitmap mScifiBitmap;
-    private Bitmap mV3Bitmap;
-    private Bitmap mAniBitmap;
+    private com.kdt.mcgui.MineButton mBtnCustomUpload, mBtnCustomEditCurrent, mBtnCustomReset;
 
     // Test zone elements
     private SeekBar mSeekBarSize;
@@ -70,8 +70,7 @@ public class CursorStoreFragment extends Fragment {
     private SeekBar mSeekBrushOrThreshold;
     private com.kdt.mcgui.MineButton mBtnUndo;
 
-    // Editor State
-    private Bitmap mEditingBitmap;
+    private EditorState mState;
     private static final int MODE_NONE = 0;
     private static final int MODE_MANUAL_ERASER = 1;
     private static final int MODE_FLOOD_ERASE = 2;
@@ -80,40 +79,52 @@ public class CursorStoreFragment extends Fragment {
     private int mEraserRadius = 15;
     private int mThreshold = 45;
 
-    // Undo History Stack
-    private final Stack<Bitmap> mUndoStack = new Stack<>();
+    /** Keeps the bitmap being edited and its undo history alive across activity recreation */
+    public static class EditorState extends ViewModel {
+        Bitmap bitmap;
+        final Stack<Bitmap> undo = new Stack<>();
+
+        @Override
+        protected void onCleared() {
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+            while (!undo.isEmpty()) {
+                Bitmap b = undo.pop();
+                if (b != null && !b.isRecycled()) b.recycle();
+            }
+            bitmap = null;
+        }
+    }
 
     private final ActivityResultLauncher<String> mPickCustomCursor = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
             this::onCustomCursorPicked
     );
 
-    public CursorStoreFragment() {
-        super(R.layout.fragment_cursor_store);
+    public CursorFragment() {
+        super(R.layout.fragment_cursor);
     }
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        mState = new ViewModelProvider(this).get(EditorState.class);
+
+        view.findViewById(R.id.cursor_back_row).setOnClickListener(v ->
+                ExtraCore.setValue(ExtraConstants.BACK_PREFERENCE, "true"));
 
         // Grid cards
         mCardStandard = view.findViewById(R.id.card_cursor_standard);
-        mCardScifi = view.findViewById(R.id.card_cursor_scifi);
-        mCardV3 = view.findViewById(R.id.card_cursor_v3);
-        mCardAni = view.findViewById(R.id.card_cursor_ani);
         mCardCustom = view.findViewById(R.id.card_cursor_custom);
 
         // Previews
         mPreviewStandard = view.findViewById(R.id.preview_standard);
-        mPreviewScifi = view.findViewById(R.id.preview_scifi);
-        mPreviewV3 = view.findViewById(R.id.preview_v3);
-        mPreviewAni = view.findViewById(R.id.preview_ani);
         mPreviewCustom = view.findViewById(R.id.preview_custom);
 
         // Buttons
         mBtnCustomUpload = view.findViewById(R.id.btn_custom_upload);
         mBtnCustomEditCurrent = view.findViewById(R.id.btn_custom_edit_current);
+        mBtnCustomReset = view.findViewById(R.id.btn_custom_reset);
 
         // Test zone
         mSeekBarSize = view.findViewById(R.id.seek_cursor_size);
@@ -138,18 +149,14 @@ public class CursorStoreFragment extends Fragment {
         // Setup Photoshop Checkered Background
         setCheckboardBackground(mEditorCheckboardContainer);
 
-        // Load Preset Bitmaps and initialize
-        generateBitmaps();
-        setupPreviews();
+        mPreviewStandard.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, requireContext().getTheme()));
+        updateCustomPreview();
 
-        // Preset Clicks
-        mCardStandard.setOnClickListener(v -> selectCursor("standard"));
-        mCardScifi.setOnClickListener(v -> selectCursor("scifi"));
-        mCardV3.setOnClickListener(v -> selectPreset("v3", "Normal Select v3.0.cur"));
-        mCardAni.setOnClickListener(v -> selectPreset("ani", "01-normal-select.ani"));
+        mCardStandard.setOnClickListener(v -> selectStandard());
 
         // Custom Clicks
         mCardCustom.setOnClickListener(v -> selectCustomCursor());
+        mBtnCustomReset.setOnClickListener(v -> resetCustomCursor());
         mBtnCustomUpload.setOnClickListener(v -> mPickCustomCursor.launch("*/*"));
         mBtnCustomEditCurrent.setOnClickListener(v -> openEditorForCurrentCustom());
 
@@ -183,6 +190,7 @@ public class CursorStoreFragment extends Fragment {
         // Test pad touchscreen drags
         mCursorTestPad.setOnTouchListener((v, event) -> {
             int action = event.getAction();
+            updateParentIntercept(v, action);
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
                 mTestPointer.setVisibility(View.VISIBLE);
                 float x = event.getX() - (mTestPointer.getWidth() / 2f);
@@ -198,7 +206,8 @@ public class CursorStoreFragment extends Fragment {
 
         // Editor Painting / Flood-Fill Erasing Touch Interception
         mEditorCheckboard.setOnTouchListener((v, event) -> {
-            if (mEditingBitmap == null || mCurrentEditorMode == MODE_NONE) return false;
+            updateParentIntercept(v, event.getAction());
+            if (mState.bitmap == null || mCurrentEditorMode == MODE_NONE) return false;
             int action = event.getAction();
 
             float touchX = event.getX();
@@ -225,11 +234,11 @@ public class CursorStoreFragment extends Fragment {
                     boolean changed = false;
                     for (int x = (int) (bitmapX - mEraserRadius); x <= (int) (bitmapX + mEraserRadius); x++) {
                         for (int y = (int) (bitmapY - mEraserRadius); y <= (int) (bitmapY + mEraserRadius); y++) {
-                            if (x >= 0 && x < mEditingBitmap.getWidth() && y >= 0 && y < mEditingBitmap.getHeight()) {
+                            if (x >= 0 && x < mState.bitmap.getWidth() && y >= 0 && y < mState.bitmap.getHeight()) {
                                 double dist = Math.sqrt((x - bitmapX) * (x - bitmapX) + (y - bitmapY) * (y - bitmapY));
                                 if (dist <= mEraserRadius) {
-                                    if (mEditingBitmap.getPixel(x, y) != Color.TRANSPARENT) {
-                                        mEditingBitmap.setPixel(x, y, Color.TRANSPARENT);
+                                    if (mState.bitmap.getPixel(x, y) != Color.TRANSPARENT) {
+                                        mState.bitmap.setPixel(x, y, Color.TRANSPARENT);
                                         changed = true;
                                     }
                                 }
@@ -237,7 +246,7 @@ public class CursorStoreFragment extends Fragment {
                         }
                     }
                     if (changed) {
-                        mEditorCheckboard.setImageBitmap(mEditingBitmap);
+                        mEditorCheckboard.setImageBitmap(mState.bitmap);
                         mEditorCheckboard.invalidate();
                     }
                     return true;
@@ -246,7 +255,7 @@ public class CursorStoreFragment extends Fragment {
                 if (action == MotionEvent.ACTION_DOWN) {
                     int bx = (int) bitmapX;
                     int by = (int) bitmapY;
-                    if (bx >= 0 && bx < mEditingBitmap.getWidth() && by >= 0 && by < mEditingBitmap.getHeight()) {
+                    if (bx >= 0 && bx < mState.bitmap.getWidth() && by >= 0 && by < mState.bitmap.getHeight()) {
                         saveToHistory();
                         performFloodErase(bx, by, mThreshold);
                     }
@@ -293,109 +302,61 @@ public class CursorStoreFragment extends Fragment {
 
         highlightActiveCard();
         updateTestPointer();
-    }
 
-    private void generateBitmaps() {
-        Paint paint = new Paint();
-        mScifiBitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
-        Canvas cScifi = new Canvas(mScifiBitmap);
-        drawSciFiGlow(cScifi, paint);
-
-        // Preload V3 & Ani assets for UI Previews
-        Context context = getContext();
-        if (context == null) return;
-        try {
-            try (InputStream in = context.getAssets().open("Normal Select v3.0.cur")) {
-                mV3Bitmap = CursorParser.decodeCursor(in);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            try (InputStream in = context.getAssets().open("01-normal-select.ani")) {
-                mAniBitmap = CursorParser.decodeCursor(in);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (mState.bitmap != null) {
+            mEditorCheckboard.setImageBitmap(mState.bitmap);
+            mPanelEditor.setVisibility(View.VISIBLE);
+            selectToolMode(mCurrentEditorMode == MODE_NONE ? MODE_FLOOD_ERASE : mCurrentEditorMode);
+            updateUndoButtonState();
         }
     }
 
-    private void setupPreviews() {
-        Context context = getContext();
-        if (context == null) return;
-
-        Drawable standardDrawable = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, context.getTheme());
-        mPreviewStandard.setImageDrawable(standardDrawable);
-        mPreviewScifi.setImageBitmap(mScifiBitmap);
-
-        if (mV3Bitmap != null) {
-            mPreviewV3.setImageBitmap(mV3Bitmap);
+    private static void updateParentIntercept(View v, int action) {
+        if (v.getParent() == null) return;
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
+            v.getParent().requestDisallowInterceptTouchEvent(true);
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            v.getParent().requestDisallowInterceptTouchEvent(false);
         }
-        if (mAniBitmap != null) {
-            mPreviewAni.setImageDrawable(new git.artdeell.mojo.utils.cursor.AnimatedCursorDrawable(context, "01-normal-select.ani", true));
-        }
+    }
 
-        updateCustomPreview();
+    private boolean hasCustomCursor() {
+        String path = LauncherPreferences.DEFAULT_PREF.getString(CursorStyle.PREF_PATH, null);
+        return path != null && new File(path).isFile();
+    }
+
+    private Drawable loadCustomDrawable(Context context) {
+        String path = LauncherPreferences.DEFAULT_PREF.getString(CursorStyle.PREF_PATH, null);
+        if (path == null || !new File(path).isFile()) return null;
+        if (path.endsWith(".ani")) return new AnimatedCursorDrawable(context, path, false);
+        return Drawable.createFromPath(path);
     }
 
     private void updateCustomPreview() {
         Context context = getContext();
         if (context == null) return;
-
-        String path = LauncherPreferences.DEFAULT_PREF.getString("custom_cursor_path", null);
-        String selectedKey = LauncherPreferences.DEFAULT_PREF.getString("custom_cursor_style_key", "standard");
-        if (path != null && new File(path).exists() && !"standard".equals(selectedKey) && !"scifi".equals(selectedKey) && !"v3".equals(selectedKey) && !"ani".equals(selectedKey)) {
-            if ("custom_ani".equals(selectedKey)) {
-                mPreviewCustom.setImageDrawable(new git.artdeell.mojo.utils.cursor.AnimatedCursorDrawable(context, path, false));
-            } else {
-                mPreviewCustom.setImageDrawable(Drawable.createFromPath(path));
-            }
-        } else {
-            mPreviewCustom.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, context.getTheme()));
-        }
+        Drawable d = loadCustomDrawable(context);
+        if (d == null) d = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, context.getTheme());
+        mPreviewCustom.setImageDrawable(d);
     }
 
     private void updateTestPointer() {
         Context context = getContext();
         if (context == null || mTestPointer == null) return;
 
+        String key = LauncherPreferences.DEFAULT_PREF.getString(CursorStyle.PREF_STYLE_KEY, CursorStyle.KEY_STANDARD);
         Drawable d = null;
-        String path = LauncherPreferences.DEFAULT_PREF.getString("custom_cursor_path", null);
-        String selectedKey = LauncherPreferences.DEFAULT_PREF.getString("custom_cursor_style_key", "standard");
-
-        if ("standard".equals(selectedKey)) {
-            d = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, context.getTheme());
-        } else if ("scifi".equals(selectedKey)) {
-            d = new BitmapDrawable(getResources(), mScifiBitmap);
-        } else if ("v3".equals(selectedKey) && mV3Bitmap != null) {
-            d = new BitmapDrawable(getResources(), mV3Bitmap);
-        } else if ("ani".equals(selectedKey)) {
-            d = new git.artdeell.mojo.utils.cursor.AnimatedCursorDrawable(context, "01-normal-select.ani", true);
-        } else if ("custom_ani".equals(selectedKey) && path != null && new File(path).exists()) {
-            d = new git.artdeell.mojo.utils.cursor.AnimatedCursorDrawable(context, path, false);
-        } else if (path != null && new File(path).exists()) {
-            d = Drawable.createFromPath(path);
-        }
-
-        if (d == null) {
-            d = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, context.getTheme());
-        }
-
+        if (!CursorStyle.KEY_STANDARD.equals(key)) d = loadCustomDrawable(context);
+        if (d == null) d = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, context.getTheme());
         mTestPointer.setImageDrawable(d);
 
         float scale = LauncherPreferences.PREF_MOUSESCALE;
         int intrinsicWidth = d.getIntrinsicWidth();
         int intrinsicHeight = d.getIntrinsicHeight();
-        int width, height;
-        if (intrinsicWidth <= 0 || intrinsicHeight <= 0) {
-            width = (int) (36 * scale);
-            height = (int) (54 * scale);
-        } else {
-            float aspect = (float) intrinsicHeight / intrinsicWidth;
-            width = (int) (36 * scale);
-            height = (int) (36 * aspect * scale);
-        }
+        int width = (int) (36 * scale);
+        int height = (intrinsicWidth <= 0 || intrinsicHeight <= 0)
+                ? (int) (54 * scale)
+                : (int) (36 * ((float) intrinsicHeight / intrinsicWidth) * scale);
 
         android.view.ViewGroup.LayoutParams params = mTestPointer.getLayoutParams();
         params.width = width;
@@ -403,73 +364,12 @@ public class CursorStoreFragment extends Fragment {
         mTestPointer.setLayoutParams(params);
     }
 
-    private void selectCursor(String type) {
+    private void selectStandard() {
+        LauncherPreferences.DEFAULT_PREF.edit()
+                .putString(CursorStyle.PREF_STYLE_KEY, CursorStyle.KEY_STANDARD)
+                .apply();
         Context context = getContext();
-        if (context == null) return;
-
-        File cursorFile = new File(context.getFilesDir(), "custom_cursor.png");
-        try {
-            if ("standard".equals(type)) {
-                LauncherPreferences.DEFAULT_PREF.edit()
-                        .putString("custom_cursor_style_key", "standard")
-                        .apply();
-                Toast.makeText(context, getString(R.string.cursor_store_selected_standard), Toast.LENGTH_SHORT).show();
-            } else if ("scifi".equals(type) && mScifiBitmap != null) {
-                try (OutputStream out = new FileOutputStream(cursorFile)) {
-                    mScifiBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
-                }
-                LauncherPreferences.DEFAULT_PREF.edit()
-                        .putString("custom_cursor_path", cursorFile.getAbsolutePath())
-                        .putString("custom_cursor_style_key", "scifi")
-                        .apply();
-                Toast.makeText(context, getString(R.string.cursor_store_success), Toast.LENGTH_SHORT).show();
-            }
-        } catch (Exception e) {
-            Toast.makeText(context, getString(R.string.cursor_store_error) + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-
-        highlightActiveCard();
-        updateTestPointer();
-    }
-
-    private void selectPreset(String key, String assetName) {
-        Context context = getContext();
-        if (context == null) return;
-
-        try {
-            if ("ani".equals(key)) {
-                LauncherPreferences.DEFAULT_PREF.edit()
-                        .putString("custom_cursor_style_key", "ani")
-                        .apply();
-                Toast.makeText(context, getString(R.string.cursor_store_success), Toast.LENGTH_SHORT).show();
-            } else {
-                File cursorFile = new File(context.getFilesDir(), "custom_cursor_" + key + ".png");
-                Bitmap bmp = null;
-                if ("v3".equals(key)) bmp = mV3Bitmap;
-
-                if (bmp == null) {
-                    try (InputStream in = context.getAssets().open(assetName)) {
-                        bmp = CursorParser.decodeCursor(in);
-                    }
-                }
-
-                if (bmp != null) {
-                    try (OutputStream out = new FileOutputStream(cursorFile)) {
-                        bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
-                    }
-                    LauncherPreferences.DEFAULT_PREF.edit()
-                            .putString("custom_cursor_path", cursorFile.getAbsolutePath())
-                            .putString("custom_cursor_style_key", key)
-                            .apply();
-                    Toast.makeText(context, getString(R.string.cursor_store_success), Toast.LENGTH_SHORT).show();
-                } else {
-                    Toast.makeText(context, getString(R.string.cursor_store_fail_preset), Toast.LENGTH_SHORT).show();
-                }
-            }
-        } catch (Exception e) {
-            Toast.makeText(context, getString(R.string.cursor_store_error) + e.getMessage(), Toast.LENGTH_LONG).show();
-        }
-
+        if (context != null) Toast.makeText(context, getString(R.string.cursor_store_selected_standard), Toast.LENGTH_SHORT).show();
         highlightActiveCard();
         updateTestPointer();
     }
@@ -477,36 +377,48 @@ public class CursorStoreFragment extends Fragment {
     private void selectCustomCursor() {
         Context context = getContext();
         if (context == null) return;
-
-        String path = LauncherPreferences.DEFAULT_PREF.getString("custom_cursor_path", null);
-        File customBmpFile = new File(context.getFilesDir(), "custom_cursor_user.png");
-        File customAniFile = new File(context.getFilesDir(), "custom_cursor_user.ani");
-
-        if (path != null && new File(path).exists()) {
-            String key = path.endsWith(".ani") ? "custom_ani" : "custom";
-            LauncherPreferences.DEFAULT_PREF.edit()
-                    .putString("custom_cursor_style_key", key)
-                    .apply();
-            Toast.makeText(context, getString(R.string.cursor_store_success), Toast.LENGTH_SHORT).show();
-        } else if (customAniFile.exists()) {
-            LauncherPreferences.DEFAULT_PREF.edit()
-                    .putString("custom_cursor_path", customAniFile.getAbsolutePath())
-                    .putString("custom_cursor_style_key", "custom_ani")
-                    .apply();
-            Toast.makeText(context, getString(R.string.cursor_store_success), Toast.LENGTH_SHORT).show();
-        } else if (customBmpFile.exists()) {
-            LauncherPreferences.DEFAULT_PREF.edit()
-                    .putString("custom_cursor_path", customBmpFile.getAbsolutePath())
-                    .putString("custom_cursor_style_key", "custom")
-                    .apply();
-            Toast.makeText(context, getString(R.string.cursor_store_success), Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(context, getString(R.string.cursor_store_fail_preset), Toast.LENGTH_SHORT).show();
+        if (!hasCustomCursor()) {
+            Toast.makeText(context, getString(R.string.cursor_no_custom), Toast.LENGTH_SHORT).show();
+            return;
         }
-
+        String path = LauncherPreferences.DEFAULT_PREF.getString(CursorStyle.PREF_PATH, null);
+        LauncherPreferences.DEFAULT_PREF.edit()
+                .putString(CursorStyle.PREF_STYLE_KEY, path.endsWith(".ani") ? CursorStyle.KEY_CUSTOM_ANI : CursorStyle.KEY_CUSTOM)
+                .apply();
+        Toast.makeText(context, getString(R.string.cursor_store_success), Toast.LENGTH_SHORT).show();
         highlightActiveCard();
         updateTestPointer();
     }
+
+    /** Goes back to the default pointer and deletes the uploaded cursor files */
+    private void resetCustomCursor() {
+        Context context = getContext();
+        if (context == null) return;
+        LauncherPreferences.DEFAULT_PREF.edit()
+                .putString(CursorStyle.PREF_STYLE_KEY, CursorStyle.KEY_STANDARD)
+                .remove(CursorStyle.PREF_PATH)
+                .apply();
+        new File(context.getFilesDir(), "custom_cursor_user.png").delete();
+        new File(context.getFilesDir(), "custom_cursor_user.ani").delete();
+        Toast.makeText(context, getString(R.string.cursor_reset_done), Toast.LENGTH_SHORT).show();
+        updateCustomPreview();
+        highlightActiveCard();
+        updateTestPointer();
+    }
+
+    private void highlightActiveCard() {
+        String key = LauncherPreferences.DEFAULT_PREF.getString(CursorStyle.PREF_STYLE_KEY, CursorStyle.KEY_STANDARD);
+        boolean standard = CursorStyle.KEY_STANDARD.equals(key);
+        mCardStandard.setAlpha(standard ? 1.0f : 0.6f);
+        mCardCustom.setAlpha(standard ? 0.6f : 1.0f);
+    }
+
+
+
+
+
+
+
 
     private void onCustomCursorPicked(Uri uri) {
         if (uri == null) return;
@@ -566,15 +478,12 @@ public class CursorStoreFragment extends Fragment {
                         .apply();
             }
 
-            mEditingBitmap = decodedBitmap.copy(Bitmap.Config.ARGB_8888, true);
-            mEditorCheckboard.setImageBitmap(mEditingBitmap);
+            mState.bitmap = decodedBitmap.copy(Bitmap.Config.ARGB_8888, true);
+            mEditorCheckboard.setImageBitmap(mState.bitmap);
             mPanelEditor.setVisibility(View.VISIBLE);
 
-            if (getActivity() != null) {
-                getActivity().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED);
-            }
 
-            mUndoStack.clear();
+            mState.undo.clear();
             updateUndoButtonState();
             selectToolMode(MODE_FLOOD_ERASE);
 
@@ -598,12 +507,6 @@ public class CursorStoreFragment extends Fragment {
         if ("standard".equals(selectedKey)) {
             Drawable d = ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, context.getTheme());
             activeBmp = drawableToBitmap(d);
-        } else if ("scifi".equals(selectedKey)) {
-            activeBmp = mScifiBitmap;
-        } else if ("v3".equals(selectedKey)) {
-            activeBmp = mV3Bitmap;
-        } else if ("ani".equals(selectedKey)) {
-            activeBmp = mAniBitmap;
         } else if ("custom_ani".equals(selectedKey) && path != null && new File(path).exists()) {
             try {
                 byte[] bytes = CursorParser.readAllBytes(new java.io.FileInputStream(new File(path)));
@@ -624,15 +527,12 @@ public class CursorStoreFragment extends Fragment {
         }
 
         try {
-            mEditingBitmap = activeBmp.copy(Bitmap.Config.ARGB_8888, true);
-            mEditorCheckboard.setImageBitmap(mEditingBitmap);
+            mState.bitmap = activeBmp.copy(Bitmap.Config.ARGB_8888, true);
+            mEditorCheckboard.setImageBitmap(mState.bitmap);
             mPanelEditor.setVisibility(View.VISIBLE);
 
-            if (getActivity() != null) {
-                getActivity().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LOCKED);
-            }
 
-            mUndoStack.clear();
+            mState.undo.clear();
             updateUndoButtonState();
             selectToolMode(MODE_FLOOD_ERASE);
 
@@ -682,13 +582,13 @@ public class CursorStoreFragment extends Fragment {
     }
 
     private void performAutoCutBackground() {
-        if (mEditingBitmap == null) return;
+        if (mState.bitmap == null) return;
 
-        int width = mEditingBitmap.getWidth();
-        int height = mEditingBitmap.getHeight();
+        int width = mState.bitmap.getWidth();
+        int height = mState.bitmap.getHeight();
         if (width <= 0 || height <= 0) return;
 
-        int keyColor = mEditingBitmap.getPixel(0, 0);
+        int keyColor = mState.bitmap.getPixel(0, 0);
         int kr = Color.red(keyColor);
         int kg = Color.green(keyColor);
         int kb = Color.blue(keyColor);
@@ -704,7 +604,7 @@ public class CursorStoreFragment extends Fragment {
         int cutCount = 0;
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                int px = mEditingBitmap.getPixel(x, y);
+                int px = mState.bitmap.getPixel(x, y);
                 int pr = Color.red(px);
                 int pg = Color.green(px);
                 int pb = Color.blue(px);
@@ -713,25 +613,25 @@ public class CursorStoreFragment extends Fragment {
                 if (pa > 0) {
                     double dist = Math.sqrt((pr - kr) * (pr - kr) + (pg - kg) * (pg - kg) + (pb - kb) * (pb - kb));
                     if (dist <= mThreshold) {
-                        mEditingBitmap.setPixel(x, y, Color.TRANSPARENT);
+                        mState.bitmap.setPixel(x, y, Color.TRANSPARENT);
                         cutCount++;
                     }
                 }
             }
         }
 
-        mEditorCheckboard.setImageBitmap(mEditingBitmap);
+        mEditorCheckboard.setImageBitmap(mState.bitmap);
         mEditorCheckboard.invalidate();
         Toast.makeText(getContext(), getString(R.string.cursor_editor_pixels_cut, cutCount), Toast.LENGTH_SHORT).show();
     }
 
     private void performFloodErase(int startX, int startY, double threshold) {
-        if (mEditingBitmap == null) return;
-        int width = mEditingBitmap.getWidth();
-        int height = mEditingBitmap.getHeight();
+        if (mState.bitmap == null) return;
+        int width = mState.bitmap.getWidth();
+        int height = mState.bitmap.getHeight();
         if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
 
-        int targetColor = mEditingBitmap.getPixel(startX, startY);
+        int targetColor = mState.bitmap.getPixel(startX, startY);
         if (Color.alpha(targetColor) == 0) return;
 
         int tr = Color.red(targetColor);
@@ -749,7 +649,7 @@ public class CursorStoreFragment extends Fragment {
             int x = p.x;
             int y = p.y;
 
-            mEditingBitmap.setPixel(x, y, Color.TRANSPARENT);
+            mState.bitmap.setPixel(x, y, Color.TRANSPARENT);
             filledCount++;
 
             int[] dx = {0, 0, 1, -1};
@@ -760,7 +660,7 @@ public class CursorStoreFragment extends Fragment {
 
                 if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
                     if (!visited[nx][ny]) {
-                        int px = mEditingBitmap.getPixel(nx, ny);
+                        int px = mState.bitmap.getPixel(nx, ny);
                         int pr = Color.red(px);
                         int pg = Color.green(px);
                         int pb = Color.blue(px);
@@ -778,31 +678,31 @@ public class CursorStoreFragment extends Fragment {
             }
         }
 
-        mEditorCheckboard.setImageBitmap(mEditingBitmap);
+        mEditorCheckboard.setImageBitmap(mState.bitmap);
         mEditorCheckboard.invalidate();
         Toast.makeText(getContext(), getString(R.string.cursor_store_flood_erased, filledCount), Toast.LENGTH_SHORT).show();
     }
 
     private void saveToHistory() {
-        if (mEditingBitmap != null) {
-            if (mUndoStack.size() >= 10) {
-                Bitmap oldest = mUndoStack.remove(0);
+        if (mState.bitmap != null) {
+            if (mState.undo.size() >= 10) {
+                Bitmap oldest = mState.undo.remove(0);
                 if (oldest != null && !oldest.isRecycled()) {
                     oldest.recycle();
                 }
             }
-            mUndoStack.push(mEditingBitmap.copy(mEditingBitmap.getConfig(), true));
+            mState.undo.push(mState.bitmap.copy(mState.bitmap.getConfig(), true));
             updateUndoButtonState();
         }
     }
 
     private void performUndo() {
-        if (!mUndoStack.isEmpty()) {
-            if (mEditingBitmap != null && !mEditingBitmap.isRecycled()) {
-                mEditingBitmap.recycle();
+        if (!mState.undo.isEmpty()) {
+            if (mState.bitmap != null && !mState.bitmap.isRecycled()) {
+                mState.bitmap.recycle();
             }
-            mEditingBitmap = mUndoStack.pop();
-            mEditorCheckboard.setImageBitmap(mEditingBitmap);
+            mState.bitmap = mState.undo.pop();
+            mEditorCheckboard.setImageBitmap(mState.bitmap);
             mEditorCheckboard.invalidate();
             updateUndoButtonState();
             Toast.makeText(getContext(), getString(R.string.cursor_store_action_undone), Toast.LENGTH_SHORT).show();
@@ -810,19 +710,19 @@ public class CursorStoreFragment extends Fragment {
     }
 
     private void updateUndoButtonState() {
-        mBtnUndo.setEnabled(!mUndoStack.isEmpty());
-        mBtnUndo.setAlpha(mUndoStack.isEmpty() ? 0.5f : 1.0f);
+        mBtnUndo.setEnabled(!mState.undo.isEmpty());
+        mBtnUndo.setAlpha(mState.undo.isEmpty() ? 0.5f : 1.0f);
     }
 
     private void closeEditorPanel(boolean saveChanges) {
         Context context = getContext();
         if (context == null) return;
 
-        if (saveChanges && mEditingBitmap != null) {
+        if (saveChanges && mState.bitmap != null) {
             File cursorFile = new File(context.getFilesDir(), "custom_cursor_user.png");
             try {
                 try (OutputStream out = new FileOutputStream(cursorFile)) {
-                    mEditingBitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+                    mState.bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
                 }
 
                 LauncherPreferences.DEFAULT_PREF.edit()
@@ -840,49 +740,23 @@ public class CursorStoreFragment extends Fragment {
             }
         }
 
-        // Clean up editing bitmaps
-        if (mEditingBitmap != null && !mEditingBitmap.isRecycled()) {
-            mEditingBitmap.recycle();
+        mEditorCheckboard.setImageDrawable(null);
+        if (mState.bitmap != null && !mState.bitmap.isRecycled()) {
+            mState.bitmap.recycle();
         }
-        mEditingBitmap = null;
+        mState.bitmap = null;
 
         // Clear history stack
-        while (!mUndoStack.isEmpty()) {
-            Bitmap b = mUndoStack.pop();
+        while (!mState.undo.isEmpty()) {
+            Bitmap b = mState.undo.pop();
             if (b != null && !b.isRecycled()) {
                 b.recycle();
             }
         }
 
         mPanelEditor.setVisibility(View.GONE);
-
-        // Restore screen auto rotation
-        if (getActivity() != null) {
-            getActivity().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-        }
     }
 
-    private void highlightActiveCard() {
-        String selectedKey = LauncherPreferences.DEFAULT_PREF.getString("custom_cursor_style_key", "standard");
-
-        mCardStandard.setAlpha(0.6f);
-        mCardScifi.setAlpha(0.6f);
-        mCardV3.setAlpha(0.6f);
-        mCardAni.setAlpha(0.6f);
-        mCardCustom.setAlpha(0.6f);
-
-        if ("standard".equals(selectedKey)) {
-            mCardStandard.setAlpha(1.0f);
-        } else if ("scifi".equals(selectedKey)) {
-            mCardScifi.setAlpha(1.0f);
-        } else if ("v3".equals(selectedKey)) {
-            mCardV3.setAlpha(1.0f);
-        } else if ("ani".equals(selectedKey)) {
-            mCardAni.setAlpha(1.0f);
-        } else {
-            mCardCustom.setAlpha(1.0f);
-        }
-    }
 
     private void setCheckboardBackground(View view) {
         int size = 16;
@@ -903,53 +777,5 @@ public class CursorStoreFragment extends Fragment {
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (getActivity() != null) {
-            getActivity().setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
-        }
 
-        // Recycle generated bitmaps
-        if (mScifiBitmap != null && !mScifiBitmap.isRecycled()) {
-            mScifiBitmap.recycle();
-            mScifiBitmap = null;
-        }
-        if (mV3Bitmap != null && !mV3Bitmap.isRecycled()) {
-            mV3Bitmap.recycle();
-            mV3Bitmap = null;
-        }
-        if (mAniBitmap != null && !mAniBitmap.isRecycled()) {
-            mAniBitmap.recycle();
-            mAniBitmap = null;
-        }
-    }
-
-    private static void drawSciFiGlow(Canvas canvas, Paint paint) {
-        paint.setAntiAlias(true);
-        paint.setColor(0x3300FFFF);
-        paint.setStyle(Paint.Style.FILL);
-        android.graphics.Path glowPath = new android.graphics.Path();
-        glowPath.moveTo(4, 4);
-        glowPath.lineTo(48, 24);
-        glowPath.lineTo(24, 48);
-        glowPath.close();
-
-        paint.setShadowLayer(8f, 0f, 0f, 0xFF00FFFF);
-        canvas.drawPath(glowPath, paint);
-
-        paint.clearShadowLayer();
-        paint.setColor(0xFF00FFFF);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(3f);
-        canvas.drawPath(glowPath, paint);
-
-        paint.setColor(0xFFFFFFFF);
-        paint.setStyle(Paint.Style.FILL);
-        android.graphics.Path corePath = new android.graphics.Path();
-        corePath.moveTo(8, 8);
-        corePath.lineTo(36, 22);
-        corePath.lineTo(22, 36);
-        corePath.close();
-        canvas.drawPath(corePath, paint);
-    }
 }

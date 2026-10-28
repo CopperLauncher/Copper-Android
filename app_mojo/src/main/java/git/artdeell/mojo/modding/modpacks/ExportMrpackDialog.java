@@ -68,13 +68,15 @@ public class ExportMrpackDialog {
         RecyclerView tree = dialogView.findViewById(R.id.export_mrpack_file_tree);
         tree.setLayoutManager(new LinearLayoutManager(activity));
         int indentPx = activity.getResources().getDimensionPixelSize(R.dimen._14sdp);
+        tree.setItemAnimator(null);
+        tree.setNestedScrollingEnabled(true);
         tree.setAdapter(new ExportFileTreeAdapter(instanceDir, overrides, indentPx));
 
         ImageView chevron = dialogView.findViewById(R.id.export_mrpack_files_chevron);
         dialogView.findViewById(R.id.export_mrpack_files_header).setOnClickListener(v -> {
             boolean show = tree.getVisibility() != View.VISIBLE;
             tree.setVisibility(show ? View.VISIBLE : View.GONE);
-            chevron.setRotation(show ? 180f : 0f);
+            chevron.setRotation(show ? 0f : 180f);
         });
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(activity)
