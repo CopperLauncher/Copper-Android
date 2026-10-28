@@ -174,12 +174,13 @@ public class DownloadUtils {
      */
     public static boolean pingInjectorUrl(String url) {
         try {
-            HttpURLConnection urlConnection = (HttpURLConnection) new URL(url).openConnection();
+            HttpURLConnection urlConnection = (HttpURLConnection) new URL("https", url, "/").openConnection();
             urlConnection.setRequestMethod("HEAD");
             urlConnection.setConnectTimeout(2000);
             urlConnection.setReadTimeout(500);
             urlConnection.setDoInput(false);
             urlConnection.setDoOutput(false);
+            urlConnection.setRequestProperty("User-Agent", "MojoLauncher-Ping/1.0");
             urlConnection.connect();
             int responseCode = urlConnection.getResponseCode();
             if(responseCode != 200) return false;
