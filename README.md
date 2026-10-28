@@ -61,7 +61,7 @@ If you are building on Windows:
 - [x] Add Mod/Content manager & browser
 - [x] Add option to share logs to mclo.gs
 - [x] Make the launcher fully m3
-- [ ] MS skin manager
+- [x] MS skin manager
 - [ ] Ely.by skin manager (idk how ely.by api works but I will try)
 - [ ] LTW: resolve issues with Create
 - [ ] LTW: switch to a color-renderable format for framebuffers
@@ -93,7 +93,7 @@ Any code change to this repository should be submitted as a pull request. The de
 - [Holy GL4ES](https://github.com/artdeell/gl4es_extra_extra/): [MIT License](https://github.com/ptitSeb/gl4es/blob/master/LICENSE).<br>
 - [OpenJDK](https://github.com/PojavLauncherTeam/openjdk-multiarch-jdk8u): [GNU GPLv2 License](https://openjdk.java.net/legal/gplv2+ce.html).<br>
 - [MobileGlues](https://github.com/MobileGL-Dev/MobileGlues): [LGPL-2.1 License](https://github.com/MobileGL-Dev/MobileGlues/blob/main/LICENSE)
-- [SFPWE](https://github.com/MobileGL-Dev/SimpleFPEWrapper): [GNU LGPLv3 License](https://github.com/MobileGL-Dev/SimpleFPEWrapper/blob/main/LICENSE)
+- [SFPEW](https://github.com/MobileGL-Dev/SimpleFPEWrapper): [GNU LGPLv3 License](https://github.com/MobileGL-Dev/SimpleFPEWrapper/blob/main/LICENSE)
 - [GLFW](https://github.com/MojoLauncher/glfw): [zlib license](https://github.com/MojoLauncher/glfw/blob/glfw34/LICENSE.md)
 - [SDL](https://github.com/MojoLauncher/MojoSDL): [zlib license](https://github.com/MojoLauncher/MojoSDL/blob/main/LICENSE.txt)
 - [LWJGL2-GLFW](https://github.com/MojoLauncher/lwjgl2-glfw): 3-Clause BSD license

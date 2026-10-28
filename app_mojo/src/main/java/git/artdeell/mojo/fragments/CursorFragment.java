@@ -775,7 +775,4 @@ public class CursorFragment extends Fragment {
         tiledDrawable.setTileModeXY(android.graphics.Shader.TileMode.REPEAT, android.graphics.Shader.TileMode.REPEAT);
         view.setBackground(tiledDrawable);
     }
-
-    @Override
-
 }
