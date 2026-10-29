@@ -17,7 +17,8 @@ import git.artdeell.mojo.modding.modpacks.models.ContentType;
 /**
  * Landscape two-pane replacement for the old {@code dialog_content_picker} AlertDialog.
  * Lives in {@link MainMenuFragment}'s {@code left_pane_container}, replacing the normal
- * sidebar, while the chosen content type (mods / resource packs / shader packs) is shown
+ * sidebar, while the chosen content type (mods, resource packs, shader packs, worlds,
+ * datapacks, and screenshots when managing) is shown
  * in the right pane — same as it worked before the dialog existed. Stays visible/selectable
  * so switching between content types doesn't require reopening a dialog each time.
  */
@@ -90,5 +91,20 @@ public class ContentPickerFragment extends Fragment {
                 v -> mainMenuFragment.selectContentType(manage, ContentType.RESOURCE_PACK));
         if (shaderpacksButton != null) shaderpacksButton.setOnClickListener(
                 v -> mainMenuFragment.selectContentType(manage, ContentType.SHADER_PACK));
+
+        View worldsButton = view.findViewById(R.id.content_picker_worlds);
+        View datapacksButton = view.findViewById(R.id.content_picker_datapacks);
+        View screenshotsButton = view.findViewById(R.id.content_picker_screenshots);
+
+        if (worldsButton != null) worldsButton.setOnClickListener(
+                v -> mainMenuFragment.selectContentType(manage, ContentType.WORLD));
+        if (datapacksButton != null) datapacksButton.setOnClickListener(
+                v -> mainMenuFragment.selectContentType(manage, ContentType.DATAPACK));
+        // Screenshots can only be managed, there is nothing to browse
+        if (screenshotsButton != null) {
+            screenshotsButton.setVisibility(manage ? View.VISIBLE : View.GONE);
+            screenshotsButton.setOnClickListener(
+                    v -> mainMenuFragment.selectContentType(true, ContentType.SCREENSHOT));
+        }
     }
 }

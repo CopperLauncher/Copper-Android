@@ -63,8 +63,10 @@ public class CurseforgeApi implements ModpackApi{
     public SearchResult searchMod(SearchFilters searchFilters, SearchResult previousPageResult) {
         CurseforgeSearchResult curseforgeSearchResult = (CurseforgeSearchResult) previousPageResult;
 
+        // Content CurseForge doesn't have (screenshots) can't match anything here
+        boolean noSuchContent = !searchFilters.isModpack && !searchFilters.contentType.onCurseforge();
         // A category CurseForge doesn't have can't match anything here
-        if (searchFilters.category != null && searchFilters.category.curseforgeId == 0) {
+        if (noSuchContent || (searchFilters.category != null && searchFilters.category.curseforgeId == 0)) {
             CurseforgeSearchResult emptyResult = curseforgeSearchResult != null ? curseforgeSearchResult : new CurseforgeSearchResult();
             emptyResult.results = new ModItem[0];
             emptyResult.totalResultCount = 0;
@@ -152,6 +154,7 @@ public class CurseforgeApi implements ModpackApi{
     public List<ContentCategory> getCategories(SearchFilters searchFilters) {
         int classId = searchFilters.isModpack
                 ? CURSEFORGE_MODPACK_CLASS_ID : searchFilters.contentType.curseforgeClassId;
+        if (classId <= 0) return Collections.emptyList();
         synchronized (sCategoryCache) {
             List<ContentCategory> cached = sCategoryCache.get(classId);
             if (cached != null) return cached;

@@ -27,6 +27,7 @@ import git.artdeell.mojo.contracts.OpenDocumentWithExtension;
 import git.artdeell.mojo.modding.optifine.InstalledModAdapter;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.prefs.LauncherPreferences;
+import git.artdeell.mojo.utils.WorldUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -54,6 +55,22 @@ public class ManageModsFragment extends Fragment {
      *  ContentType enum name(); defaults to MOD when absent. */
     public static final String ARG_CONTENT_TYPE = "content_type";
 
+    /** Bundle key: folder name of the world whose datapacks are managed, only used for DATAPACK. */
+    public static final String ARG_WORLD = "world";
+
+    /** Arguments that open the datapacks of a world. */
+    public static Bundle datapackArgs(@NonNull String worldFolderName) {
+        Bundle args = new Bundle();
+        args.putString(ARG_CONTENT_TYPE, ContentType.DATAPACK.name());
+        args.putString(ARG_WORLD, worldFolderName);
+        return args;
+    }
+
+    /** Fragment tag of the datapacks screen of a world, one per world. */
+    public static String datapackTag(@NonNull String worldFolderName) {
+        return TAG + ":" + ContentType.DATAPACK.name() + ":" + worldFolderName;
+    }
+
     private static final String PREF_FILE      = "mod_filters";
     private static final String KEY_MC_VERSION = "mc_version_";
     private static final String KEY_LOADER     = "loader_";
@@ -62,6 +79,8 @@ public class ManageModsFragment extends Fragment {
     private ProgressBar mUpdateProgress;
     private InstalledModAdapter mAdapter;
     private ContentType mContentType = ContentType.MOD;
+    /** Folder name of the world whose datapacks are listed, null for every other content type */
+    @Nullable private String mWorld;
 
     // Registered unconditionally as a field initializer (must happen before the
     // fragment reaches STARTED) — mContentType isn't resolved from arguments yet
@@ -80,6 +99,7 @@ public class ManageModsFragment extends Fragment {
         Bundle args = getArguments();
         String typeName = args != null ? args.getString(ARG_CONTENT_TYPE, null) : null;
         mContentType = typeName != null ? ContentType.valueOf(typeName) : ContentType.MOD;
+        mWorld = mContentType == ContentType.DATAPACK && args != null ? args.getString(ARG_WORLD, null) : null;
 
         ImageButton backButton = view.findViewById(R.id.manage_mods_back);
         mRefreshButton         = view.findViewById(R.id.manage_mods_refresh);
@@ -103,7 +123,8 @@ public class ManageModsFragment extends Fragment {
         addButton.setOnClickListener(v -> openModSearch());
         importButton.setOnClickListener(v -> mImportLauncher.launch(null));
 
-        String profileName = getCurrentProfileName();
+        // Datapacks belong to a world, so the title names the world instead of the profile
+        String profileName = mWorld != null ? mWorld : getCurrentProfileName();
         String typeLabel = getString(contentTypeLabelRes());
         title.setText(profileName.isEmpty() ? typeLabel : profileName + " - " + typeLabel);
 
@@ -187,6 +208,7 @@ public class ManageModsFragment extends Fragment {
         if (!version.isEmpty()) args.putString(ModsSearchFragment.ARG_PRESET_MC_VERSION, version);
         if (!loader.isEmpty())  args.putString(ModsSearchFragment.ARG_PRESET_LOADER,     loader);
         args.putString(ModsSearchFragment.ARG_CONTENT_TYPE, mContentType.name());
+        if (mWorld != null) args.putString(ModsSearchFragment.ARG_TARGET_WORLD, mWorld);
 
         String tag = ModsSearchFragment.TAG + ":" + mContentType.name();
         // Landscape: the left pane has to become the browse menu too, not stay on the manage one
@@ -325,6 +347,7 @@ public class ManageModsFragment extends Fragment {
         switch (mContentType) {
             case RESOURCE_PACK: return R.string.mcl_content_resourcepacks;
             case SHADER_PACK:   return R.string.mcl_content_shaderpacks;
+            case DATAPACK:      return R.string.mcl_content_datapacks;
             default:            return R.string.mcl_content_mods;
         }
     }
@@ -333,6 +356,7 @@ public class ManageModsFragment extends Fragment {
         switch (mContentType) {
             case RESOURCE_PACK: return R.string.manage_resourcepacks_empty;
             case SHADER_PACK:   return R.string.manage_shaderpacks_empty;
+            case DATAPACK:      return R.string.manage_datapacks_empty;
             default:            return R.string.manage_mods_empty;
         }
     }
@@ -354,6 +378,7 @@ public class ManageModsFragment extends Fragment {
     }
 
     private File getContentDir() {
+        if (mWorld != null) return WorldUtils.getDatapacksDirectory(mWorld);
         try {
             Instance instance = Instances.loadInstance(getCurrentProfileKey());
             if (instance != null) {

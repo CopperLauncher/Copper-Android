@@ -56,8 +56,10 @@ public class ModrinthApi implements ModpackApi{
         }
 
 
+        // Content Modrinth doesn't have (worlds) can't match anything here
+        boolean noSuchContent = !searchFilters.isModpack && !searchFilters.contentType.onModrinth();
         // A category Modrinth doesn't have can't match anything here
-        if (searchFilters.category != null && searchFilters.category.modrinthId == null) {
+        if (noSuchContent || (searchFilters.category != null && searchFilters.category.modrinthId == null)) {
             ModrinthSearchResult emptyResult = modrinthSearchResult != null ? modrinthSearchResult : new ModrinthSearchResult();
             emptyResult.results = new ModItem[0];
             emptyResult.totalResultCount = 0;
@@ -115,6 +117,7 @@ public class ModrinthApi implements ModpackApi{
     @Override
     public List<ContentCategory> getCategories(SearchFilters searchFilters) {
         String projectType = searchFilters.isModpack ? "modpack" : searchFilters.contentType.modrinthType;
+        if (projectType == null) return new ArrayList<>();
         synchronized (sCategoryCache) {
             List<ContentCategory> cached = sCategoryCache.get(projectType);
             if (cached != null) return cached;

@@ -44,6 +44,7 @@ import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.progresskeeper.ProgressKeeper;
 import git.artdeell.mojo.utils.profiles.VersionSelectorDialog;
 import git.artdeell.mojo.utils.DownloadUtils;
+import git.artdeell.mojo.utils.WorldUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,6 +73,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
     /** Bundle key: which kind of content to browse. Value is a ContentType enum
      *  name(); defaults to MOD when absent. */
     public static final String ARG_CONTENT_TYPE      = "content_type";
+    /** Bundle key: folder name of the world a datapack is installed into. Without it the world is
+     *  asked for at every datapack install. */
+    public static final String ARG_TARGET_WORLD      = "target_world";
 
     private View mOverlay;
     private float mOverlayTopCache;
@@ -154,6 +158,10 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
         mSearchEditText.setHint(searchHintRes());
 
+        if (mSearchFilters.contentType == ContentType.WORLD && LauncherPreferences.PREF_DISABLE_CURSEFORGE_API) {
+            Toast.makeText(requireContext(), R.string.world_needs_curseforge, Toast.LENGTH_LONG).show();
+        }
+
         searchMods(null);
     }
 
@@ -161,6 +169,8 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         switch (mSearchFilters.contentType) {
             case RESOURCE_PACK: return R.string.hint_search_resourcepack;
             case SHADER_PACK:   return R.string.hint_search_shaderpack;
+            case WORLD:         return R.string.hint_search_world;
+            case DATAPACK:      return R.string.hint_search_datapack;
             default:            return R.string.hint_search_mod;
         }
     }
@@ -182,6 +192,12 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         String contentTypeName = args.getString(ARG_CONTENT_TYPE, null);
         if (contentTypeName != null) {
             mSearchFilters.contentType = ContentType.valueOf(contentTypeName);
+        }
+        // Modrinth has no worlds, CurseForge is the only source for them
+        if (!mSearchFilters.contentType.onModrinth()) mSearchFilters.engine = Constants.ENGINE_CURSEFORGE;
+        String targetWorld = args.getString(ARG_TARGET_WORLD, null);
+        if (targetWorld != null && !targetWorld.isEmpty() && mModpackApi instanceof ModsInstallApi) {
+            ((ModsInstallApi) mModpackApi).mTargetWorld = targetWorld;
         }
 
         String presetVersion = args.getString(ARG_PRESET_MC_VERSION, null);
@@ -238,6 +254,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
         SearchFilterDialog.Options options = new SearchFilterDialog.Options();
         options.showLoader = showLoaderFilter;
+        options.showEngine = mSearchFilters.contentType.onModrinth() && mSearchFilters.contentType.onCurseforge();
         options.engine = mSearchFilters.engine;
         options.mcVersion = mSearchFilters.mcVersion != null ? mSearchFilters.mcVersion : "";
         options.loader = mSearchFilters.modLoader != null ? mSearchFilters.modLoader : "";
@@ -276,7 +293,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
 
     /** Sets the filters and searches again */
     public void applyFilters(int engine, @NonNull String mcVersion, @NonNull String loader) {
-        mSearchFilters.engine = engine;
+        if (mSearchFilters.contentType.onModrinth()) mSearchFilters.engine = engine;
         mSearchFilters.mcVersion = mcVersion;
         mSearchFilters.modLoader = supportsLoaderFilter() ? loader : "";
         if (mSearchEditText != null) searchMods(mSearchEditText.getText().toString());
@@ -291,6 +308,10 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private final ModrinthApi mModrinthApi = new ModrinthApi();
         private final Handler mMainHandler = new Handler(Looper.getMainLooper());
         private Context mActivityContext;
+        /** World the datapacks go into when the browser was opened from a world's datapacks */
+        @Nullable private String mTargetWorld;
+        /** World picked for the datapack that is being installed right now */
+        @Nullable private volatile String mPickedWorld;
         @Nullable
         private final git.artdeell.mojo.modding.modpacks.api.CurseforgeApi mCurseforgeApi;
 
@@ -355,9 +376,11 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private void resolveInstalledVersionIndex(ModDetail detail) {
             detail.installedVersionIndex = -1;
             detail.installedFilePath = null;
+            if (!mFilters.contentType.isGameFolderFiles()) return;
             if (detail.versionHashes == null || detail.versionHashes.length == 0) return;
 
             File modsDir = getModsDir();
+            if (modsDir == null) return;
             File[] files = modsDir.listFiles(f -> f.isFile() &&
                     (f.getName().endsWith(mFilters.contentType.fileExtension) ||
                             f.getName().endsWith(mFilters.contentType.fileExtension + ".disabled")));
@@ -446,6 +469,20 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             if (url == null || url.isEmpty()) {
                 Tools.showErrorRemote(context, R.string.modpack_install_download_failed,
                         new IOException("No download URL available for this mod"));
+                return;
+            }
+
+            if (mFilters.contentType == ContentType.WORLD) {
+                installWorld(context, url, modDetail.title);
+                return;
+            }
+
+            if (mFilters.contentType == ContentType.DATAPACK && currentWorld() == null) {
+                Context dialogCtx = mActivityContext != null ? mActivityContext : context;
+                mMainHandler.post(() -> WorldUtils.pickWorld(dialogCtx, R.string.datapack_pick_world, world -> {
+                    mPickedWorld = world;
+                    handleInstallation(context, modDetail, selectedVersion);
+                }));
                 return;
             }
 
@@ -617,9 +654,11 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private void downloadMod(Context context, String url, String fileName,
                                   String[] depIds, String[] depTypes, @Nullable String oldFilePath) {
             File modsDir = getModsDir();
+            if (modsDir == null) return;
             if (!modsDir.exists()) modsDir.mkdirs();
 
             final File targetFile = new File(modsDir, fileName);
+            final String installedInto = mFilters.contentType == ContentType.DATAPACK ? currentWorld() : null;
 
             ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, R.string.global_waiting);
             MojoApplication.sExecutorService.execute(() -> {
@@ -647,11 +686,15 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                     ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
                     Tools.runOnUiThread(() ->
                             Toast.makeText(context,
-                                    context.getString(R.string.mod_install_success, fileName),
+                                    installedInto != null
+                                            ? context.getString(R.string.datapack_install_success, fileName, installedInto)
+                                            : context.getString(R.string.mod_install_success, fileName),
                                     Toast.LENGTH_LONG).show());
                 } catch (Exception e) {
                     ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
                     Tools.showErrorRemote(context, R.string.modpack_install_download_failed, e);
+                } finally {
+                    mPickedWorld = null;
                 }
             });
         }
@@ -692,6 +735,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 if (!depName.endsWith(depType.fileExtension)) depName += depType.fileExtension;
 
                 File targetDir = getContentDir(depType);
+                if (targetDir == null) return;
                 if (!targetDir.exists()) targetDir.mkdirs();
 
                 DownloadUtils.downloadFile(depUrl, new File(targetDir, depName));
@@ -720,7 +764,9 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
         private File[] getAllInstalledContentFiles() {
             List<File> all = new ArrayList<>();
             for (ContentType type : ContentType.values()) {
+                if (!type.isGameFolderFiles()) continue;
                 File dir = getContentDir(type);
+                if (dir == null) continue;
                 File[] files = dir.listFiles(f -> f.isFile() &&
                         (f.getName().endsWith(type.fileExtension) ||
                                 f.getName().endsWith(type.fileExtension + ".disabled")));
@@ -874,16 +920,63 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             return m.find() ? m.group(1) : null;
         }
 
+        /** World a datapack is installed into: the one the browser was opened for, else the picked one */
+        @Nullable
+        private String currentWorld() {
+            return mTargetWorld != null ? mTargetWorld : mPickedWorld;
+        }
+
+        /**
+         * Downloads a world zip and extracts it into the saves folder. CurseForge world zips hold
+         * the world folder, some have the level.dat at the top level, both are handled.
+         */
+        private void installWorld(Context context, String url, String title) {
+            String rawName = url.substring(url.lastIndexOf('/') + 1);
+            if (rawName.contains("?")) rawName = rawName.substring(0, rawName.indexOf('?'));
+            if (rawName.toLowerCase(java.util.Locale.ROOT).endsWith(".zip")) {
+                rawName = rawName.substring(0, rawName.length() - 4);
+            }
+            final String fallbackName = rawName.isEmpty() ? title : rawName;
+            final File savesDir = WorldUtils.getSavesDirectory();
+            final File tempZip = new File(Tools.DIR_CACHE, "world_download_" + System.nanoTime() + ".zip");
+
+            ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, R.string.global_waiting);
+            MojoApplication.sExecutorService.execute(() -> {
+                try {
+                    DownloadUtils.downloadFileMonitored(url, tempZip, null, (current, max) ->
+                            ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK,
+                                    max > 0 ? (int) (current * 100L / max) : 0,
+                                    R.string.world_downloading, title));
+                    ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 100, R.string.world_extracting, title);
+                    File world = WorldUtils.extractWorldZip(tempZip, savesDir, fallbackName);
+                    ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
+                    Tools.runOnUiThread(() ->
+                            Toast.makeText(context,
+                                    context.getString(R.string.world_install_success, world.getName()),
+                                    Toast.LENGTH_LONG).show());
+                } catch (Exception e) {
+                    ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
+                    Tools.showErrorRemote(context, R.string.modpack_install_download_failed, e);
+                } finally {
+                    tempZip.delete();
+                }
+            });
+        }
+
+        @Nullable
         private File getModsDir() {
             return getContentDir(mFilters.contentType);
         }
 
+        /** @return the folder the content type is installed into, null for datapacks without a world */
+        @Nullable
         private File getContentDir(ContentType type) {
-            try {
-                Instance instance = Instances.loadInstance(Instances.getSelectedInstanceKey());
-                if (instance != null) return new File(instance.getGameDirectory(), type.folderName);
-            } catch (Exception ignored) {}
-            return new File(Tools.DIR_GAME_NEW, type.folderName);
+            if (type == ContentType.WORLD) return WorldUtils.getSavesDirectory();
+            if (type == ContentType.DATAPACK) {
+                String world = currentWorld();
+                return world != null ? WorldUtils.getDatapacksDirectory(world) : null;
+            }
+            return new File(WorldUtils.getGameDirectory(), type.folderName);
         }
     }
 }

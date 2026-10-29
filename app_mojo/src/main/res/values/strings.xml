@@ -835,4 +835,36 @@
     <string name="cursor_btn_reset">Reset</string>
     <string name="cursor_reset_done">Default cursor restored</string>
     <string name="cursor_no_custom">No custom cursor uploaded yet</string>
+
+    <!-- Worlds, datapacks and screenshots in Browse / Manage Content -->
+    <string name="mcl_content_worlds">Worlds</string>
+    <string name="mcl_content_datapacks">Datapacks</string>
+    <string name="mcl_content_screenshots">Screenshots</string>
+    <string name="content_kind_world">World</string>
+    <string name="content_kind_datapack">Datapack</string>
+    <string name="hint_search_world">Search worlds…</string>
+    <string name="hint_search_datapack">Search datapacks…</string>
+    <string name="world_needs_curseforge">Worlds are only available on CurseForge, enable the CurseForge API in the settings.</string>
+    <string name="world_none_found">No worlds found. Create or install a world first.</string>
+    <string name="world_downloading">Downloading %s</string>
+    <string name="world_extracting">Extracting %s</string>
+    <string name="world_install_success">World %s installed</string>
+    <string name="datapack_pick_world">Install into which world?</string>
+    <string name="datapack_manage_pick_world">Manage the datapacks of which world?</string>
+    <string name="datapack_install_success">%1$s installed into %2$s</string>
+    <string name="manage_datapacks_empty">No datapacks installed in this world.</string>
+    <string name="manage_worlds_empty">No worlds yet.</string>
+    <string name="manage_screenshots_empty">No screenshots yet.</string>
+    <string name="world_import">Import world</string>
+    <string name="world_import_done">World %s imported</string>
+    <string name="world_import_failed">Could not import the world</string>
+    <string name="world_export">Export world</string>
+    <string name="world_export_failed">Could not export the world</string>
+    <string name="world_datapacks">Datapacks</string>
+    <string name="world_delete_title">Delete world</string>
+    <string name="world_delete_message">%s and everything in it will be deleted. This can\'t be undone.</string>
+    <string name="world_info">%1$s · last played %2$s</string>
+    <string name="screenshot_delete_title">Delete screenshot</string>
+    <string name="screenshot_delete_message">%s will be deleted. This can\'t be undone.</string>
+    <string name="screenshot_share">Share</string>
 </resources>

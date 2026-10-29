@@ -11,6 +11,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -313,6 +314,8 @@ public class ContentDetailFragment extends Fragment {
         ContentType type = mSession.getContentType();
         if (type == ContentType.RESOURCE_PACK) return R.string.content_kind_resourcepack;
         if (type == ContentType.SHADER_PACK) return R.string.content_kind_shaderpack;
+        if (type == ContentType.WORLD) return R.string.content_kind_world;
+        if (type == ContentType.DATAPACK) return R.string.content_kind_datapack;
         return R.string.content_kind_mod;
     }
 
@@ -474,6 +477,10 @@ public class ContentDetailFragment extends Fragment {
                 getResources().getDisplayMetrics());
         for (ContentInfo.GalleryImage image : info.gallery) {
             View row = inflater.inflate(R.layout.item_content_gallery, mGalleryList, false);
+            // Two pictures side by side (three in landscape), the grid fills its row evenly
+            row.setLayoutParams(new GridLayout.LayoutParams(
+                    GridLayout.spec(GridLayout.UNDEFINED, 1f), GridLayout.spec(GridLayout.UNDEFINED, 1f)));
+            ((GridLayout.LayoutParams) row.getLayoutParams()).width = 0;
             ShapeableImageView picture = row.findViewById(R.id.gallery_image);
             TextView caption = row.findViewById(R.id.gallery_caption);
             picture.setShapeAppearanceModel(picture.getShapeAppearanceModel().toBuilder()
@@ -484,7 +491,7 @@ public class ContentDetailFragment extends Fragment {
             }
             picture.setOnClickListener(v -> showFullImage(image));
             mGalleryList.addView(row);
-            track(RemoteImageLoader.load(image.url, 720, bitmap -> {
+            track(RemoteImageLoader.load(image.url, 480, bitmap -> {
                 if (bitmap != null) picture.setImageBitmap(bitmap);
             }));
         }
@@ -520,11 +527,21 @@ public class ContentDetailFragment extends Fragment {
         dialog.setContentView(root);
         root.setOnClickListener(v -> dialog.dismiss());
 
-        Future<?> load = RemoteImageLoader.load(image.url, 2048, (Bitmap bitmap) -> {
+        // The original upload at full quality, the gallery's own picture when that fails to load
+        String fullUrl = image.fullUrl != null && !image.fullUrl.isEmpty() ? image.fullUrl : image.url;
+        Future<?>[] load = new Future<?>[1];
+        load[0] = RemoteImageLoader.loadFullQuality(fullUrl, (Bitmap bitmap) -> {
+            if (bitmap == null && !fullUrl.equals(image.url)) {
+                load[0] = RemoteImageLoader.loadFullQuality(image.url, (Bitmap fallback) -> {
+                    progress.setVisibility(View.GONE);
+                    if (fallback != null) picture.setImageBitmap(fallback);
+                });
+                return;
+            }
             progress.setVisibility(View.GONE);
             if (bitmap != null) picture.setImageBitmap(bitmap);
         });
-        dialog.setOnDismissListener(d -> load.cancel(true));
+        dialog.setOnDismissListener(d -> load[0].cancel(true));
         dialog.show();
     }
 

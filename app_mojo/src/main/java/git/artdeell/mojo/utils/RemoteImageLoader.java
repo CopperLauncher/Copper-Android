@@ -36,6 +36,10 @@ import java.util.concurrent.FutureTask;
  */
 public final class RemoteImageLoader {
     private static final int MAX_DOWNLOAD_BYTES = 12 * 1024 * 1024;
+    /** Originals of gallery pictures can be big, they are only downloaded when one is opened */
+    private static final int MAX_FULL_DOWNLOAD_BYTES = 64 * 1024 * 1024;
+    /** Longest side a full quality picture is decoded at, the usual GPU texture limit */
+    public static final int FULL_QUALITY_DIMENSION = 4096;
     private static final int CONNECT_TIMEOUT_MS = 10_000;
     private static final int READ_TIMEOUT_MS = 20_000;
     private static final String USER_AGENT =
@@ -62,6 +66,17 @@ public final class RemoteImageLoader {
      */
     @NonNull
     public static Future<?> load(@NonNull String url, int maxDimension, @NonNull Callback callback) {
+        return load(url, maxDimension, MAX_DOWNLOAD_BYTES, callback);
+    }
+
+    /** Loads the picture at the best quality that can be shown, not downscaled to the screen size */
+    @NonNull
+    public static Future<?> loadFullQuality(@NonNull String url, @NonNull Callback callback) {
+        return load(url, FULL_QUALITY_DIMENSION, MAX_FULL_DOWNLOAD_BYTES, callback);
+    }
+
+    @NonNull
+    private static Future<?> load(@NonNull String url, int maxDimension, int maxBytes, @NonNull Callback callback) {
         String cacheKey = url + "@" + maxDimension;
         Bitmap cached = sCache.get(cacheKey);
         if (cached != null) {
@@ -71,7 +86,7 @@ public final class RemoteImageLoader {
             return done;
         }
         return MojoApplication.sExecutorService.submit(() -> {
-            Bitmap bitmap = download(url, maxDimension);
+            Bitmap bitmap = download(url, maxDimension, maxBytes);
             if (bitmap != null) sCache.put(cacheKey, bitmap);
             if (Thread.currentThread().isInterrupted()) return;
             Tools.runOnUiThread(() -> callback.onImage(bitmap));
@@ -79,8 +94,8 @@ public final class RemoteImageLoader {
     }
 
     @Nullable
-    private static Bitmap download(String url, int maxDimension) {
-        byte[] data = url.startsWith("data:") ? decodeDataUri(url) : fetch(url);
+    private static Bitmap download(String url, int maxDimension, int maxBytes) {
+        byte[] data = url.startsWith("data:") ? decodeDataUri(url) : fetch(url, maxBytes);
         if (data == null || data.length == 0 || Thread.currentThread().isInterrupted()) return null;
         try {
             BitmapFactory.Options bounds = new BitmapFactory.Options();
@@ -101,7 +116,7 @@ public final class RemoteImageLoader {
     }
 
     @Nullable
-    private static byte[] fetch(String url) {
+    private static byte[] fetch(String url, int maxBytes) {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) new URL(url).openConnection();
@@ -114,7 +129,7 @@ public final class RemoteImageLoader {
                 int read;
                 while ((read = in.read(buffer)) != -1) {
                     out.write(buffer, 0, read);
-                    if (out.size() > MAX_DOWNLOAD_BYTES) return null;
+                    if (out.size() > maxBytes) return null;
                     if (Thread.currentThread().isInterrupted()) return null;
                 }
                 return out.toByteArray();

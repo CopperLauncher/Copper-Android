@@ -19,7 +19,10 @@ public class ContentInfo {
     public final List<GalleryImage> gallery = new ArrayList<>();
 
     public static class GalleryImage {
+        /** The picture the gallery grid shows, may be recompressed by the site */
         public String url;
+        /** The original upload, shown when a picture is opened. Null when the site has no other. */
+        public String fullUrl;
         public String title;
         public String description;
     }

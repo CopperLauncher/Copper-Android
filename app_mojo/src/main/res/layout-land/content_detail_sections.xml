@@ -79,11 +79,11 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             android:visibility="gone" />
 
-        <LinearLayout
+        <GridLayout
             android:id="@+id/content_gallery_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical" />
+            android:columnCount="3" />
     </LinearLayout>
 
     <!-- Changelog -->

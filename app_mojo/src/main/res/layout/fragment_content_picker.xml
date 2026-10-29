@@ -77,8 +77,31 @@
         android:id="@+id/content_picker_shaderpacks"
         style="@style/LauncherMenuButton.Universal"
         android:layout_width="match_parent"
-        android:drawableStart="@drawable/ic_setting_screen_resolution"
+        android:drawableStart="@drawable/ic_px_shader"
         android:text="@string/mcl_content_shaderpacks" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_worlds"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_px_world"
+        android:text="@string/mcl_content_worlds" />
+
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_datapacks"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_px_datapack"
+        android:text="@string/mcl_content_datapacks" />
+
+    <!-- Manage Content only, screenshots can't be browsed -->
+    <com.kdt.mcgui.LauncherMenuButton
+        android:id="@+id/content_picker_screenshots"
+        style="@style/LauncherMenuButton.Universal"
+        android:layout_width="match_parent"
+        android:drawableStart="@drawable/ic_px_screenshot"
+        android:text="@string/mcl_content_screenshots"
+        android:visibility="gone" />
 
 </LinearLayout>
 </ScrollView>

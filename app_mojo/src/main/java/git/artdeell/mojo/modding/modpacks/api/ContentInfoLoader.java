@@ -73,6 +73,8 @@ public final class ContentInfoLoader {
                 if (url == null || url.isEmpty()) continue;
                 ContentInfo.GalleryImage galleryImage = new ContentInfo.GalleryImage();
                 galleryImage.url = url;
+                String rawUrl = GsonJsonUtils.getStringSafe(image, "raw_url");
+                galleryImage.fullUrl = rawUrl != null && !rawUrl.isEmpty() ? rawUrl : url;
                 galleryImage.title = GsonJsonUtils.getStringSafe(image, "title");
                 galleryImage.description = GsonJsonUtils.getStringSafe(image, "description");
                 info.gallery.add(galleryImage);
@@ -144,6 +146,7 @@ public final class ContentInfoLoader {
                 if (url == null || url.isEmpty()) continue;
                 ContentInfo.GalleryImage galleryImage = new ContentInfo.GalleryImage();
                 galleryImage.url = url;
+                galleryImage.fullUrl = url;
                 galleryImage.title = GsonJsonUtils.getStringSafe(screenshot, "title");
                 galleryImage.description = GsonJsonUtils.getStringSafe(screenshot, "description");
                 info.gallery.add(galleryImage);

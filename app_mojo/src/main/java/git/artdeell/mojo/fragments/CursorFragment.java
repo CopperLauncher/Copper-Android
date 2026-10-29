@@ -46,8 +46,6 @@ import java.util.Stack;
 public class CursorFragment extends Fragment {
     public static final String TAG = "CursorFragment";
 
-    private View mCardStandard;
-    private ImageView mPreviewStandard;
 
     // Custom Card
     private View mCardCustom;
@@ -114,11 +112,9 @@ public class CursorFragment extends Fragment {
                 ExtraCore.setValue(ExtraConstants.BACK_PREFERENCE, "true"));
 
         // Grid cards
-        mCardStandard = view.findViewById(R.id.card_cursor_standard);
         mCardCustom = view.findViewById(R.id.card_cursor_custom);
 
         // Previews
-        mPreviewStandard = view.findViewById(R.id.preview_standard);
         mPreviewCustom = view.findViewById(R.id.preview_custom);
 
         // Buttons
@@ -149,10 +145,7 @@ public class CursorFragment extends Fragment {
         // Setup Photoshop Checkered Background
         setCheckboardBackground(mEditorCheckboardContainer);
 
-        mPreviewStandard.setImageDrawable(ResourcesCompat.getDrawable(getResources(), R.drawable.ic_mouse_pointer, requireContext().getTheme()));
         updateCustomPreview();
-
-        mCardStandard.setOnClickListener(v -> selectStandard());
 
         // Custom Clicks
         mCardCustom.setOnClickListener(v -> selectCustomCursor());
@@ -364,16 +357,6 @@ public class CursorFragment extends Fragment {
         mTestPointer.setLayoutParams(params);
     }
 
-    private void selectStandard() {
-        LauncherPreferences.DEFAULT_PREF.edit()
-                .putString(CursorStyle.PREF_STYLE_KEY, CursorStyle.KEY_STANDARD)
-                .apply();
-        Context context = getContext();
-        if (context != null) Toast.makeText(context, getString(R.string.cursor_store_selected_standard), Toast.LENGTH_SHORT).show();
-        highlightActiveCard();
-        updateTestPointer();
-    }
-
     private void selectCustomCursor() {
         Context context = getContext();
         if (context == null) return;
@@ -409,7 +392,6 @@ public class CursorFragment extends Fragment {
     private void highlightActiveCard() {
         String key = LauncherPreferences.DEFAULT_PREF.getString(CursorStyle.PREF_STYLE_KEY, CursorStyle.KEY_STANDARD);
         boolean standard = CursorStyle.KEY_STANDARD.equals(key);
-        mCardStandard.setAlpha(standard ? 1.0f : 0.6f);
         mCardCustom.setAlpha(standard ? 0.6f : 1.0f);
     }
 

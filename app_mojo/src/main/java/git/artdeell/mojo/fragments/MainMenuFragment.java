@@ -40,6 +40,7 @@ import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.utils.FileUtils;
+import git.artdeell.mojo.utils.WorldUtils;
 
 import java.io.File;
 
@@ -273,6 +274,9 @@ public class MainMenuFragment extends Fragment {
             View modsButton = dialog.findViewById(R.id.content_picker_mods);
             View resourcepacksButton = dialog.findViewById(R.id.content_picker_resourcepacks);
             View shaderpacksButton = dialog.findViewById(R.id.content_picker_shaderpacks);
+            View worldsButton = dialog.findViewById(R.id.content_picker_worlds);
+            View datapacksButton = dialog.findViewById(R.id.content_picker_datapacks);
+            View screenshotsButton = dialog.findViewById(R.id.content_picker_screenshots);
 
             if (title != null) {
                 title.setText(manage ? R.string.content_picker_title_manage
@@ -304,13 +308,38 @@ public class MainMenuFragment extends Fragment {
                 dialog.dismiss();
                 onContentTypeChosen(manage, ContentType.SHADER_PACK);
             });
+            if (worldsButton != null) worldsButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, ContentType.WORLD);
+            });
+            if (datapacksButton != null) datapacksButton.setOnClickListener(v -> {
+                dialog.dismiss();
+                onContentTypeChosen(manage, ContentType.DATAPACK);
+            });
+            // Screenshots can only be managed
+            if (screenshotsButton != null) {
+                screenshotsButton.setVisibility(manage ? View.VISIBLE : View.GONE);
+                screenshotsButton.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    onContentTypeChosen(true, ContentType.SCREENSHOT);
+                });
+            }
         });
 
         dialog.show();
     }
 
     private void onContentTypeChosen(boolean manage, ContentType contentType) {
-        if (manage) {
+        if (manage && contentType == ContentType.WORLD) {
+            openPane(ManageWorldsFragment.class, ManageWorldsFragment.TAG, new Bundle());
+        } else if (manage && contentType == ContentType.SCREENSHOT) {
+            openPane(ManageScreenshotsFragment.class, ManageScreenshotsFragment.TAG, new Bundle());
+        } else if (manage && contentType == ContentType.DATAPACK) {
+            // Datapacks live inside a world, so the world comes first
+            WorldUtils.pickWorld(requireContext(), R.string.datapack_manage_pick_world, world ->
+                    openPane(ManageModsFragment.class, ManageModsFragment.datapackTag(world),
+                            ManageModsFragment.datapackArgs(world)));
+        } else if (manage) {
             Bundle args = new Bundle();
             args.putString(ManageModsFragment.ARG_CONTENT_TYPE, contentType.name());
             openPane(ManageModsFragment.class, ManageModsFragment.TAG + ":" + contentType.name(), args);
