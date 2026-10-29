@@ -8,7 +8,8 @@
     <Preference
         android:title="@string/preference_edit_controls_title"
         android:summary="@string/preference_edit_controls_summary"
-        app2:icon="@drawable/ic_px_gamepad">
+        app2:icon="@drawable/ic_px_gamepad"
+        >
         <intent android:targetPackage="@string/application_package" android:targetClass="git.artdeell.mojo.CustomControlsActivity" android:action=".CustomControlsActivity"/>
     </Preference>
 
@@ -16,6 +17,7 @@
         android:title="@string/preference_category_gestures">
 
         <androidx.preference.SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="false"
             android:icon="@drawable/ic_px_nogestures"
             android:key="disableGestures"
@@ -23,6 +25,7 @@
             android:title="@string/mcl_disable_gestures" />
 
         <androidx.preference.SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:defaultValue="false"
             android:key="disableDoubleTap"
             android:summary="@string/mcl_disable_swap_hand_subtitle"
@@ -68,6 +71,7 @@
             app2:seekBarIncrement="@integer/button_scale_seekbar_increment"
             />
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="buttonAllCaps"
             android:defaultValue="true"
             android:title="@string/mcl_setting_title_buttonallcaps"
@@ -93,6 +97,14 @@
             android:icon="@drawable/ic_px_pointer_size"
             />
 
+        <Preference
+            android:key="cursor_style_setting"
+            android:title="@string/pref_cursor_style_title"
+            android:summary="@string/pref_cursor_style_summary"
+            android:fragment="git.artdeell.mojo.fragments.CursorFragment"
+            android:icon="@drawable/ic_px_virtual_mouse"
+            />
+
         <git.artdeell.mojo.prefs.CustomSeekBarPreference
             android:key="mousespeed"
             android:summary="@string/mcl_setting_subtitle_mousespeed"
@@ -104,6 +116,7 @@
             app2:seekBarIncrement="@integer/mouse_speed_seekbar_increment"
             app2:showSeekBarValue="true" />
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="mouse_start"
             android:title="@string/preference_mouse_start_title"
             android:summary="@string/preference_mouse_start_description"
@@ -115,6 +128,7 @@
         android:title="@string/preference_category_gyro_controls"
         >
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="enableGyro"
             android:title="@string/preference_enable_gyro_title"
             android:summary="@string/preference_enable_gyro_description"/>
@@ -136,16 +150,19 @@
             app2:selectable="false"
             app2:showSeekBarValue="true"/>
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="gyroSmoothing"
             android:title="@string/preference_gyro_smoothing_title"
             android:summary="@string/preference_gyro_smoothing_description"
             android:defaultValue="true"
             />
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="gyroInvertX"
             android:title="@string/preference_gyro_invert_x_axis"
             android:summary="@string/preference_gyro_invert_x_axis_description"/>
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="gyroInvertY"
             android:title="@string/preference_gyro_invert_y_axis"
             android:summary="@string/preference_gyro_invert_y_axis_description"/>
@@ -177,6 +194,7 @@
 
     <PreferenceCategory android:title="@string/preference_category_keyboard">
         <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="keyboardAutoPanning"
             android:title="@string/preference_keyboard_autopan_title"
             android:summary="@string/preference_keyboard_autopan_summary"

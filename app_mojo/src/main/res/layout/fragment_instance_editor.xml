@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_app"
+    android:background="?attr/colorSurface"
     android:orientation="vertical"
     >
     <ScrollView
@@ -13,7 +13,8 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fadeScrollbars="true"
-        android:scrollbarThumbVertical="@color/minebutton_color">
+        android:overScrollMode="never"
+        android:scrollbarThumbVertical="?attr/colorPrimary">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
@@ -246,6 +247,29 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/fragment_padding_medium"
+        android:layout_marginTop="13dp"
+        >
+        <com.kdt.mcgui.MineButton
+            android:id="@+id/vprof_editor_export_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/export_mrpack_button"
+            android:layout_marginEnd="@dimen/padding_medium" />
+
+        <com.kdt.mcgui.MineButton
+            android:id="@+id/vprof_editor_shortcut_button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/padding_medium"
+            android:text="@string/create_shortcut" />
+    </LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

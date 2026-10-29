@@ -98,7 +98,7 @@ public class InstanceInstaller implements ContextExecutorTask {
             instance.versionId = targetVersionId;
             instance.write();
         }
-        ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, null);
+        ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, true);
     }
 
     public static void postInstallCheck(Context context) {

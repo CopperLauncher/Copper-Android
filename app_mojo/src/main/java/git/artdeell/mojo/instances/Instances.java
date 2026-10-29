@@ -5,6 +5,8 @@ import android.util.Log;
 import com.google.gson.JsonSyntaxException;
 
 import git.artdeell.mojo.Tools;
+import git.artdeell.mojo.extra.ExtraConstants;
+import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.utils.FileUtils;
 import git.artdeell.mojo.utils.JSONUtils;
@@ -179,7 +181,32 @@ public class Instances {
      * @throws IOException if directory creation/instance writing fails
      */
     public static Instance createInstance(InstanceSetter instanceSetter, String namePrefix) throws IOException {
-        return internalCreateInstance(instanceSetter, namePrefix);
+        Instance instance = internalCreateInstance(instanceSetter, namePrefix);
+        // Let the instance list know about the new instance
+        ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, true);
+        return instance;
+    }
+
+    /**
+     * @return the key (directory name) of the currently selected instance, or an empty string
+     */
+    public static String getSelectedInstanceKey() {
+        return LauncherPreferences.DEFAULT_PREF.getString(LauncherPreferences.PREF_KEY_CURRENT_INSTANCE, "");
+    }
+
+    /**
+     * Load a single instance by its key (see {@link DisplayInstance#getKey()}).
+     * @param key the directory name of the instance
+     * @return the instance, or null if it doesn't exist or can't be read
+     */
+    public static Instance loadInstance(String key) {
+        if(key == null || key.isEmpty()) return null;
+        File instanceRoot = new File(sInstancePath, key);
+        if(!metadataLocation(instanceRoot).exists()) return null;
+        Instance instance = read(instanceRoot, Instance.class);
+        if(instance == null) return null;
+        instance.sanitize();
+        return instance;
     }
 
     /**

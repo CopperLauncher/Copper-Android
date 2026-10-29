@@ -2,10 +2,14 @@
 
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
-        <shape android:shape="rectangle">
+        <shape
+            android:shape="rectangle" >
+
+            <corners android:radius="12dp" />
+
             <stroke
                 android:width="@dimen/_2sdp"
-                android:color="@color/minebutton_color"/>
+                android:color="?attr/colorPrimary"/>
         </shape>
     </item>
 </layer-list>

@@ -1,28 +1,39 @@
 package git.artdeell.mojo.modding.modpacks;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
+import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewStub;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.content.res.AppCompatResources;
+import androidx.core.widget.TextViewCompat;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.drawable.RoundedBitmapDrawable;
 import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.color.MaterialColors;
 import com.kdt.SimpleArrayAdapter;
+import com.kdt.mcgui.MineButton;
 
 import git.artdeell.mojo.MojoApplication;
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
+import git.artdeell.mojo.modding.modpacks.api.InstalledStateResolver;
 import git.artdeell.mojo.modding.modpacks.api.ModpackApi;
 import git.artdeell.mojo.modding.modpacks.imagecache.ImageReceiver;
 import git.artdeell.mojo.modding.modpacks.imagecache.ModIconCache;
@@ -33,10 +44,14 @@ import git.artdeell.mojo.modding.modpacks.models.SearchFilters;
 import git.artdeell.mojo.modding.modpacks.models.SearchResult;
 import git.artdeell.mojo.progresskeeper.TaskCountListener;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> implements TaskCountListener {
@@ -50,11 +65,18 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private final Set<ViewHolder> mViewHolderSet = Collections.newSetFromMap(new WeakHashMap<>());
     private final ModIconCache mIconCache = new ModIconCache();
     private final SearchResultCallback mSearchResultCallback;
+    /* When set, tapping an item reports it here instead of expanding the card in place */
+    private OnContentClickListener mContentClickListener;
     private ModItem[] mModItems;
     private final ModpackApi mModpackApi;
 
-    /* Cache for ever so slightly rounding the image for the corner not to stick out of the layout */
-    private final float mCornerDimensionCache;
+    /* Corner radius of the logos, as a fraction of the logo size. Keeps the logo inside the rounded card */
+    private static final float ICON_CORNER_RATIO = 0.2f;
+
+    /* Versions of the cards that were on screen, so scrolling back doesn't load them again */
+    private final LruCache<String, ModDetail> mDetailCache = new LruCache<>(48);
+    /* Own small pool, a screenful of cards must not starve the search and image loading */
+    private static final ExecutorService sCardStatePool = Executors.newFixedThreadPool(2);
 
     private Future<?> mTaskInProgress;
     private SearchFilters mSearchFilters;
@@ -64,10 +86,17 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
 
     public ModItemAdapter(Resources resources, ModpackApi api, SearchResultCallback callback) {
-        mCornerDimensionCache = resources.getDimension(R.dimen._1sdp) / 250;
         mModpackApi = api;
         mModItems = new ModItem[]{};
         mSearchResultCallback = callback;
+    }
+
+    /**
+     * Makes the items open a detail screen when tapped. Without a listener the card expands in
+     * place with a version spinner, which is how the adapter used to work.
+     */
+    public void setOnContentClickListener(OnContentClickListener listener) {
+        mContentClickListener = listener;
     }
 
     public void performSearchQuery(SearchFilters searchFilters) {
@@ -77,6 +106,8 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         }
         this.mSearchFilters = searchFilters;
         this.mLastPage = false;
+        // The versions depend on the filters
+        mDetailCache.evictAll();
         mTaskInProgress = new SelfReferencingFuture(new SearchApiTask(mSearchFilters, null))
                 .startOnExecutor(MojoApplication.sExecutorService);
     }
@@ -135,12 +166,39 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     @Override
     public boolean onUpdateTaskCount(int taskCount) {
         Tools.runOnUiThread(()->{
+            boolean justFinished = mTasksRunning && taskCount == 0;
             mTasksRunning = taskCount != 0;
             for(ViewHolder viewHolder : mViewHolderSet) {
                 viewHolder.updateInstallButtonState();
             }
+            // Something was installed, the cards have to say Installed / Update accordingly
+            if(justFinished) refreshCachedInstalledStates();
         });
         return false;
+    }
+
+    private void refreshCachedInstalledStates() {
+        if(!(mModpackApi instanceof InstalledStateResolver)) return;
+        final InstalledStateResolver resolver = (InstalledStateResolver) mModpackApi;
+        final List<ModDetail> details = new ArrayList<>(mDetailCache.snapshot().values());
+        if(details.isEmpty()) return;
+        sCardStatePool.execute(() -> {
+            for(ModDetail detail : details) {
+                try {
+                    resolver.resolveInstalledState(detail);
+                } catch (Exception ignored) {}
+            }
+            Tools.runOnUiThread(() -> {
+                for(ViewHolder viewHolder : mViewHolderSet) {
+                    if(viewHolder.mCardDetail != null) viewHolder.renderCardAction();
+                }
+            });
+        });
+    }
+
+    @Override
+    public void onViewRecycled(@NonNull RecyclerView.ViewHolder holder) {
+        if(holder instanceof ViewHolder) ((ViewHolder) holder).cancelCardState();
     }
 
 
@@ -153,6 +211,11 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private ModItem mModItem = null;
         private final TextView mTitle, mDescription;
         private final ImageView mIconView, mSourceView;
+        private final TextView mDownloadsText, mFavoritesText;
+        private final MineButton mCardAction;
+        /* The versions of the item, loaded lazily for the install button of the card */
+        private ModDetail mCardDetail;
+        private Future<?> mCardFuture;
         private View mExtendedLayout;
         private Spinner mExtendedSpinner;
         private Button mExtendedButton;
@@ -169,6 +232,10 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             super(view);
             mViewHolderSet.add(this);
             view.setOnClickListener(v -> {
+                if(mContentClickListener != null) {
+                    if(mModItem != null) mContentClickListener.onContentClicked(mModItem);
+                    return;
+                }
                 if(!hasExtended()){
                     // Inflate the ViewStub
                     mExtendedLayout = ((ViewStub)v.findViewById(R.id.mod_limited_state_stub)).inflate();
@@ -176,10 +243,37 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                     mExtendedSpinner = mExtendedLayout.findViewById(R.id.mod_extended_version_spinner);
                     mExtendedErrorTextView = mExtendedLayout.findViewById(R.id.mod_extended_error_textview);
 
-                    mExtendedButton.setOnClickListener(v1 -> mModpackApi.handleModpackInstallation(
-                            mExtendedButton.getContext().getApplicationContext(),
-                            mModDetail,
-                            mExtendedSpinner.getSelectedItemPosition()));
+                    mExtendedButton.setOnClickListener(v1 -> {
+                        final int selectedVersion = mExtendedSpinner.getSelectedItemPosition();
+                        if (computeButtonState(selectedVersion) == InstallButtonState.INSTALLED) {
+                            new MaterialAlertDialogBuilder(mExtendedButton.getContext())
+                                    .setTitle(R.string.mod_reinstall_confirm_title)
+                                    .setMessage(mExtendedButton.getContext().getString(
+                                            R.string.mod_reinstall_confirm_message,
+                                            mModDetail != null ? mModDetail.title : ""))
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .setPositiveButton(android.R.string.ok, (d, w) ->
+                                            mModpackApi.handleInstallation(
+                                                    mExtendedButton.getContext().getApplicationContext(),
+                                                    mModDetail,
+                                                    selectedVersion))
+                                    .show();
+                        } else {
+                            mModpackApi.handleInstallation(
+                                    mExtendedButton.getContext().getApplicationContext(),
+                                    mModDetail,
+                                    selectedVersion);
+                        }
+                    });
+                    mExtendedSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View selectedView, int position, long id) {
+                            updateExtendedButtonLabel();
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) { }
+                    });
                     mExtendedSpinner.setAdapter(mLoadingAdapter);
                 } else {
                     if(isExtended()) closeDetailedView();
@@ -227,6 +321,13 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             mDescription = view.findViewById(R.id.mod_body_textview);
             mIconView = view.findViewById(R.id.mod_thumbnail_imageview);
             mSourceView = view.findViewById(R.id.mod_source_imageview);
+            mDownloadsText = view.findViewById(R.id.mod_downloads_text);
+            mFavoritesText = view.findViewById(R.id.mod_favorites_text);
+            mCardAction = view.findViewById(R.id.mod_action_button);
+            int iconSize = view.getResources().getDimensionPixelSize(R.dimen._14sdp);
+            int iconTint = MaterialColors.getColor(view, com.google.android.material.R.attr.colorOnSurfaceVariant);
+            setStatIcon(mDownloadsText, R.drawable.ic_download, iconSize, iconTint);
+            setStatIcon(mFavoritesText, R.drawable.ic_favorite, iconSize, iconTint);
         }
 
         /** Display basic info about the moditem */
@@ -254,31 +355,122 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 mImageReceiver = null;
                 mThumbnailBitmap = bm;
                 RoundedBitmapDrawable drawable = RoundedBitmapDrawableFactory.create(mIconView.getResources(), bm);
+                drawable.setCornerRadius(ICON_CORNER_RATIO * Math.min(bm.getWidth(), bm.getHeight()));
                 mIconView.setImageDrawable(drawable);
             };
             mIconCache.getImage(mImageReceiver, mModItem.getIconCacheTag(), mModItem.imageUrl);
             mSourceView.setImageResource(getSourceDrawable(item.apiSource));
             mTitle.setText(item.title);
             mDescription.setText(item.description);
+            bindCount(mDownloadsText, item.downloads);
+            bindCount(mFavoritesText, item.favorites);
+            bindCardAction(item);
 
             if(hasExtended()){
                 closeDetailedView();
             }
         }
 
+        private void setStatIcon(TextView text, int drawableRes, int size, int tint) {
+            Drawable icon = AppCompatResources.getDrawable(text.getContext(), drawableRes);
+            if (icon == null) return;
+            icon.setBounds(0, 0, size, size);
+            text.setCompoundDrawablesRelative(icon, null, null, null);
+            TextViewCompat.setCompoundDrawableTintList(text, ColorStateList.valueOf(tint));
+        }
+
+        /**
+         * The install / update / installed button of the card. It acts on the newest version that
+         * fits the current filters, the other versions are on the detail screen. Whether it is
+         * installed needs the versions, so those are loaded in the background for the cards that
+         * are actually on screen.
+         */
+        private void bindCardAction(ModItem item) {
+            cancelCardState();
+            mCardDetail = null;
+
+            ModDetail cached = mDetailCache.get(item.getIconCacheTag());
+            if (cached != null) {
+                mCardDetail = cached;
+                renderCardAction();
+                return;
+            }
+
+            mCardAction.setVisibility(View.VISIBLE);
+            InstallButtonStyle.apply(mCardAction, InstallButtonStyle.State.INSTALL);
+            mCardAction.setText(R.string.content_action_loading);
+            mCardAction.setEnabled(false);
+            mCardAction.setAlpha(0.5f);
+            mCardAction.setOnClickListener(null);
+
+            final String key = item.getIconCacheTag();
+            mCardFuture = sCardStatePool.submit(() -> {
+                ModDetail detail = null;
+                try {
+                    detail = mModpackApi.getModDetails(item);
+                } catch (Exception ignored) {
+                    // No button for this one, same as when it has no versions
+                }
+                if (Thread.currentThread().isInterrupted()) return;
+                final ModDetail result = detail;
+                Tools.runOnUiThread(() -> {
+                    if (mModItem != item) return; // recycled while loading
+                    if (result != null) mDetailCache.put(key, result);
+                    mCardDetail = result;
+                    renderCardAction();
+                });
+            });
+        }
+
+        private void cancelCardState() {
+            if (mCardFuture != null) {
+                mCardFuture.cancel(true);
+                mCardFuture = null;
+            }
+        }
+
+        private void renderCardAction() {
+            ModDetail detail = mCardDetail;
+            if (detail == null || detail.versionNames == null || detail.versionNames.length == 0) {
+                mCardAction.setVisibility(View.GONE);
+                return;
+            }
+            final InstallButtonStyle.State state = InstallButtonStyle.stateOf(detail, 0);
+            mCardAction.setVisibility(View.VISIBLE);
+            InstallButtonStyle.apply(mCardAction, state);
+            mCardAction.setEnabled(!mTasksRunning);
+            mCardAction.setAlpha(mTasksRunning ? 0.5f : 1f);
+            mCardAction.setOnClickListener(v -> {
+                if (state == InstallButtonStyle.State.INSTALLED) {
+                    new MaterialAlertDialogBuilder(v.getContext())
+                            .setTitle(R.string.mod_reinstall_confirm_title)
+                            .setMessage(v.getContext().getString(R.string.mod_reinstall_confirm_message, detail.title))
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .setPositiveButton(android.R.string.ok, (d, w) ->
+                                    mModpackApi.handleInstallation(v.getContext().getApplicationContext(), detail, 0))
+                            .show();
+                } else {
+                    mModpackApi.handleInstallation(v.getContext().getApplicationContext(), detail, 0);
+                }
+            });
+        }
+
         /** Display extended info/interaction about a modpack */
         private void setStateDetailed(ModDetail detailedItem) {
+            mModDetail = detailedItem;
             if(detailedItem != null) {
                 setInstallEnabled(true);
                 mExtendedErrorTextView.setVisibility(View.GONE);
                 mVersionAdapter.setObjects(Arrays.asList(detailedItem.versionNames));
                 mExtendedSpinner.setAdapter(mVersionAdapter);
+                updateExtendedButtonLabel();
             } else {
                 closeDetailedView();
                 setInstallEnabled(false);
                 mExtendedErrorTextView.setVisibility(View.VISIBLE);
                 mExtendedSpinner.setAdapter(null);
                 mVersionAdapter.setObjects(null);
+                if (mExtendedButton != null) mExtendedButton.setText(R.string.generic_install);
             }
         }
 
@@ -332,8 +524,56 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private void updateInstallButtonState() {
             if(mExtendedButton != null)
                 mExtendedButton.setEnabled(mInstallEnabled && !mTasksRunning);
+            if(mCardDetail != null) {
+                mCardAction.setEnabled(!mTasksRunning);
+                mCardAction.setAlpha(mTasksRunning ? 0.5f : 1f);
+            }
+        }
+
+        /**
+         * Compares a candidate version index against mModDetail.installedVersionIndex
+         * (resolved by ModsInstallApi via local jar hashing) to decide whether the
+         * install button should read Install / Installed / Update / Downgrade.
+         * Versions are ordered newest-first, so a lower index than the installed
+         * one means "this is newer" (Update), and a higher index means "this is
+         * older" (Downgrade).
+         */
+        private InstallButtonState computeButtonState(int selectedIndex) {
+            if (mModDetail == null || mModDetail.isModpack || mModDetail.installedVersionIndex < 0) {
+                return InstallButtonState.INSTALL;
+            }
+            int installedIndex = mModDetail.installedVersionIndex;
+            if (selectedIndex == installedIndex) return InstallButtonState.INSTALLED;
+            return selectedIndex < installedIndex ? InstallButtonState.UPDATE : InstallButtonState.DOWNGRADE;
+        }
+
+        private void updateExtendedButtonLabel() {
+            if (mExtendedButton == null || mExtendedSpinner == null) return;
+            int selectedIndex = mExtendedSpinner.getSelectedItemPosition();
+            switch (computeButtonState(selectedIndex)) {
+                case INSTALLED:
+                    mExtendedButton.setText(R.string.mod_install_installed);
+                    break;
+                case UPDATE:
+                    mExtendedButton.setText(R.string.mod_install_update);
+                    break;
+                case DOWNGRADE:
+                    mExtendedButton.setText(R.string.mod_install_downgrade);
+                    break;
+                default:
+                    mExtendedButton.setText(R.string.generic_install);
+                    break;
+            }
         }
     }
+
+    /**
+     * Install button states for the search/install screen — moved out of the
+     * (non-static) ViewHolder inner class since Java forbids static
+     * declarations, which an enum implicitly is, inside non-static inner
+     * classes.
+     */
+    private enum InstallButtonState { INSTALL, INSTALLED, UPDATE, DOWNGRADE }
 
     /**
      * The view holder used to hold the progress bar at the end of the list
@@ -398,6 +638,15 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 }
             });
         }
+    }
+
+    private static void bindCount(TextView text, long count) {
+        text.setVisibility(count < 0 ? View.GONE : View.VISIBLE);
+        if (count >= 0) text.setText(git.artdeell.mojo.utils.CountFormatter.compact(count));
+    }
+
+    public interface OnContentClickListener {
+        void onContentClicked(ModItem item);
     }
 
     public interface SearchResultCallback {

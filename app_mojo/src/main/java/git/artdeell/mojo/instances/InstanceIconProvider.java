@@ -32,11 +32,20 @@ public class InstanceIconProvider {
 
     /**
      * Fetch an icon from the cache, or load it if it's not cached.
+     * Every call returns its own Drawable, because views resize the bounds of the Drawable they
+     * show. A shared one would be resized by whichever view was set up last (the instance bar,
+     * the dropdown entries, the instance editor), leaving the others with the wrong icon size.
      * @param resources the Resources object, used for creating drawables
      * @param instance the instance
      * @return an icon drawable
      */
     public static @NonNull Drawable fetchIcon(Resources resources, @NonNull DisplayInstance instance) {
+        Drawable cachedIcon = fetchCachedIcon(resources, instance);
+        Drawable.ConstantState state = cachedIcon.getConstantState();
+        return new RoundedIconDrawable(state != null ? state.newDrawable(resources) : cachedIcon);
+    }
+
+    private static @NonNull Drawable fetchCachedIcon(Resources resources, @NonNull DisplayInstance instance) {
         int identityHashCode = System.identityHashCode(instance);
 
         Drawable cachedIcon = sIconCache.get(identityHashCode);
@@ -92,10 +101,28 @@ public class InstanceIconProvider {
         return ResourcesCompat.getDrawable(resources, staticIconResource, null);
     }
 
-    private static int getStaticIconResource(String icon) {
+    /**
+     * Get the drawable resource of a static icon.
+     * @param icon static icon name
+     * @return the drawable resource id, -1 when there is no such static icon
+     */
+    public static int getStaticIconResource(String icon) {
         Integer iconResource = sStaticIcons.get(icon);
         if(iconResource == null) return -1;
         return iconResource;
+    }
+
+    /**
+     * Fetch a static icon by its name. Every call returns its own Drawable, see {@link #fetchIcon}.
+     * @param resources the Resources object, used for creating drawables
+     * @param name static icon name
+     * @return the icon drawable, the fallback icon when there is no such static icon
+     */
+    public static @NonNull Drawable fetchStaticIconByName(Resources resources, @NonNull String name) {
+        Drawable icon = getStaticIcon(resources, name);
+        if(icon == null) icon = fetchFallbackIcon(resources);
+        Drawable.ConstantState state = icon.getConstantState();
+        return new RoundedIconDrawable(state != null ? state.newDrawable(resources) : icon);
     }
 
     /**

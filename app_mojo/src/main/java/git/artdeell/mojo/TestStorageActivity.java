@@ -1,8 +1,9 @@
 package git.artdeell.mojo;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -47,7 +48,7 @@ public class TestStorageActivity extends Activity {
 
     private void showRerequestDialog() {
         if(mPermissionRequestDialog != null) mPermissionRequestDialog.dismiss();
-        mPermissionRequestDialog = new AlertDialog.Builder(this)
+        mPermissionRequestDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.global_error)
                 .setMessage(R.string.toast_permission_denied)
                 .setPositiveButton(android.R.string.ok,(d,i)->requestStoragePermission())
@@ -96,6 +97,11 @@ public class TestStorageActivity extends Activity {
         AsyncAssetManager.unpackSingleFiles(this);
 
         Intent intent =  new Intent(this, LauncherActivity.class);
+        Intent source = getIntent();
+        if(source != null) {
+            if(source.getAction() != null) intent.setAction(source.getAction());
+            if(source.getExtras() != null) intent.putExtras(source.getExtras());
+        }
         startActivity(intent);
         finish();
     }

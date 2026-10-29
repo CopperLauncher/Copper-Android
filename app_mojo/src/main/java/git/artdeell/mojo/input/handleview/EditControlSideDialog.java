@@ -14,9 +14,8 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.Spinner;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import android.widget.TextView;
-
-import androidx.appcompat.widget.SwitchCompat;
 
 import com.kdt.SideDialogView;
 
@@ -63,7 +62,7 @@ public class EditControlSideDialog extends SideDialogView {
         }
     };
     private EditText mNameEditText, mWidthEditText, mHeightEditText;
-    private SwitchCompat mToggleSwitch, mPassthroughSwitch, mSwipeableSwitch, mForwardLockSwitch, mAbsoluteTrackingSwitch;
+    private MaterialSwitch mToggleSwitch, mPassthroughSwitch, mSwipeableSwitch, mForwardLockSwitch, mAbsoluteTrackingSwitch;
     private Spinner mOrientationSpinner;
     private final TextView[] mKeycodeTextviews = new TextView[4];
     private SeekBar mStrokeWidthSeekbar, mCornerRadiusSeekbar, mAlphaSeekbar;

@@ -1,13 +1,17 @@
 package git.artdeell.mojo.dialogs;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.widget.Button;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import git.artdeell.mojo.utils.AnimationManager;
 
 public abstract class PackageSelector {
     protected AlertDialog mDialog;
@@ -31,8 +35,9 @@ public abstract class PackageSelector {
         PackageAdapter<?> adapter = createAdapter(context, this);
         mDialogView.setAdapter(adapter);
         mAdapter = adapter;
+        AnimationManager.applyListAnimation(mDialogView);
 
-        mDialog = new AlertDialog.Builder(context)
+        mDialog = new MaterialAlertDialogBuilder(context)
                 .setTitle(getTitleRes())
                 .setView(mDialogView)
                 .setPositiveButton(getPositiveButtonText(), (dialog, which) -> onPositive(context, launcher))

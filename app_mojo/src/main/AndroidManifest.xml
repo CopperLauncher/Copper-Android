@@ -37,7 +37,7 @@
         android:process=":launcher"
         android:resizeableActivity="true"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:theme="@style/MojoLauncher.AppTheme"
+        android:theme="@style/AppTheme"
         android:networkSecurityConfig="@xml/netconfig"
         android:enableOnBackInvokedCallback="false"
         tools:ignore="UnusedAttribute">
@@ -87,14 +87,14 @@
         <activity
             android:name=".FatalErrorActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:theme="@style/Theme.AppCompat.DayNight.Dialog" />
+            android:theme="@style/Theme.Copper.Dialog" />
         <activity android:name=".ShowErrorActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:theme="@style/Theme.AppCompat.DayNight.Dialog" />
+            android:theme="@style/Theme.Copper.Dialog" />
         <activity
             android:name=".ExitActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:theme="@style/Theme.AppCompat.DayNight.Dialog" />
+            android:theme="@style/Theme.Copper.Dialog" />
         <activity
             android:process=":gui_installer"
             android:name=".awt.AWTActivity"
@@ -128,6 +128,16 @@
                 <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
             </intent-filter>
         </provider>
+
+        <activity
+            android:name="git.artdeell.mojo.mobileglues.MainActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme" />
+
+        <service
+            android:name="git.artdeell.mojo.mobileglues.MgQueryService"
+            android:exported="false"
+            android:process=":mgquery" />
 
         <service android:name=".services.ProgressService"
             android:foregroundServiceType="dataSync"/>

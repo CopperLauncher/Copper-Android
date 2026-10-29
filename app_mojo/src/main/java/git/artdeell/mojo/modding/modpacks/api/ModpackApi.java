@@ -9,6 +9,7 @@ import git.artdeell.mojo.MojoApplication;
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.modding.modpacks.api.modloader.LoaderInstaller;
+import git.artdeell.mojo.modding.modpacks.models.ContentCategory;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
 import git.artdeell.mojo.modding.modpacks.models.SearchFilters;
@@ -16,6 +17,8 @@ import git.artdeell.mojo.modding.modpacks.models.SearchResult;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -38,6 +41,16 @@ public interface ModpackApi {
     }
 
     /**
+     * Blocking, call it off the main thread.
+     * @param searchFilters Filters, only the kind of content (and the engine) matter
+     * @return the categories results can be filtered by, empty when there are none or they
+     *         can't be loaded
+     */
+    default List<ContentCategory> getCategories(SearchFilters searchFilters) {
+        return Collections.emptyList();
+    }
+
+    /**
      * Fetch the mod details
      * @param item The moditem that was selected
      * @return Detailed data about a mod(pack)
@@ -49,7 +62,7 @@ public interface ModpackApi {
      * @param modDetail The mod detail data
      * @param selectedVersion The selected version
      */
-    default void handleModpackInstallation(Context context, ModDetail modDetail, int selectedVersion) {
+    default void handleInstallation(Context context, ModDetail modDetail, int selectedVersion) {
         // Doing this here since when starting installation, the progress does not start immediately
         // which may lead to two concurrent installations (very bad)
         ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, R.string.global_waiting);

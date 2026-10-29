@@ -22,6 +22,14 @@
             />
 
         <Preference
+            android:key="appearance_screen_setting"
+            android:title="@string/preference_appearance_title"
+            android:summary="@string/preference_appearance_description"
+            android:fragment="git.artdeell.mojo.prefs.screens.LauncherPreferenceAppearanceFragment"
+            android:icon="@drawable/ic_px_appearance"
+            />
+
+        <Preference
             android:key="control_screen_setting"
             android:title="@string/preference_control_title"
             android:summary="@string/preference_control_description"
@@ -55,6 +63,7 @@
     </PreferenceCategory>
 
     <SwitchPreferenceCompat
+        android:widgetLayout="@layout/preference_widget_material_switch"
         android:title="@string/preference_force_english_title"
         android:key="force_english"
         android:summary="@string/preference_force_english_description"

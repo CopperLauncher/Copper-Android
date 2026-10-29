@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 import java.util.zip.ZipInputStream;
 
 public class ZipUtils {
@@ -71,5 +72,21 @@ public class ZipUtils {
                 IOUtils.copy(inputStream, fs);
             }
         }
+    }
+
+    /** Writes the given bytes into the ZipOutputStream as a new entry. */
+    public static void putBytes(ZipOutputStream zipOutputStream, String entryName, byte[] data) throws IOException {
+        zipOutputStream.putNextEntry(new ZipEntry(entryName));
+        zipOutputStream.write(data);
+        zipOutputStream.closeEntry();
+    }
+
+    /** Copies a file into the ZipOutputStream as a new entry. */
+    public static void putFile(ZipOutputStream zipOutputStream, String entryName, File file) throws IOException {
+        zipOutputStream.putNextEntry(new ZipEntry(entryName));
+        try (InputStream inputStream = new java.io.FileInputStream(file)) {
+            IOUtils.copy(inputStream, zipOutputStream);
+        }
+        zipOutputStream.closeEntry();
     }
 }

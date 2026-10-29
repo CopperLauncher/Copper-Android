@@ -1,58 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Light or not? -->
-    <style name="MojoLauncher" parent="@style/Theme.AppCompat.NoActionBar">
-        <item name="windowNoTitle">true</item>
-        <item name="windowActionBar">false</item>
-        <item name="android:windowContentOverlay">@null</item>
-        <item name="android:statusBarColor">@color/background_status_bar</item>
-        <item name="android:navigationBarColor">@color/background_app</item>
-        <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
-        <item name="android:textSize">@dimen/_12ssp</item>
-        <item name="dialogCornerRadius">0dp</item>
-        <item name="android:seekBarStyle">@style/MojoLauncher.SeekBar</item>
-        <item name="seekBarStyle">@style/MojoLauncher.SeekBar</item>
-        <item name="android:switchStyle">@style/MojoLauncher.Switch</item>
-        <item name="switchStyle">@style/MojoLauncher.Switch</item>
-        <item name="buttonStyle">@style/MojoLauncher.Button</item>
-        <item name="android:buttonStyleToggle">@style/MojoLauncher.Button.Toggle</item>
+    <style name="AppTheme" parent="@style/Base.AppTheme">
+        <item name="android:statusBarColor">?attr/colorSurfaceContainer</item>
+        <item name="android:navigationBarColor">?attr/colorSurface</item>
     </style>
-
-    <style name="MojoLauncher.AppTheme" parent="MojoLauncher"/>
-
-    <style name="MojoLauncher.SeekBar" parent="Widget.AppCompat.SeekBar">
-        <item name="android:progressDrawable">@drawable/minepb_progress</item>
-        <item name="android:thumb">@drawable/mineknob_on_unfiltered</item>
-        <item name="android:thumbOffset">0dp</item>
-        <item name="android:maxHeight">4dp</item>
-        <item name="android:minHeight">4dp</item>
-    </style>
-
-    <style name="MojoLauncher.Switch" parent="Widget.AppCompat.CompoundButton.Switch">
-        <item name="track">@drawable/mineknob_track_mask_unfiltered</item>
-        <item name="trackTint">@color/mineknob_track_tint</item>
-        <item name="trackTintMode">multiply</item>
-        <item name="android:thumb">@drawable/mineknob_switch</item>
-        <item name="switchMinWidth">40dp</item>
-    </style>
-
-    <style name="MojoLauncher.Button" parent="Widget.AppCompat.Button">
-        <item name="android:background">@drawable/button_flat</item>
-    </style>
-
-    <style name="MojoLauncher.Button.Toggle" parent="MojoLauncher.Button">
-        <item name="android:background">@drawable/button_flat_toggle</item>
-    </style>
-
 
     <style name="LauncherFragment_Divider">
         <item name="android:layout_width">@dimen/padding_tiny</item>
         <item name="android:layout_height">0dp</item>
-        <item name="android:background">@color/divider</item>
+        <item name="android:background">?attr/colorOutlineVariant</item>
     </style>
 
     <style name="LauncherMenuButton" parent="Widget.AppCompat.Button">
-        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:background">@drawable/bg_menu_button</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:stateListAnimator">?attr/copperPressAnimator</item>
     </style>
 
     <style name="LauncherMenuButton.Universal" parent="LauncherMenuButton">
@@ -70,5 +33,22 @@
         <item name="android:id">@id/dimension_tracker</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">match_parent</item>
+    </style>
+
+    <!-- Tab chip of the content detail screen, see ContentDetailFragment for the selected look -->
+    <style name="ContentTabChip">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginEnd">@dimen/padding_medium</item>
+        <item name="android:background">@drawable/bg_tab_chip</item>
+        <item name="android:paddingStart">@dimen/padding_heavy</item>
+        <item name="android:paddingEnd">@dimen/padding_heavy</item>
+        <item name="android:paddingTop">@dimen/padding_moderate</item>
+        <item name="android:paddingBottom">@dimen/padding_moderate</item>
+        <item name="android:textAppearance">?attr/textAppearanceLabelLarge</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
     </style>
 </resources>

@@ -14,9 +14,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import android.widget.TextView;
-
-import androidx.appcompat.widget.SwitchCompat;
 
 import com.kdt.CustomSeekbar;
 
@@ -31,8 +30,7 @@ import git.artdeell.mojo.utils.interfaces.SimpleSeekBarListener;
 public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
 
     private SharedPreferences.Editor mEditor;
-
-    private SwitchCompat mGyroSwitch, mGyroXSwitch, mGyroYSwitch, mGestureSwitch;
+    private MaterialSwitch mGyroSwitch, mGyroXSwitch, mGyroYSwitch, mGestureSwitch;
     private CustomSeekbar mGyroSensitivityBar, mMouseSpeedBar, mGestureDelayBar, mResolutionBar, mTransparencyBar;
     private TextView mGyroSensitivityText, mGyroSensitivityDisplayText, mMouseSpeedText, mGestureDelayText, mGestureDelayDisplayText, mResolutionText, mTransparencyText;
 

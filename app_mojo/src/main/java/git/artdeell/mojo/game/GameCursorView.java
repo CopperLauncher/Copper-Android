@@ -8,13 +8,12 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 
 import git.artdeell.mojo.game.platform.Platform;
 import git.artdeell.mojo.game.platform.cursor.PlatformCursor;
 import git.artdeell.mojo.game.platform.cursor.PlatformCursorImplementor;
 
-import git.artdeell.mojo.R;
+import git.artdeell.mojo.utils.cursor.CursorStyle;
 
 /**
  * A view that draws the platform cursor on the screen
@@ -39,9 +38,19 @@ public class GameCursorView extends View implements PlatformCursorImplementor {
 
     public GameCursorView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        cursorDrawable = ContextCompat.getDrawable(context, R.drawable.ic_mouse_pointer);
-        assert cursorDrawable != null;
-        cursorDrawable.setBounds(0, 0, 36, 54);
+        cursorDrawable = CursorStyle.load(context);
+        cursorDrawable.setCallback(this);
+    }
+
+    @Override
+    protected boolean verifyDrawable(@NonNull Drawable who) {
+        return who == cursorDrawable || super.verifyDrawable(who);
+    }
+
+    @Override
+    public void invalidateDrawable(@NonNull Drawable who) {
+        if (who == cursorDrawable) invalidate();
+        else super.invalidateDrawable(who);
     }
 
     @Override

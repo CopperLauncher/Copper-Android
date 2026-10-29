@@ -1,6 +1,7 @@
 package git.artdeell.mojo.multirt;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -24,6 +25,11 @@ public class MultiRTConfigDialog extends PackageSelector {
     protected int getPositiveButtonText() { return R.string.multirt_config_add; }
     protected int getNeutralButtonText() { return R.string.multirt_delete_runtime; }
     protected int getEditingButtonLabel() { return R.string.multirt_config_setdefault; }
-    protected PackageAdapter<?> createAdapter(Context context, PackageSelector dialog) { return new RTRecyclerViewAdapter(dialog); }
+    protected PackageAdapter<?> createAdapter(Context context, PackageSelector dialog) {
+        RTRecyclerViewAdapter adapter = new RTRecyclerViewAdapter(dialog);
+        // Needed to install the downloadable runtimes from the bundled assets
+        if(context instanceof Activity) adapter.setActivity((Activity) context);
+        return adapter;
+    }
     protected void onPositive(Context context, ActivityResultLauncher<Object> launcher) { launcher.launch(null); }
 }

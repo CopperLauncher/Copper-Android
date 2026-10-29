@@ -5,21 +5,30 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 
 import git.artdeell.mojo.MojoApplication;
+import git.artdeell.mojo.R;
+import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.modding.modpacks.api.modloader.LoaderInstaller;
 import git.artdeell.mojo.modding.modpacks.models.Constants;
+import git.artdeell.mojo.modding.modpacks.models.ContentCategory;
 import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
 import git.artdeell.mojo.modding.modpacks.models.SearchFilters;
 import git.artdeell.mojo.modding.modpacks.models.SearchResult;
+import git.artdeell.mojo.utils.ZipUtils;
+
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 /**
  * Group all apis under the same umbrella, as another layer of abstraction
@@ -29,20 +38,71 @@ public class CommonApi implements ModpackApi {
     private final ModpackApi mCurseforgeApi;
     private final ModpackApi mModrinthApi;
     private final ModpackApi[] mModpackApis;
-
-    public static final byte PACK_MODRINTH = 1;
-    public static final byte PACK_CURSEFORGE = 2;
-    public static final byte PACK_UNDEFINED = 0;
+    /** Parallel to mModpackApis — which Constants.SOURCE_* each entry is, for engine filtering. */
+    private final int[] mModpackApiSources;
 
     public CommonApi(String curseforgeApiKey) {
+        this(curseforgeApiKey, false);
+    }
+
+    /**
+     * @param disableCurseforge when true, CurseForge is excluded from
+     *                          {@link #searchMod}'s result fan-out entirely —
+     *                          used by the "Disable CurseForge" experimental
+     *                          setting, since its API can be noticeably slower
+     *                          than Modrinth's. The instance is still created
+     *                          (cheap, no network) so {@link #getModpackApi}
+     *                          keeps working for things like importing an
+     *                          existing CurseForge modpack zip.
+     */
+    public CommonApi(String curseforgeApiKey, boolean disableCurseforge) {
+        mCurseforgeApi = new CurseforgeApi(curseforgeApiKey);
         mModrinthApi = new ModrinthApi();
-        if ("DUMMY".equals(curseforgeApiKey)) {
-            mCurseforgeApi = null;
+        if (disableCurseforge) {
             mModpackApis = new ModpackApi[]{mModrinthApi};
+            mModpackApiSources = new int[]{Constants.SOURCE_MODRINTH};
         } else {
-            mCurseforgeApi = new CurseforgeApi(curseforgeApiKey);
             mModpackApis = new ModpackApi[]{mModrinthApi, mCurseforgeApi};
+            mModpackApiSources = new int[]{Constants.SOURCE_MODRINTH, Constants.SOURCE_CURSEFORGE};
         }
+    }
+
+    /** Whether the given per-api source should be queried under the requested engine filter. */
+    private static boolean isEngineIncluded(int apiSource, int engineFilter) {
+        switch (engineFilter) {
+            case Constants.ENGINE_MODRINTH:   return apiSource == Constants.SOURCE_MODRINTH;
+            case Constants.ENGINE_CURSEFORGE: return apiSource == Constants.SOURCE_CURSEFORGE;
+            case Constants.ENGINE_BOTH:
+            default:                          return true;
+        }
+    }
+
+    /**
+     * The categories of every engine the filters ask for. A category both engines have shows up
+     * once and filters both, the ones that only one engine has stay in the list after them.
+     */
+    @Override
+    public List<ContentCategory> getCategories(SearchFilters searchFilters) {
+        Future<List<ContentCategory>>[] futures = new Future[mModpackApis.length];
+        for (int i = 0; i < mModpackApis.length; i++) {
+            if (!isEngineIncluded(mModpackApiSources[i], searchFilters.engine)) continue;
+            final ModpackApi api = mModpackApis[i];
+            futures[i] = MojoApplication.sExecutorService.submit(() -> api.getCategories(searchFilters));
+        }
+        Map<String, ContentCategory> merged = new LinkedHashMap<>();
+        for (Future<List<ContentCategory>> future : futures) {
+            if (future == null) continue;
+            try {
+                for (ContentCategory category : future.get()) {
+                    ContentCategory known = merged.get(category.getKey());
+                    merged.put(category.getKey(), known == null ? category : known.merge(category));
+                }
+            } catch (Exception e) {
+                // The categories of the other engine are still good
+                e.printStackTrace();
+            }
+        }
+        return new ArrayList<>(merged.values());
     }
 
     @Override
@@ -56,6 +116,8 @@ public class CommonApi implements ModpackApi {
 
         Future<?>[] futures = new Future<?>[mModpackApis.length];
         for(int i = 0; i < mModpackApis.length; i++) {
+            // Skip engines the user didn't pick in the search filter dialog (Modrinth / CurseForge / Both)
+            if(!isEngineIncluded(mModpackApiSources[i], searchFilters.engine)) continue;
             // If there is an array and its length is zero, this means that we've exhausted the results for this
             // search query and we don't need to actually do the search
             if(results[i] != null && results[i].results.length == 0) continue;
@@ -125,19 +187,27 @@ public class CommonApi implements ModpackApi {
         return getModpackApi(modDetail.apiSource).installModpack(modDetail, selectedVersion);
     }
 
+    @Override
     public LoaderInstaller installLocalModpack(String modpackName, File modpackFile, String icon) throws IOException {
-        short s = checkModpack(modpackFile);
-        switch (s) {
-            case PACK_MODRINTH:
-                return mModrinthApi.installLocalModpack(modpackName, modpackFile, icon);
-            case PACK_CURSEFORGE:
-                if (mCurseforgeApi == null) return null;
-                else return mCurseforgeApi.installLocalModpack(modpackName, modpackFile, icon);
-            case PACK_UNDEFINED:
-                modpackFile.delete();
-                return null;
-            default:
-                return null;
+        try {
+            return getModpackApi(modpackFile).installLocalModpack(modpackName, modpackFile, icon);
+        } catch (IllegalArgumentException e) {
+            // Neither modrinth.index.json nor manifest.json is in the archive, this is not a modpack
+            modpackFile.delete();
+            throw new IOException(e.getMessage(), e);
+        }
+    }
+
+    /** Kept for callers that only need to know what kind of modpack a file is */
+    public static final short PACK_UNDEFINED = 0, PACK_MODRINTH = 1, PACK_CURSEFORGE = 2;
+
+    public static short checkModpack(File outFile) {
+        try (ZipFile zipFile = new ZipFile(outFile)) {
+            if (zipFile.getEntry("modrinth.index.json") != null) return PACK_MODRINTH;
+            if (zipFile.getEntry("manifest.json") != null) return PACK_CURSEFORGE;
+            return PACK_UNDEFINED;
+        } catch (Exception e) {
+            return -1;
         }
     }
 
@@ -146,26 +216,42 @@ public class CommonApi implements ModpackApi {
             case Constants.SOURCE_MODRINTH:
                 return mModrinthApi;
             case Constants.SOURCE_CURSEFORGE:
-                if (mCurseforgeApi == null) return null;
-                else return mCurseforgeApi;
+                return mCurseforgeApi;
             default:
                 throw new UnsupportedOperationException("Unknown API source: " + apiSource);
         }
     }
 
-    public static short checkModpack(File outFile) {
-        try (ZipFile zipFile = new ZipFile(outFile)) {
-            ZipEntry modrinth = zipFile.getEntry("modrinth.index.json");
-            ZipEntry curseforge = zipFile.getEntry("manifest.json");
-            if (modrinth != null) {
-                return CommonApi.PACK_MODRINTH;
+    private @NonNull ModpackApi getModpackApi(@NonNull File modpackFile) throws IOException {
+        try (ZipFile zip = new ZipFile(modpackFile)) {
+            boolean isModrinth;
+            boolean isCurseforge;
+
+            try {
+                ZipUtils.getEntryStream(zip, "modrinth.index.json");
+                isModrinth = true;
+            } catch (IOException ignored) {
+                isModrinth = false;
             }
-            if (curseforge != null) {
-                return CommonApi.PACK_CURSEFORGE;
+
+            try {
+                ZipUtils.getEntryStream(zip, "manifest.json");
+                isCurseforge = true;
+            } catch (IOException ignored) {
+                isCurseforge = false;
             }
-            return CommonApi.PACK_UNDEFINED; // return this if no modpack was detected
-        } catch (Exception e) {
-            return -1;
+
+            if (isModrinth && isCurseforge) {
+                String name = modpackFile.getName();
+                int dot = name.lastIndexOf('.');
+                String extension = (dot == -1) ? "" : name.substring(dot + 1);
+                if (extension.equalsIgnoreCase("mrpack")) return mModrinthApi;
+                throw new IOException("Ambiguous file contains both modrinth.index.json and manifest.json. Cannot determine modpack format.");
+            }
+            if (isModrinth) return mModrinthApi;
+            if (isCurseforge) return mCurseforgeApi;
+
+            throw new IllegalArgumentException("Zip provided does not contain a manifest file.");
         }
     }
 

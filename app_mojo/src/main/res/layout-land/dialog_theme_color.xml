@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Landscape: the screen is too short for everything stacked, so the hex field sits beside the
+     preview and slider and the whole dialog scrolls. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true"
+    android:overScrollMode="never">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="24dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="24dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/preference_theme_color_dialog_hint"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <View
+                    android:id="@+id/theme_color_preview_primary"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="2" />
+
+                <View
+                    android:id="@+id/theme_color_preview_container"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1" />
+
+                <View
+                    android:id="@+id/theme_color_preview_tertiary"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+            <SeekBar
+                android:id="@+id/theme_color_hue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:max="359"
+                android:minHeight="28dp"
+                android:maxHeight="28dp"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:progressDrawable="@android:color/transparent"
+                android:splitTrack="false"
+                android:thumb="@drawable/thumb_hue_slider" />
+        </LinearLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_weight="2"
+            android:hint="@string/preference_theme_color_hex">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/theme_color_hex"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:digits="0123456789abcdefABCDEF#"
+                android:imeOptions="actionDone|flagNoExtractUi"
+                android:inputType="textNoSuggestions|textCapCharacters"
+                android:maxLength="7"
+                android:minHeight="56dp"
+                android:singleLine="true" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+</ScrollView>
