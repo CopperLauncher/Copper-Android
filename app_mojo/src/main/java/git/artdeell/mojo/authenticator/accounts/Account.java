@@ -15,6 +15,7 @@ import java.net.URL;
 import android.graphics.Bitmap;
 
 import androidx.annotation.Keep;
+import androidx.annotation.Nullable;
 
 import com.google.gson.JsonParseException;
 
@@ -34,6 +35,12 @@ public class Account {
     private transient Bitmap mFaceCache;
 
     protected Account() {}
+
+    /** @return the file this account is stored in, or null for ephemeral accounts */
+    @Nullable
+    public File getSaveLocation() {
+        return mSaveLocation;
+    }
 
     public void updateSkinFace() {
         String skinFaceUrlTemplate = authType.skinUrl;

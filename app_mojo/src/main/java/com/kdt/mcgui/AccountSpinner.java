@@ -199,7 +199,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
     /** Opens the skin/cape editor for a Microsoft account */
     private void openSkinEditor(@NonNull Account account) {
         FragmentActivity activity = findActivity(getContext());
-        if(activity == null || account.mSaveLocation == null) return;
+        if(activity == null || account.getSaveLocation() == null) return;
         FragmentManager manager = activity.getSupportFragmentManager();
         if(manager.isStateSaved()) return;
         if(ProgressKeeper.hasProgressKey(ProgressLayout.AUTHENTICATE)) {
@@ -209,7 +209,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
         }
         dismissPopup();
         Bundle args = new Bundle();
-        args.putString(SkinEditorFragment.ARG_ACCOUNT_FILE, account.mSaveLocation.getName());
+        args.putString(SkinEditorFragment.ARG_ACCOUNT_FILE, account.getSaveLocation().getName());
         Tools.swapFragmentFullScreen(activity, SkinEditorFragment.class, SkinEditorFragment.TAG, args);
     }
 

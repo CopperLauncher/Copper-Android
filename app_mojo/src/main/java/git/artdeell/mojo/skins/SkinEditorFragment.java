@@ -245,7 +245,7 @@ public class SkinEditorFragment extends Fragment {
     private static Account findAccount(@Nullable String fileName) throws IOException {
         if (fileName == null) return null;
         for (Account account : Accounts.load().accounts) {
-            if (account.mSaveLocation != null && fileName.equals(account.mSaveLocation.getName())) {
+            if (account.getSaveLocation() != null && fileName.equals(account.getSaveLocation().getName())) {
                 return account;
             }
         }
