@@ -72,7 +72,7 @@ public class Account {
      * for a while, so downloading it again right after an upload would still give the old head.
      */
     public void updateSkinFace(byte[] skinPng) {
-        if(authType.skinUrl == null) return;
+        if(authType.skinUrl == null && authType != AuthType.LOCAL) return;
         Bitmap skinBitmap = BitmapFactory.decodeByteArray(skinPng, 0, skinPng.length);
         if(skinBitmap == null) return;
         Bitmap skinFace = new SkinHeadRenderer().render(100, skinBitmap);
@@ -115,7 +115,7 @@ public class Account {
      }
 
     public Bitmap getSkinFace(){
-        if(isLocal()) return null;
+        if(isLocal() && authType != AuthType.LOCAL) return null;
         File skinFaceFile = getSkinFaceFile();
         if(!skinFaceFile.exists()) return null;
         if(mFaceCache == null) {
@@ -124,7 +124,16 @@ public class Account {
         return mFaceCache;
     }
 
+    /** Drops the saved avatar, used when a local account has no skin selected anymore */
+    public void clearSkinFace() {
+        //noinspection ResultOfMethodCallIgnored
+        getSkinFaceFile().delete();
+        mFaceCache = null;
+    }
+
     private File getSkinFaceFile() {
-        return new File(Tools.DIR_CACHE,  "skin-face-" + profileId +"-"+authType.name() + ".webp");
+        // Local accounts all share the same empty profile id, so the name tells them apart
+        String id = authType == AuthType.LOCAL ? username : profileId;
+        return new File(Tools.DIR_CACHE,  "skin-face-" + id +"-"+authType.name() + ".webp");
     }
 }

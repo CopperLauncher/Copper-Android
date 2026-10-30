@@ -727,7 +727,11 @@
     <string name="skin_editor_current_skin">Current skin</string>
     <string name="skin_editor_invalid_skin">Pick a PNG skin that is 64×64 or 64×32 pixels.</string>
     <string name="skin_editor_no_capes">This account doesn\'t own any capes yet.</string>
-    <string name="skin_editor_not_microsoft">Skin editing is only available for Microsoft accounts.</string>
+    <string name="skin_editor_not_microsoft">Skin editing is not available for this account.</string>
+    <string name="skin_editor_add_cape">Add a cape</string>
+    <string name="skin_editor_invalid_cape">Pick a PNG cape that is 64×32 (or larger with the same ratio), or 22×17 pixels.</string>
+    <string name="skin_editor_delete_cape_title">Delete this cape?</string>
+    <string name="skin_editor_delete_cape_message">It will be removed from this launcher.</string>
     <string name="skin_editor_load_failed">Couldn\'t load your profile. Check your connection.</string>
     <string name="skin_editor_error">Couldn\'t update your profile: %s</string>
     <string name="skin_editor_rate_limited">Too many requests to Mojang. Wait a minute and try again.</string>

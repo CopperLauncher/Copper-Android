@@ -41,10 +41,30 @@ public final class SkinLibrary {
     }
 
     @Keep
+    public static final class CapeEntry {
+        public String id;
+        public String name;
+        public long added;
+    }
+
+    @Keep
     private static final class Index {
         List<Entry> skins = new ArrayList<>();
+        List<CapeEntry> capes = new ArrayList<>();
+        /** local account key -> id of the cape worn by that account */
+        Map<String, String> selectedCapes = new HashMap<>();
         /** profile UUID -> id of the skin that is applied to that profile */
         Map<String, String> selected = new HashMap<>();
+    }
+
+    /** Local accounts share one empty profile UUID, so their choices are keyed by user name */
+    @NonNull
+    public static String localKey(@NonNull String username) {
+        return "local:" + username;
+    }
+
+    private static File capeDir() {
+        return new File(dir(), "capes");
     }
 
     private static File dir() {
@@ -64,6 +84,8 @@ public final class SkinLibrary {
             if (index == null) return new Index();
             if (index.skins == null) index.skins = new ArrayList<>();
             if (index.selected == null) index.selected = new HashMap<>();
+            if (index.capes == null) index.capes = new ArrayList<>();
+            if (index.selectedCapes == null) index.selectedCapes = new HashMap<>();
             return index;
         } catch (Exception e) {
             return new Index();
@@ -151,5 +173,62 @@ public final class SkinLibrary {
         try (InputStream in = new FileInputStream(fileOf(entry))) {
             return IOUtils.toByteArray(in);
         }
+    }
+
+    public static File capeFile(@NonNull String id) {
+        return new File(capeDir(), id + ".png");
+    }
+
+    @NonNull
+    public static synchronized List<CapeEntry> listCapes() {
+        List<CapeEntry> result = new ArrayList<>();
+        for (CapeEntry entry : readIndex().capes) {
+            if (entry != null && entry.id != null && capeFile(entry.id).exists()) result.add(entry);
+        }
+        return result;
+    }
+
+    @NonNull
+    public static synchronized CapeEntry addCape(@NonNull byte[] png, @NonNull String name) throws IOException {
+        FileUtils.ensureDirectory(capeDir());
+        CapeEntry entry = new CapeEntry();
+        entry.id = UUID.randomUUID().toString();
+        entry.name = name;
+        entry.added = System.currentTimeMillis();
+        try (FileOutputStream out = new FileOutputStream(capeFile(entry.id))) {
+            out.write(png);
+        }
+        Index index = readIndex();
+        index.capes.add(entry);
+        writeIndex(index);
+        return entry;
+    }
+
+    public static synchronized void deleteCape(@NonNull String id) throws IOException {
+        Index index = readIndex();
+        CapeEntry target = null;
+        for (CapeEntry entry : index.capes) if (id.equals(entry.id)) target = entry;
+        if (target != null) {
+            index.capes.remove(target);
+            //noinspection ResultOfMethodCallIgnored
+            capeFile(id).delete();
+        }
+        Iterator<String> selected = index.selectedCapes.values().iterator();
+        while (selected.hasNext()) {
+            if (id.equals(selected.next())) selected.remove();
+        }
+        writeIndex(index);
+    }
+
+    @Nullable
+    public static synchronized String getSelectedCape(@NonNull String key) {
+        return readIndex().selectedCapes.get(key);
+    }
+
+    public static synchronized void setSelectedCape(@NonNull String key, @Nullable String id) throws IOException {
+        Index index = readIndex();
+        if (id == null) index.selectedCapes.remove(key);
+        else index.selectedCapes.put(key, id);
+        writeIndex(index);
     }
 }

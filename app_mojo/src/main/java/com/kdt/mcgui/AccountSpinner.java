@@ -196,7 +196,7 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
         onAttachedToWindow();
     }
 
-    /** Opens the skin/cape editor for a Microsoft account */
+    /** Opens the skin editor, or the Ely.by skin site in the browser for Ely.by accounts */
     private void openSkinEditor(@NonNull Account account) {
         FragmentActivity activity = findActivity(getContext());
         if(activity == null || account.getSaveLocation() == null) return;
@@ -208,6 +208,11 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
             return;
         }
         dismissPopup();
+        if(account.authType == AuthType.ELY_BY) {
+            // Ely.by has no skin API, so its own site is opened in the browser
+            Tools.openURL(activity, "https://ely.by/skins");
+            return;
+        }
         Bundle args = new Bundle();
         args.putString(SkinEditorFragment.ARG_ACCOUNT_FILE, account.getSaveLocation().getName());
         Tools.swapFragmentFullScreen(activity, SkinEditorFragment.class, SkinEditorFragment.TAG, args);
@@ -393,8 +398,9 @@ public class AccountSpinner extends AppCompatSpinner implements LoginListener, A
 
             Account account = Objects.requireNonNull(getItem(position));
 
-            // Skins and capes live on the Minecraft account, so only Microsoft ones can edit them
-            if(account.authType == AuthType.MICROSOFT) {
+            // Microsoft and local accounts use the built-in editor, Ely.by accounts the Ely.by site
+            if(account.authType == AuthType.MICROSOFT || account.authType == AuthType.LOCAL
+                    || account.authType == AuthType.ELY_BY) {
                 editButton.setVisibility(View.VISIBLE);
                 editButton.setOnClickListener(v -> openSkinEditor(account));
             }else {

@@ -13,6 +13,8 @@ import git.artdeell.mojo.JVersionList;
 import git.artdeell.mojo.Logger;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.authenticator.accounts.Account;
+import git.artdeell.mojo.authenticator.AuthType;
+import git.artdeell.mojo.skins.LocalSkinServer;
 import git.artdeell.mojo.game.renderer.def.Renderers;
 import git.artdeell.mojo.game.renderer.impl.GLESRenderSpec;
 import git.artdeell.mojo.instances.Instance;
@@ -396,6 +398,9 @@ public class GameRunner {
 
     private static void addAuthlibInjectorArgs(List<String> javaArgList, Account account) {
         String injectorUrl = account.authType.injectorUrl;
+        if(injectorUrl == null && account.authType == AuthType.LOCAL) {
+            injectorUrl = LocalSkinServer.prepare(account);
+        }
         if(injectorUrl == null) return;
         javaArgList.add("-javaagent:"+Tools.DIR_DATA+"/authlib-injector/authlib-injector.jar="+injectorUrl);
     }

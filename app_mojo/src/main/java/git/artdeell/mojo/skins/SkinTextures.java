@@ -15,6 +15,12 @@ public final class SkinTextures {
         return width == 64 && (height == 64 || height == 32);
     }
 
+    /** Cape sizes the game accepts: 64x32 scaled up, or the old 22x17 one */
+    public static boolean isValidCapeSize(int width, int height) {
+        if (width == 22 && height == 17) return true;
+        return width >= 64 && width % 64 == 0 && height == width / 2;
+    }
+
     /** Slim ("Alex") skins leave the last column of every arm front face transparent */
     public static boolean looksSlim(@NonNull Bitmap skin) {
         if (skin.getWidth() != 64 || skin.getHeight() != 64) return false;

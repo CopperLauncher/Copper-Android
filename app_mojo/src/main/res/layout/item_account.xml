@@ -25,7 +25,7 @@
 
         tools:ignore="RtlSymmetry" />
 
-    <!-- Skin/cape editor, shown for Microsoft accounts only (right next to their logo) -->
+    <!-- Skin/cape editor, hidden for the "add account" row -->
     <ImageView
         android:id="@+id/edit_account_button"
         android:layout_width="@dimen/_44sdp"
