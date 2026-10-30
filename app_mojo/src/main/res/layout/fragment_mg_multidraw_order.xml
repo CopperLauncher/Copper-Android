@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="@dimen/fragment_padding_medium"
+        android:paddingBottom="40dp">
+
+        <include layout="@layout/include_mg_back_row" />
+
+        <TextView
+            android:id="@+id/mg_order_title"
+            style="@style/TextAppearance.AppCompat.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_large"
+            android:textColor="?attr/colorOnSurface" />
+
+        <TextView
+            android:id="@+id/mg_order_hint"
+            style="@style/TextAppearance.AppCompat.Subhead"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/padding_large"
+            android:text="@string/md_order_hint"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.materialswitch.MaterialSwitch
+            android:id="@+id/mg_order_exception_switch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/padding_large"
+            android:text="@string/md_exception_on"
+            android:visibility="gone" />
+
+        <View
+            style="@style/ThickDivider"
+            android:layout_width="match_parent"
+            android:layout_marginBottom="@dimen/padding_large" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/mg_order_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/padding_large"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mg_order_bench"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/md_bench_run_all" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/mg_order_reset"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:text="@string/md_reset_default" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

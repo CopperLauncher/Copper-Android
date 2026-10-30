@@ -16,7 +16,6 @@ import git.artdeell.mojo.BuildConfig;
 import git.artdeell.mojo.R;
 
 import git.artdeell.mojo.contracts.OpenDocumentWithExtension;
-import git.artdeell.mojo.mobileglues.MainActivity;
 import git.artdeell.mojo.game.renderer.RendererCache;
 import git.artdeell.mojo.game.renderer.def.Renderers;
 import git.artdeell.mojo.game.renderer.extra.GLESProvider;
@@ -106,11 +105,6 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
         boolean hasSupport = DriverManager.isSupportedByDevice();
         customVk.setVisible(hasSupport && (!gplay || isAdreno));
         customVk.setChecked(LauncherPreferences.PREF_ZINK_PREFER_SYSTEM_DRIVER);
-
-        requirePreference("renderer_settings").setOnPreferenceClickListener(preference -> {
-            startActivity(new Intent(getContext(), MainActivity.class));
-            return true;
-        });
 
         computeVisibility();
     }
