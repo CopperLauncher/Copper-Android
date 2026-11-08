@@ -19,7 +19,9 @@ import git.artdeell.mojo.Logger;
 import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.game.renderer.impl.GLESRenderSpec;
 import git.artdeell.mojo.game.renderer.impl.MesaRenderSpec;
+import git.artdeell.mojo.game.renderer.impl.PluginRenderSpec;
 import git.artdeell.mojo.prefs.LauncherPreferences;
+import git.artdeell.mojo.utils.plugins.PluginManager;
 
 import java.io.File;
 import java.util.HashMap;
@@ -80,6 +82,9 @@ public class GameRenderer {
             case MOBILEGLUES_RENDERER: return new GLESRenderSpec.MgRenderSpec();
             case SFPEW_RENDERER: return new GLESRenderSpec.SFPEWRenderSpec();
             default:
+                if (renderer != null && renderer.startsWith(PluginManager.RENDERER_TAG_PREFIX)) {
+                    return new PluginRenderSpec(renderer.substring(PluginManager.RENDERER_TAG_PREFIX.length()));
+                }
                 Log.e(TAG, "Unknown renderer " + renderer);
                 return null;
         }

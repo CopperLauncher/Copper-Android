@@ -31,6 +31,17 @@ public interface RenderSpec {
     int displayName();
 
     /**
+     * Display name shown in the renderer list. Plugins override this to provide a runtime name
+     * instead of a resource id.
+     *
+     * @param context application context
+     * @return display name
+     */
+    default String getDisplayName(Context context) {
+        return context.getString(displayName());
+    }
+
+    /**
      * Renderer tag
      *
      * @return tag
