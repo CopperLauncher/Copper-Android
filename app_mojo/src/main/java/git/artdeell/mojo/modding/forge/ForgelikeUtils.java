@@ -113,20 +113,36 @@ public abstract class ForgelikeUtils {
         return mVersionOrderInversed;
     }
 
-    private static String getMcVersionForNeoVersion(String neoVersion) {
-        // I feel like it's necessary to explain the NeoForge versioning format
-        // basically, what it does is it trims the major version from minecrafts version
-        // e.g.: 1.20.1 -> 20.1, and then appends its own "patch" version to that
-        // e.g.: 20.1 -> 20.1.8, which means the version string includes both, the minecraft
-        // and the loader version at once
+    /**
+     * Gets the Minecraft version a NeoForge version was made for.
+     * <ul>
+     *     <li>Until Minecraft 1.21.11 the NeoForge version is "&lt;minor&gt;.&lt;patch&gt;.&lt;build&gt;": it trims the
+     *     "1." off Minecraft's version and appends its own build, e.g. 21.1.8 is Minecraft 1.21.1</li>
+     *     <li>Since Minecraft 26.1 (year based versions, without the "1.") the first three numbers are the
+     *     Minecraft version and the fourth one is the NeoForge build, e.g. 26.1.0.10-beta is Minecraft 26.1,
+     *     and 26.1.1.3 would be Minecraft 26.1.1</li>
+     * </ul>
+     */
+    public static String getMcVersionForNeoVersion(String neoVersion) {
         try {
             int firstIndex = neoVersion.indexOf('.');
             int secondIndex = neoVersion.indexOf('.', firstIndex + 1);
             if (firstIndex == -1 || secondIndex == -1) {
                 Log.e("NeoforgeUtils", "Failed to parse neoforge version: " + neoVersion + "; not enough '.' found");
+                return neoVersion;
+            }
+            if (Integer.parseInt(neoVersion.substring(0, firstIndex)) >= 26) {
+                // Calendar versioning, the Minecraft version has no "1." in front and a hotfix of 0 is left out
+                int thirdIndex = secondIndex + 1;
+                int thirdEnd = thirdIndex;
+                while (thirdEnd < neoVersion.length() && Character.isDigit(neoVersion.charAt(thirdEnd))) thirdEnd++;
+                String hotfix = neoVersion.substring(thirdIndex, thirdEnd);
+                String mcVersion = neoVersion.substring(0, secondIndex);
+                if (!hotfix.isEmpty() && Integer.parseInt(hotfix) != 0) mcVersion += "." + hotfix;
+                return mcVersion;
             }
             return "1." + neoVersion.substring(0, secondIndex);
-        } catch (StringIndexOutOfBoundsException e) {
+        } catch (RuntimeException e) {
             Log.e("NeoforgeUtils", "Failed to parse neoforge version: " + neoVersion, e);
             return neoVersion;
         }

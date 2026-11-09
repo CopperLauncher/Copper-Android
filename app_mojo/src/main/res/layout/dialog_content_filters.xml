@@ -230,6 +230,24 @@
                     android:checkable="true"
                     android:text="NeoForge"
                     tools:ignore="HardcodedText" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/filter_loader_legacy_fabric"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="Legacy Fabric"
+                    tools:ignore="HardcodedText" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/filter_loader_bta"
+                    style="@style/Widget.Material3.Chip.Filter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checkable="true"
+                    android:text="BTA (Babric)"
+                    tools:ignore="HardcodedText" />
             </com.google.android.material.chip.ChipGroup>
         </LinearLayout>
 

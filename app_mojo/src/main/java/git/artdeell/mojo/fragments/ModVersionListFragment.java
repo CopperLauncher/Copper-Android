@@ -1,5 +1,6 @@
 package git.artdeell.mojo.fragments;
 
+import git.artdeell.mojo.utils.BackRow;
 import git.artdeell.mojo.utils.AnimationManager;
 import android.content.Context;
 import android.os.Bundle;
@@ -46,6 +47,7 @@ public abstract class ModVersionListFragment<T> extends Fragment implements Runn
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        BackRow.bind(view);
         ((TextView)view.findViewById(R.id.title_textview)).setText(getTitleText());
         mProgressBar = view.findViewById(R.id.mod_dl_list_progress);
         mExpandableListView = view.findViewById(R.id.mod_dl_expandable_version_list);
@@ -119,7 +121,7 @@ public abstract class ModVersionListFragment<T> extends Fragment implements Runn
             setTaskProxy(null);
             mExpandableListView.setEnabled(true);
             // Read the comment in FabricInstallFragment.onDownloadFinished() to see how this works
-            getParentFragmentManager().popBackStackImmediate();
+            ProfileTypeSelectFragment.returnToStart(getParentFragmentManager());
             onDownloadFinished(context, downloadedFile);
         });
     }

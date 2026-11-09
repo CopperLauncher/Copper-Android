@@ -12,7 +12,10 @@
         android:paddingHorizontal="@dimen/fragment_padding_medium"
         android:orientation="vertical">
 
-
+        <include
+            layout="@layout/include_mg_back_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
         <!-- Vanilla like version -->
 
@@ -80,44 +83,12 @@
             />
 
         <com.kdt.mcgui.MineButton
-            android:id="@+id/modded_profile_fabric"
+            android:id="@+id/modded_profile_loader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/padding_large"
             android:layout_marginTop="@dimen/padding_large"
-            android:text="@string/modloader_dl_install_fabric_instance" />
-
-        <com.kdt.mcgui.MineButton
-            android:id="@+id/modded_profile_quilt"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_large"
-            android:layout_marginTop="@dimen/padding_large"
-            android:text="@string/modloader_dl_install_quilt_instance" />
-
-        <com.kdt.mcgui.MineButton
-            android:id="@+id/modded_profile_legacy_fabric"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_large"
-            android:layout_marginTop="@dimen/padding_large"
-            android:text="@string/modloader_dl_install_legacy_fabric_instance" />
-
-        <com.kdt.mcgui.MineButton
-            android:id="@+id/modded_profile_forge"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_large"
-            android:layout_marginTop="@dimen/padding_large"
-            android:text="@string/modloader_dl_install_forge_instance" />
-
-        <com.kdt.mcgui.MineButton
-            android:id="@+id/modded_profile_neoforge"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_large"
-            android:layout_marginTop="@dimen/padding_large"
-            android:text="@string/modloader_dl_install_neoforge_instance" />
+            android:text="@string/create_loader_instance" />
 
         <com.kdt.mcgui.MineButton
             android:id="@+id/modded_profile_modpack"
@@ -126,14 +97,6 @@
             android:layout_marginHorizontal="@dimen/padding_large"
             android:layout_marginTop="@dimen/padding_large"
             android:text="@string/modpack_install_instance_button" />
-
-        <com.kdt.mcgui.MineButton
-            android:id="@+id/modded_profile_bta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/padding_large"
-            android:layout_marginTop="@dimen/padding_large"
-            android:text="@string/create_bta_instance" />
 
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/guideline"

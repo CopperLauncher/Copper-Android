@@ -22,6 +22,8 @@ public class Instance extends DisplayInstance {
     public static final String VERSION_LATEST_SNAPSHOT = "latest_snapshot";
 
     public InstanceInstaller installer;
+    /** Id of the mod loader the instance was created with ("fabric", "legacy-fabric", "bta-babric"...), null when unknown */
+    public String loader;
     public String renderer;
     public String jvmArgs;
     public int argsMode;

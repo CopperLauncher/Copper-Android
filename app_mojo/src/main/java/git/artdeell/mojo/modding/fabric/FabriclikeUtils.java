@@ -80,6 +80,11 @@ public class FabriclikeUtils {
         return mIconName;
     }
 
+    /** Id of the loader the way Modrinth spells it ("legacy-fabric"), stored in the instances it creates */
+    public String getLoaderId() {
+        return mCachePrefix.replace('_', '-');
+    }
+
     public String install(String gameVersion, String loaderVersion) throws IOException {
         String fabricJson = DownloadUtils.downloadString(createJsonDownloadUrl(gameVersion, loaderVersion));
         String versionId;

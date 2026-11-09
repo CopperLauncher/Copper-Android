@@ -49,6 +49,7 @@ public abstract class ForgelikeInstallFragment extends ModVersionListFragment<Li
             Instances.createInstance(instance -> {
                 instance.name = mUtils.getName();
                 instance.icon = mUtils.getIconName();
+                instance.loader = mUtils.getIconName();
                 instance.installer = instanceInstaller;
             }, selectedVersion);
             ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);

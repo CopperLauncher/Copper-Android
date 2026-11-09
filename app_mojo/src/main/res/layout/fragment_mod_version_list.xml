@@ -7,6 +7,10 @@
     android:background="?attr/colorSurface"
     android:paddingHorizontal="@dimen/fragment_padding_medium">
 
+    <include
+        layout="@layout/include_mg_back_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/title_textview"

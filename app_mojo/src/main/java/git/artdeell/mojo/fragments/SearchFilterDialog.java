@@ -36,9 +36,10 @@ import java.util.List;
 public final class SearchFilterDialog {
     private static final int[] LOADER_CHIPS = {
             R.id.filter_loader_any, R.id.filter_loader_fabric, R.id.filter_loader_forge,
-            R.id.filter_loader_quilt, R.id.filter_loader_neoforge
+            R.id.filter_loader_quilt, R.id.filter_loader_neoforge,
+            R.id.filter_loader_legacy_fabric, R.id.filter_loader_bta
     };
-    private static final String[] LOADER_VALUES = {"", "fabric", "forge", "quilt", "neoforge"};
+    private static final String[] LOADER_VALUES = {"", "fabric", "forge", "quilt", "neoforge", "legacy-fabric", "bta-babric"};
 
     private SearchFilterDialog() {}
 

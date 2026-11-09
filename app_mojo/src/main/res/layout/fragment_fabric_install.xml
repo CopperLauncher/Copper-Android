@@ -1,12 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Scrolls so the options and the install button can be reached in landscape -->
+<com.kdt.DefocusableScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface"
+    android:fillViewport="true">
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
     android:paddingHorizontal="@dimen/fragment_padding_medium">
 
+
+    <include
+        android:id="@+id/mg_back_row"
+        layout="@layout/include_mg_back_row"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/title_textview"
@@ -18,7 +33,7 @@
 
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/mg_back_row" />
 
     <View
         android:id="@+id/view"
@@ -152,7 +167,7 @@
         app:layout_constraintBottom_toTopOf="@+id/fabric_installer_progress_bar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/fabric_installer_game_ver_spinner"
+        app:layout_constraintTop_toBottomOf="@+id/fabric_installer_only_stable_checkbox"
         app:layout_constraintVertical_bias="1.0" />
 
     <ProgressBar
@@ -167,3 +182,4 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>
+</com.kdt.DefocusableScrollView>

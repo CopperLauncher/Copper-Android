@@ -288,8 +288,10 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
     @NonNull
     public String getModLoader() { return mSearchFilters.modLoader != null ? mSearchFilters.modLoader : ""; }
 
-    /** Resource packs and shader packs aren't loader specific */
-    public boolean supportsLoaderFilter() { return mSearchFilters.contentType == ContentType.MOD; }
+    /** Resource packs and shader packs aren't loader specific, mods and datapacks are */
+    public boolean supportsLoaderFilter() {
+        return mSearchFilters.contentType == ContentType.MOD || mSearchFilters.contentType == ContentType.DATAPACK;
+    }
 
     /** Sets the filters and searches again */
     public void applyFilters(int engine, @NonNull String mcVersion, @NonNull String loader) {

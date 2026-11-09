@@ -1,5 +1,6 @@
 package git.artdeell.mojo.fragments;
 
+import git.artdeell.mojo.utils.BackRow;
 import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
@@ -64,6 +65,7 @@ public abstract class FabriclikeInstallFragment extends Fragment implements Modl
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        BackRow.bind(view);
         mStartButton = view.findViewById(R.id.fabric_installer_start_button);
         mStartButton.setOnClickListener(this::onClickStart);
         mGameVersionSpinner = view.findViewById(R.id.fabric_installer_game_ver_spinner);
@@ -114,6 +116,7 @@ public abstract class FabriclikeInstallFragment extends Fragment implements Modl
             Instances.createInstance((i)->{
                 i.name = mFabriclikeUtils.getName();
                 i.icon = mFabriclikeUtils.getIconName();
+                i.loader = mFabriclikeUtils.getLoaderId();
                 i.versionId = versionId;
             }, versionId);
             getListenerProxy().onDownloadFinished(null);
@@ -148,7 +151,7 @@ public abstract class FabriclikeInstallFragment extends Fragment implements Modl
             // we can get back to the main fragment with just one back stack pop.
             // For some reason that amendment causes the transaction to lose its tag
             // so we cant use the tag here.
-            getParentFragmentManager().popBackStackImmediate();
+            ProfileTypeSelectFragment.returnToStart(getParentFragmentManager());
         });
     }
 

@@ -96,6 +96,7 @@ public class BTADownloadTask implements Runnable {
         final boolean core = BTAUtils.isNightlyVersion(mBtaVersion) || BTAUtils.parseBTAVersion(mBtaVersion)[0] >= 8;
         Instance instance = Instances.createInstance(i -> {
             i.versionId = btaVersionId;
+            i.loader = "bta-babric";
             if(core) i.renderer = Renderers.LTW_RENDERER;
             i.name = "Better than Adventure!";
         }, "BTA-"+btaVersionId);
