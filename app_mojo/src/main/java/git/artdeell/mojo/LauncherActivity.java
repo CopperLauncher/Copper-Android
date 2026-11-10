@@ -26,6 +26,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentManager;
 
+import com.kdt.mcgui.LauncherWallpaperView;
 import com.kdt.mcgui.ProgressLayout;
 
 import git.artdeell.mojo.authenticator.accounts.Accounts;
@@ -59,6 +60,7 @@ public class LauncherActivity extends BaseActivity {
     private static final long SHORTCUT_LAUNCH_DELAY_MS = 500L;
     private FragmentContainerView mFragmentView;
     private ImageButton mSettingsButton;
+    private LauncherWallpaperView mWallpaper;
     private ProgressLayout mProgressLayout;
     private ProgressServiceKeeper mProgressServiceKeeper;
     private NotificationManager mNotificationManager;
@@ -168,6 +170,8 @@ public class LauncherActivity extends BaseActivity {
         boolean atHome = current instanceof MainMenuFragment && !((MainMenuFragment) current).isRightPaneActive();
         mSettingsButton.setImageDrawable(ContextCompat.getDrawable(this,
                 atHome ? R.drawable.ic_px_sliders : R.drawable.ic_px_home));
+        // Every other screen covers the wallpaper, so it only plays behind the main menu
+        if(mWallpaper != null) mWallpaper.setActive(current instanceof MainMenuFragment);
     }
 
     @Override
@@ -251,12 +255,15 @@ public class LauncherActivity extends BaseActivity {
         super.onResume();
         ContextExecutor.setActivity(this);
         InstanceInstaller.postInstallCheck(this);
+        updateSettingsButton();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         ContextExecutor.clearActivity();
+        // Nothing has to play while the launcher isn't in front
+        if(mWallpaper != null) mWallpaper.setActive(false);
     }
 
     @Override
@@ -381,5 +388,6 @@ public class LauncherActivity extends BaseActivity {
         mFragmentView = findViewById(R.id.container_fragment);
         mSettingsButton = findViewById(R.id.setting_button);
         mProgressLayout = findViewById(R.id.progress_layout);
+        mWallpaper = findViewById(R.id.launcher_wallpaper);
     }
 }

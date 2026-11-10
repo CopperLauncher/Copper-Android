@@ -1,46 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Default content of the right pane in the two-pane landscape main menu -->
+<!-- Home screen of the right pane in the two-pane landscape main menu: a board of tiles on top of the launcher wallpaper -->
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Custom background, loaded by RightPaneHomeFragment. An image or a GIF... -->
-    <ImageView
-        android:id="@+id/right_pane_wallpaper"
+    <git.artdeell.mojo.home.HomeTileBoard
+        android:id="@+id/home_tile_board"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:contentDescription="@null"
-        android:scaleType="centerCrop"
-        android:visibility="gone" />
-
-    <!-- ...or a looping muted video -->
-    <com.kdt.mcgui.CenterCropVideoView
-        android:id="@+id/right_pane_wallpaper_video"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone" />
+        android:layout_height="match_parent" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/home_edit_bar"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:orientation="horizontal">
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_margin="12dp"
+        android:background="@drawable/bg_home_edit_bar"
+        android:elevation="6dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="8dp"
+        android:visibility="gone">
 
-        <com.kdt.mcgui.LauncherMenuButton
-            android:id="@+id/news_button_pane"
-            style="@style/LauncherMenuButton.Universal"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:drawableStart="@drawable/ic_px_book"
-            android:text="@string/mcl_tab_wiki" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/home_edit_add"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/home_add_tile" />
 
-        <com.kdt.mcgui.LauncherMenuButton
-            android:id="@+id/social_media_button_pane"
-            style="@style/LauncherMenuButton.Universal"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:drawableStart="@drawable/ic_social_media"
-            android:text="@string/mcl_button_social_media" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/home_edit_reset"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/home_reset_tiles" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/home_edit_done"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/home_edit_done" />
     </LinearLayout>
 </FrameLayout>

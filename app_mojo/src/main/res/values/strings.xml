@@ -564,7 +564,7 @@
     <string name="preference_category_animations">Animations</string>
     <string name="preference_category_background">Background</string>
     <string name="preference_set_custom_bg_title">Set custom background</string>
-    <string name="preference_set_custom_bg_summary">Pick an image, an animated GIF or a video (MP4) to show on the home screen of the right pane in landscape. Videos are muted and looped.</string>
+    <string name="preference_set_custom_bg_summary">Pick an image, an animated GIF or a video (MP4) to show behind the whole launcher. Videos are muted and looped.</string>
     <string name="preference_remove_custom_bg_title">Remove custom background</string>
     <string name="preference_remove_custom_bg_summary">Go back to the plain background.</string>
     <string name="preference_custom_bg_applying">Applying the background\u2026</string>
@@ -877,4 +877,28 @@
     <string name="screenshot_delete_title">Delete screenshot</string>
     <string name="screenshot_delete_message">%s will be deleted. This can\'t be undone.</string>
     <string name="screenshot_share">Share</string>
+
+    <!-- Home screen tiles -->
+    <string name="home_tile_controller_settings">Controller settings</string>
+    <string name="home_tile_instance">Add instance tile</string>
+    <string name="home_tile_separator">Separator</string>
+    <string name="home_add_tile_title">Add tile</string>
+    <string name="home_add_tile">Add tile</string>
+    <string name="home_reset_tiles">Reset</string>
+    <string name="home_edit_done">Done</string>
+    <string name="home_no_space">No free space for this tile. Remove or shrink a tile first.</string>
+    <string name="home_reset_confirm">Reset the home screen to the default tiles?</string>
+    <string name="home_tile_remove">Remove tile</string>
+    <string name="home_pick_instance_title">Pick an instance</string>
+    <string name="home_pick_instance_empty">There are no instances yet.</string>
+    <string name="home_instance_missing">Instance not found</string>
+    <string name="home_instance_edit">Edit instance</string>
+    <string name="home_instance_manage">Manage content</string>
+    <string name="home_instance_browse">Browse content</string>
+    <string name="home_instance_actions_title">%1$s</string>
+    <string name="home_edit_hint">Drag to move, use the corner handle to resize</string>
+
+    <!-- Background blur -->
+    <string name="preference_bg_blur_title">Background blur</string>
+    <string name="preference_bg_blur_summary">Blurs the custom background. Videos and animated images are only blurred on Android 12 and newer, older versions dim them instead.</string>
 </resources>

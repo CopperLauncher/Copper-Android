@@ -23,13 +23,15 @@ import java.io.OutputStream;
 
 /**
  * The custom launcher background: an image (static or animated GIF/WebP) or a video (MP4).
- * The picked file is copied into the launcher data folder, and shown on the home screen of the
- * right pane of the two-pane landscape main menu.
+ * The picked file is copied into the launcher data folder, and shown behind the whole launcher
+ * by {@link com.kdt.mcgui.LauncherWallpaperView}.
  */
 public final class LauncherBackground {
     public static final String PREF_KIND = "custom_launcher_bg_kind";
     public static final String KIND_IMAGE = "image";
     public static final String KIND_VIDEO = "video";
+    /** Blur of the background in percent, 0 to 100 */
+    public static final String PREF_BLUR = "launcher_bg_blur";
 
     /** Larger images are scaled down while decoding, a background never needs more than this */
     private static final int MAX_IMAGE_SIDE = 2048;
@@ -40,6 +42,12 @@ public final class LauncherBackground {
     public static File getFile() {
         // DIR_DATA is only known at runtime, so this can't be a constant
         return new File(Tools.DIR_DATA, "custom_launcher_bg");
+    }
+
+    /** @return the blur of the background in percent */
+    public static int getBlur(@NonNull Context context) {
+        int blur = PreferenceManager.getDefaultSharedPreferences(context).getInt(PREF_BLUR, 0);
+        return Math.max(0, Math.min(100, blur));
     }
 
     public static boolean exists() {

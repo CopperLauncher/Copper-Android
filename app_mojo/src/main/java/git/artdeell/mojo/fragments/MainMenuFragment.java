@@ -7,6 +7,8 @@ import static git.artdeell.mojo.Tools.shareLog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +23,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.graphics.ColorUtils;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -40,6 +43,8 @@ import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.utils.FileUtils;
+import git.artdeell.mojo.utils.LauncherBackground;
+import git.artdeell.mojo.utils.ThemeColors;
 import git.artdeell.mojo.utils.WorldUtils;
 
 import java.io.File;
@@ -59,6 +64,8 @@ public class MainMenuFragment extends Fragment {
     /* The sidebar and the pane that replaces it while the content picker is open, null in portrait */
     private View mLeftSidebar;
     private FrameLayout mLeftPaneContainer;
+    /* A custom background is set: it shows through the main menu, which then is partly see-through */
+    private boolean mHasWallpaper;
     /* Intercepts back when the right pane shows something above the home screen */
     private OnBackPressedCallback mRightPaneBackCallback;
 
@@ -70,6 +77,7 @@ public class MainMenuFragment extends Fragment {
     private final FragmentManager.OnBackStackChangedListener mBackStackListener = () -> {
         mRightPaneBackCallback.setEnabled(isRightPaneActive());
         updateBottomBar();
+        updatePaneBackground();
         updateLeftPaneVisibility();
         // Back at the home screen: instances may have been created, renamed or deleted
         if (mVersionSpinner != null && getChildFragmentManager().getBackStackEntryCount() == 0) {
@@ -132,6 +140,31 @@ public class MainMenuFragment extends Fragment {
         mBottomBar.setVisibility(atHome ? View.VISIBLE : View.GONE);
     }
 
+    /**
+     * With a custom background the home screen shows it through, and so do the sidebar and the
+     * bottom bar, as translucent panels. Every other screen keeps its solid pane.
+     */
+    private void updatePaneBackground() {
+        if (mRightPane == null) return;
+        boolean atHome = getChildFragmentManager().getBackStackEntryCount() == 0;
+        if (mHasWallpaper && atHome) mRightPane.setBackground(null);
+        else mRightPane.setBackgroundResource(R.drawable.bg_right_pane);
+    }
+
+    private void applyWallpaperBackdrop(@NonNull View root) {
+        mHasWallpaper = LauncherBackground.exists();
+        if (!mHasWallpaper) return;
+        int panel = ColorUtils.setAlphaComponent(ThemeColors.surfaceContainer(requireContext()), 0xB8);
+        root.setBackgroundColor(Color.TRANSPARENT);
+        if (mLeftSidebar != null) mLeftSidebar.setBackgroundColor(panel);
+        if (mBottomBar != null) {
+            GradientDrawable bar = new GradientDrawable();
+            bar.setColor(panel);
+            bar.setCornerRadius(24f * getResources().getDisplayMetrics().density);
+            mBottomBar.setBackground(bar);
+        }
+    }
+
     // ─── Browse / Manage Content ─────────────────────────────────────────────
 
     /** Opens a screen in the right pane, or full screen in portrait */
@@ -147,7 +180,7 @@ public class MainMenuFragment extends Fragment {
      * The manage variant also exposes the per-instance version/loader filter.
      * Landscape docks it in the left pane, portrait shows it as a dialog.
      */
-    private void showContentPicker(boolean manage) {
+    public void showContentPicker(boolean manage) {
         if (isTwoPane()) openContentPickerPane(manage);
         else showContentPickerDialog(manage);
     }
@@ -423,6 +456,7 @@ public class MainMenuFragment extends Fragment {
         mLeftSidebar = view.findViewById(R.id.left_sidebar);
         mLeftPaneContainer = view.findViewById(R.id.left_pane_container);
         getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
+        if (isTwoPane()) applyWallpaperBackdrop(view);
 
         FragmentManager childManager = getChildFragmentManager();
         if (isTwoPane()) {
@@ -480,7 +514,7 @@ public class MainMenuFragment extends Fragment {
         mVersionSpinner = null;
     }
 
-    private void openGameDirectory(Context context) {
+    public void openGameDirectory(Context context) {
         Instance instance = Instances.loadSelectedInstance();
         if(instance == null) {
             Toast.makeText(context, R.string.no_instance, Toast.LENGTH_LONG).show();
@@ -502,7 +536,7 @@ public class MainMenuFragment extends Fragment {
         if (mBottomBar != null) mBottomBar.post(this::updateBottomBar);
     }
 
-    private void runInstallerWithConfirmation() {
+    public void runInstallerWithConfirmation() {
         if(!ProgressLayout.ensureNoOngoingTasks(requireContext())) return;
         mModInstallerLauncher.launch(null);
     }

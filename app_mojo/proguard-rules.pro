@@ -28,3 +28,6 @@
  -keep class git.artdeell.mojo.game.platform.dialog.FileDialogBridge { *; }
  -keep class git.artdeell.mojo.game.platform.dialog.SDLFileDialogHandler { *; }
 
+
+# Home screen tiles are saved as JSON with Gson, the field names must stay
+ -keep class git.artdeell.mojo.home.HomeTile { *; }
