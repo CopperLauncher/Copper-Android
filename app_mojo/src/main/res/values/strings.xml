@@ -884,10 +884,9 @@
     <string name="home_tile_separator">Separator</string>
     <string name="home_add_tile_title">Add tile</string>
     <string name="home_add_tile">Add tile</string>
-    <string name="home_reset_tiles">Reset</string>
     <string name="home_edit_done">Done</string>
     <string name="home_no_space">No free space for this tile. Remove or shrink a tile first.</string>
-    <string name="home_reset_confirm">Reset the home screen to the default tiles?</string>
+    <string name="home_reset_confirm">Reset the home screen tiles and the order of the sidebar to the defaults?</string>
     <string name="home_tile_remove">Remove tile</string>
     <string name="home_pick_instance_title">Pick an instance</string>
     <string name="home_pick_instance_empty">There are no instances yet.</string>
@@ -896,9 +895,27 @@
     <string name="home_instance_manage">Manage content</string>
     <string name="home_instance_browse">Browse content</string>
     <string name="home_instance_actions_title">%1$s</string>
-    <string name="home_edit_hint">Drag to move, use the corner handle to resize</string>
+    <string name="home_edit_hint">Drag to move · corner handle resizes · tap a separator to write on it</string>
 
     <!-- Background blur -->
     <string name="preference_bg_blur_title">Background blur</string>
-    <string name="preference_bg_blur_summary">Blurs the custom background. Videos and animated images are only blurred on Android 12 and newer, older versions dim them instead.</string>
+    <string name="preference_bg_blur_summary">How blurred the custom background is on the home screen. Every other screen blurs it on its own. Videos and animated images are only blurred on Android 12 and newer, older versions dim them instead.</string>
+
+    <string name="home_more">More</string>
+    <string name="home_reset_layout">Reset layout</string>
+    <string name="home_share_layout">Share layout (.json)</string>
+    <string name="home_import_layout">Import layout (.json)</string>
+    <string name="home_import_invalid">This file is not a home screen layout.</string>
+    <string name="home_import_done">Layout imported.</string>
+    <string name="home_export_failed">Couldn\'t write the layout file.</string>
+    <string name="home_separator_title">Separator text</string>
+    <string name="home_separator_hint">Text, leave it empty for a plain line</string>
+    <string name="home_instance_load_failed">Couldn\'t read the instances.</string>
+
+    <!-- Home tile look -->
+    <string name="preference_category_home_tiles">Home tiles</string>
+    <string name="preference_tile_opacity_title">Tile opacity</string>
+    <string name="preference_tile_opacity_summary">How solid the background of the tiles on the home screen is.</string>
+    <string name="preference_tile_blur_title">Frosted tiles</string>
+    <string name="preference_tile_blur_summary">Shows a blurred copy of the wallpaper behind the tiles. Lower the tile opacity to see it. Not available for video wallpapers.</string>
 </resources>

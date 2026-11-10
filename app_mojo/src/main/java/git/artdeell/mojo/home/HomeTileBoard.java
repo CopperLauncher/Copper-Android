@@ -4,20 +4,17 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.ContextCompat;
-import androidx.core.graphics.drawable.DrawableCompat;
 
-import git.artdeell.mojo.R;
 import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.utils.ThemeColors;
 
@@ -36,6 +33,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         void onTileClick(@NonNull HomeTile tile);
         void onTilePlay(@NonNull HomeTile tile);
         void onTileEdit(@NonNull HomeTile tile);
+        /** A tap on a tile while editing, without moving it */
+        void onTileTap(@NonNull HomeTile tile);
         /** Long press on the empty space */
         void onEmptyLongPress();
         void onEditModeChanged(boolean editMode);
@@ -52,16 +51,19 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
 
     private int mRows = HomeTileStore.MIN_ROWS;
     private float mCellW, mCellH;
-    private final int mPad, mGap, mBadgeRadius, mBadgeInset;
+    private final int mPad, mGap;
 
     private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF mRect = new RectF();
-    private Drawable mResizeIcon, mRemoveIcon;
     private final GestureDetector mDetector;
+    private final int mTouchSlop;
+    private final WallpaperBackdrop.Listener mBackdropListener = this::invalidateTiles;
 
     private HomeTile mActive;
     private Mode mMode = Mode.NONE;
-    private float mLastX, mLastY, mGrabDX, mGrabDY;
+    private float mLastX, mLastY, mGrabDX, mGrabDY, mDownX, mDownY;
+    /** The touch hasn't moved yet, so releasing it is a tap */
+    private boolean mTapCandidate;
     private int mDropX, mDropY;
     private boolean mDropValid;
 
@@ -73,8 +75,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         super(context, attrs);
         mPad = dp(8);
         mGap = dp(3);
-        mBadgeRadius = dp(12);
-        mBadgeInset = dp(14);
+        mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         setWillNotDraw(false);
         mDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
             @Override
@@ -127,6 +128,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
 
     private void addTileView(HomeTile tile, HomeTileType type) {
         HomeTileView view = new HomeTileView(getContext(), tile, type, this);
+        view.setEditing(mEditMode);
         view.setOnClickListener(v -> {
             if (mListener != null && !mEditMode) mListener.onTileClick(tile);
         });
@@ -174,12 +176,42 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         if (mListener != null) mListener.onTilesChanged(mTiles);
     }
 
+    /** The text of a separator changed */
+    public void refreshTile(@NonNull HomeTile tile) {
+        HomeTileView view = mViews.get(tile);
+        if (view != null) view.bindLabel();
+    }
+
+    /** The tile opacity or the frosted glass setting changed */
+    public void refreshStyle() {
+        for (HomeTileView view : mViews.values()) view.applyStyle();
+    }
+
+    private void invalidateTiles() {
+        post(() -> {
+            for (HomeTileView view : mViews.values()) view.invalidate();
+        });
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        WallpaperBackdrop.addListener(mBackdropListener);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        WallpaperBackdrop.removeListener(mBackdropListener);
+    }
+
     // ─── Edit mode ───────────────────────────────────────────────────────────
 
     public void setEditMode(boolean editMode) {
         if (mEditMode == editMode) return;
         mEditMode = editMode;
         if (!editMode) cancelGesture();
+        for (HomeTileView view : mViews.values()) view.setEditing(editMode);
         invalidate();
         if (mListener != null) mListener.onEditModeChanged(editMode);
     }
@@ -188,6 +220,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         setEditMode(true);
         getParent().requestDisallowInterceptTouchEvent(true);
         beginDrag(tile, mLastX, mLastY);
+        mTapCandidate = false;
     }
 
     // ─── Geometry ────────────────────────────────────────────────────────────
@@ -390,14 +423,16 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
 
     /** Decides what a touch that landed on a tile in the edit mode does */
     private void beginGesture(HomeTile tile, float x, float y) {
-        RectF rect = tileRect(tile.x, tile.y, tile.w, tile.h, new RectF());
-        float slop = mBadgeRadius + dp(6);
-        float resizeX = rect.right - mBadgeInset, resizeY = rect.bottom - mBadgeInset;
-        float removeX = rect.right - mBadgeInset, removeY = rect.top + mBadgeInset;
-        if (Math.hypot(x - removeX, y - removeY) <= slop) {
+        HomeTileView view = mViews.get(tile);
+        mDownX = x;
+        mDownY = y;
+        mTapCandidate = true;
+        HomeTileView.Badge badge = view == null ? HomeTileView.Badge.NONE
+                : view.badgeAt(x - view.getLeft(), y - view.getTop());
+        if (badge == HomeTileView.Badge.REMOVE) {
             mActive = tile;
             mMode = Mode.REMOVE;
-        } else if (Math.hypot(x - resizeX, y - resizeY) <= slop) {
+        } else if (badge == HomeTileView.Badge.RESIZE) {
             mActive = tile;
             mMode = Mode.RESIZE;
         } else {
@@ -424,6 +459,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
 
     private void updateGesture(float x, float y) {
         if (mActive == null) return;
+        if (mTapCandidate && Math.hypot(x - mDownX, y - mDownY) > mTouchSlop) mTapCandidate = false;
         if (mMode == Mode.DRAG) {
             HomeTileView view = mViews.get(mActive);
             if (view == null) return;
@@ -463,9 +499,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         mMode = Mode.NONE;
         HomeTileView view = mViews.get(tile);
         if (mode == Mode.REMOVE) {
-            RectF rect = tileRect(tile.x, tile.y, tile.w, tile.h, new RectF());
-            boolean inside = Math.hypot(x - (rect.right - mBadgeInset), y - (rect.top + mBadgeInset))
-                    <= mBadgeRadius + dp(10);
+            boolean inside = view != null
+                    && view.badgeAt(x - view.getLeft(), y - view.getTop()) == HomeTileView.Badge.REMOVE;
             if (commit && inside) removeTile(tile);
         } else if (mode == Mode.DRAG && view != null) {
             float visualLeft = view.getLeft() + view.getTranslationX();
@@ -474,6 +509,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
                 tile.x = mDropX;
                 tile.y = mDropY;
                 notifyChanged();
+            } else if (commit && mTapCandidate && mListener != null) {
+                mListener.onTileTap(tile);
             }
             RectF target = tileRect(tile.x, tile.y, tile.w, tile.h, new RectF());
             view.setTranslationX(visualLeft - target.left);
@@ -494,6 +531,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
+        // Where the tile will land. The outline and the badges are drawn by the tiles themselves
         if (mEditMode && mActive != null && mMode == Mode.DRAG && mDropValid) {
             tileRect(mDropX, mDropY, mActive.w, mActive.h, mRect);
             mPaint.setStyle(Paint.Style.FILL);
@@ -501,40 +539,6 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
             canvas.drawRoundRect(mRect, dp(16), dp(16), mPaint);
         }
         super.dispatchDraw(canvas);
-        if (!mEditMode) return;
-
-        int primary = ThemeColors.primary(getContext());
-        int onPrimary = ThemeColors.get(getContext(), com.google.android.material.R.attr.colorOnPrimary);
-        if (mResizeIcon == null) mResizeIcon = tinted(R.drawable.ic_px_resize, onPrimary);
-        if (mRemoveIcon == null) mRemoveIcon = tinted(R.drawable.ic_close, onPrimary);
-        for (HomeTile tile : mTiles) {
-            HomeTileView view = mViews.get(tile);
-            if (view == null) continue;
-            mRect.set(view.getLeft() + view.getTranslationX(), view.getTop() + view.getTranslationY(),
-                    view.getRight() + view.getTranslationX(), view.getBottom() + view.getTranslationY());
-            mPaint.setStyle(Paint.Style.STROKE);
-            mPaint.setStrokeWidth(dp(2));
-            mPaint.setColor(primary);
-            canvas.drawRoundRect(mRect, dp(16), dp(16), mPaint);
-
-            mPaint.setStyle(Paint.Style.FILL);
-            drawBadge(canvas, mRect.right - mBadgeInset, mRect.top + mBadgeInset, primary, mRemoveIcon);
-            drawBadge(canvas, mRect.right - mBadgeInset, mRect.bottom - mBadgeInset, primary, mResizeIcon);
-        }
-    }
-
-    private void drawBadge(Canvas canvas, float cx, float cy, int color, Drawable icon) {
-        mPaint.setColor(color);
-        canvas.drawCircle(cx, cy, mBadgeRadius, mPaint);
-        int half = dp(8);
-        icon.setBounds(Math.round(cx) - half, Math.round(cy) - half, Math.round(cx) + half, Math.round(cy) + half);
-        icon.draw(canvas);
-    }
-
-    private Drawable tinted(int resource, int color) {
-        Drawable drawable = DrawableCompat.wrap(ContextCompat.getDrawable(getContext(), resource).mutate());
-        DrawableCompat.setTint(drawable, color);
-        return drawable;
     }
 
     private static int withAlpha(int color, int alpha) {

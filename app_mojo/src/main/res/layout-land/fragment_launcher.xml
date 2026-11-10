@@ -30,13 +30,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
+        <!-- Long press a button or a title and drag it to put it somewhere else, the order is saved -->
+        <com.kdt.mcgui.ReorderableLinearLayout
             android:id="@+id/left_sidebar_content"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
 			<TextView
+				android:id="@+id/sidebar_header_quick"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:text="@string/mcl_section_quick_actions"
@@ -63,11 +65,13 @@
 				android:text="@string/mcl_option_customcontrol" />
 
 			<com.google.android.material.divider.MaterialDivider
+				android:id="@+id/sidebar_divider"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:layout_marginTop="@dimen/padding_medium" />
 
 			<TextView
+				android:id="@+id/sidebar_header_tools"
 				android:layout_width="match_parent"
 				android:layout_height="wrap_content"
 				android:text="@string/mcl_section_instance_tools"
@@ -106,7 +110,7 @@
 				android:layout_width="match_parent"
 				android:drawableStart="@drawable/ic_px_sharelog"
 				android:text="@string/main_share_logs" />
-        </LinearLayout>
+        </com.kdt.mcgui.ReorderableLinearLayout>
     </ScrollView>
 
     <!-- Replaces the sidebar while Browse/Manage Content is open, see ContentPickerFragment -->

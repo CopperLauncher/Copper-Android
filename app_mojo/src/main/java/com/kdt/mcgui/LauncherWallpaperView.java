@@ -3,6 +3,7 @@ package com.kdt.mcgui;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
@@ -20,6 +21,7 @@ import androidx.annotation.Nullable;
 import androidx.preference.PreferenceManager;
 
 import git.artdeell.mojo.MojoApplication;
+import git.artdeell.mojo.home.WallpaperBackdrop;
 import git.artdeell.mojo.utils.LauncherBackground;
 
 import java.io.File;
@@ -32,6 +34,9 @@ import java.io.File;
 public class LauncherWallpaperView extends FrameLayout {
     private static final float MAX_BLUR_RADIUS_PX = 40f;
     private static final float MAX_DIM_ALPHA = 0.6f;
+    /** Blur in percent of every screen that covers the home screen, whatever the setting is */
+    private static final int UNFOCUSED_BLUR = 60;
+    private static final int BACKDROP_WIDTH = 48;
 
     private final ImageView mImage;
     private final CenterCropVideoView mVideo;
@@ -41,6 +46,8 @@ public class LauncherWallpaperView extends FrameLayout {
     private boolean mHasMedia;
     private boolean mIsVideo;
     private boolean mActive = true;
+    /** The home screen is in front, the wallpaper is blurred only as much as the setting says */
+    private boolean mFocused = true;
     private int mLoadId;
     private String mStamp;
 
@@ -97,6 +104,13 @@ public class LauncherWallpaperView extends FrameLayout {
         applyState();
     }
 
+    /** Every other screen than the home screen gets the wallpaper blurred, even when the blur is off */
+    public void setFocused(boolean focused) {
+        if (mFocused == focused) return;
+        mFocused = focused;
+        applyBlur();
+    }
+
     private String currentStamp() {
         String kind = LauncherBackground.getKind(getContext());
         if (kind == null) return "none";
@@ -122,6 +136,8 @@ public class LauncherWallpaperView extends FrameLayout {
             mImage.setImageDrawable(null);
             mImage.setVisibility(GONE);
             mVideo.setVisibility(VISIBLE);
+            // There is no frame to blur for the tiles, they stay translucent only
+            WallpaperBackdrop.set(null, this);
             mVideo.setVideoPath(file.getAbsolutePath());
             mIsVideo = true;
             mHasMedia = true;
@@ -134,12 +150,14 @@ public class LauncherWallpaperView extends FrameLayout {
         // Decoding a big image takes a while, keep it off the UI thread
         MojoApplication.sExecutorService.execute(() -> {
             Drawable drawable = LauncherBackground.decodeImage(file);
+            Bitmap backdrop = drawable == null ? null : buildBackdrop(drawable);
             post(() -> {
                 if (loadId != mLoadId) return;
                 if (drawable == null) {
                     clear();
                     return;
                 }
+                WallpaperBackdrop.set(backdrop, this);
                 mDecoded = drawable;
                 mIsVideo = false;
                 mHasMedia = true;
@@ -151,6 +169,7 @@ public class LauncherWallpaperView extends FrameLayout {
     }
 
     private void clear() {
+        WallpaperBackdrop.set(null, null);
         stopAnimation();
         mDecoded = null;
         mHasMedia = false;
@@ -178,6 +197,7 @@ public class LauncherWallpaperView extends FrameLayout {
     private void applyBlur() {
         if (!mHasMedia) return;
         int blur = LauncherBackground.getBlur(getContext());
+        if (!mFocused) blur = Math.max(blur, UNFOCUSED_BLUR);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RenderEffect effect = null;
             if (blur > 0) {
@@ -199,6 +219,44 @@ public class LauncherWallpaperView extends FrameLayout {
         }
         if (!mIsVideo) mImage.setImageDrawable(mDecoded);
         mScrim.setAlpha(blur / 100f * MAX_DIM_ALPHA);
+    }
+
+    /** A tiny copy of the wallpaper, drawn stretched behind the frosted tiles. Null if there is no frame to take */
+    @Nullable
+    private static Bitmap buildBackdrop(@NonNull Drawable drawable) {
+        try {
+            Bitmap source;
+            if (drawable instanceof BitmapDrawable) {
+                source = ((BitmapDrawable) drawable).getBitmap();
+            } else if (drawable.getIntrinsicWidth() > 0 && drawable.getIntrinsicHeight() > 0) {
+                // An animated image: its current frame
+                int width = Math.min(drawable.getIntrinsicWidth(), 256);
+                int height = Math.max(1, Math.round(drawable.getIntrinsicHeight() * (width / (float) drawable.getIntrinsicWidth())));
+                source = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                drawable.setBounds(0, 0, width, height);
+                drawable.draw(new Canvas(source));
+            } else {
+                return null;
+            }
+            if (source == null) return null;
+            Bitmap small = downscaleToWidth(source, BACKDROP_WIDTH);
+            return small == source ? small.copy(Bitmap.Config.ARGB_8888, false) : small;
+        } catch (RuntimeException | OutOfMemoryError e) {
+            return null;
+        }
+    }
+
+    private static Bitmap downscaleToWidth(Bitmap source, int width) {
+        int height = Math.max(1, Math.round(source.getHeight() * (width / (float) source.getWidth())));
+        Bitmap current = source;
+        while (current.getWidth() / 2 > width) {
+            Bitmap next = Bitmap.createScaledBitmap(current, current.getWidth() / 2, Math.max(1, current.getHeight() / 2), true);
+            if (current != source) current.recycle();
+            current = next;
+        }
+        Bitmap result = Bitmap.createScaledBitmap(current, width, height, true);
+        if (current != source && current != result) current.recycle();
+        return result;
     }
 
     /** Scales the image down, the ImageView scales it back up smoothly, which looks like a blur */

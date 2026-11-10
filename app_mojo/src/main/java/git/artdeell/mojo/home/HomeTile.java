@@ -13,6 +13,8 @@ public class HomeTile {
     public int x, y, w, h;
     /** Instance tiles only: the instance key, empty follows the selected instance */
     public String instanceKey;
+    /** Separator tiles only: the text in the middle of the line, empty for a plain line */
+    public String label;
 
     public HomeTile() {
     }

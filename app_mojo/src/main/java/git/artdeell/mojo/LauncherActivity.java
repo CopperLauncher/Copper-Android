@@ -19,6 +19,9 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
+import androidx.fragment.app.DialogFragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -52,7 +55,9 @@ import git.artdeell.mojo.services.ProgressServiceKeeper;
 import git.artdeell.mojo.tasks.mojson.MoJsonExtras;
 import git.artdeell.mojo.tasks.AsyncVersionList;
 import git.artdeell.mojo.tasks.mojson.MoJsonDownloader;
+import git.artdeell.mojo.utils.LauncherBackground;
 import git.artdeell.mojo.utils.NotificationUtils;
+import git.artdeell.mojo.utils.ThemeColors;
 
 public class LauncherActivity extends BaseActivity {
     public static final String SETTING_FRAGMENT_TAG = "SETTINGS_FRAGMENT";
@@ -72,6 +77,16 @@ public class LauncherActivity extends BaseActivity {
         public void onFragmentResumed(@NonNull FragmentManager fm, @NonNull Fragment f) {
             // Also called for the screens of the right pane of the main menu
             updateSettingsButton();
+        }
+
+        @Override
+        public void onFragmentViewCreated(@NonNull FragmentManager fm, @NonNull Fragment f,
+                                          @NonNull View v, @Nullable Bundle savedInstanceState) {
+            // The screens that fill the launcher (settings, accounts, ...) show the wallpaper, blurred,
+            // through a translucent panel. The screens of the main menu are handled by the main menu.
+            if(fm != getSupportFragmentManager() || f instanceof MainMenuFragment || f instanceof DialogFragment) return;
+            if(!LauncherBackground.exists()) return;
+            v.setBackgroundColor(ColorUtils.setAlphaComponent(ThemeColors.surface(LauncherActivity.this), 0xCC));
         }
     };
 
@@ -170,8 +185,16 @@ public class LauncherActivity extends BaseActivity {
         boolean atHome = current instanceof MainMenuFragment && !((MainMenuFragment) current).isRightPaneActive();
         mSettingsButton.setImageDrawable(ContextCompat.getDrawable(this,
                 atHome ? R.drawable.ic_px_sliders : R.drawable.ic_px_home));
-        // Every other screen covers the wallpaper, so it only plays behind the main menu
-        if(mWallpaper != null) mWallpaper.setActive(current instanceof MainMenuFragment);
+        // The wallpaper is behind every screen
+        if(mWallpaper != null) mWallpaper.setActive(true);
+        refreshWallpaperFocus();
+    }
+
+    /** The wallpaper is sharp (as sharp as the blur setting says) behind the home screen only, every other screen blurs it */
+    public void refreshWallpaperFocus() {
+        if(mWallpaper == null) return;
+        Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+        mWallpaper.setFocused(current instanceof MainMenuFragment && !((MainMenuFragment) current).isRightPaneActive());
     }
 
     @Override

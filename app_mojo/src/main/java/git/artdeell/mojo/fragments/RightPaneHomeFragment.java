@@ -6,13 +6,20 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.PopupMenu;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.net.Uri;
+
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -34,7 +41,12 @@ import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.InstanceIconProvider;
 import git.artdeell.mojo.instances.Instances;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,9 +59,14 @@ import java.util.Map;
 public class RightPaneHomeFragment extends Fragment implements HomeTileBoard.Listener {
     public static final String TAG = "RightPaneHomeFragment";
 
+    private static final int MAX_IMPORT_BYTES = 1024 * 1024;
+
     private HomeTileBoard mBoard;
     private View mEditBar;
     private OnBackPressedCallback mExitEditCallback;
+
+    private final ActivityResultLauncher<String[]> mImportLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), this::importLayout);
 
     public RightPaneHomeFragment() {
         super(R.layout.fragment_right_pane_home);
@@ -64,16 +81,7 @@ public class RightPaneHomeFragment extends Fragment implements HomeTileBoard.Lis
 
         view.findViewById(R.id.home_edit_add).setOnClickListener(v -> showAddTileDialog());
         view.findViewById(R.id.home_edit_done).setOnClickListener(v -> mBoard.setEditMode(false));
-        view.findViewById(R.id.home_edit_reset).setOnClickListener(v ->
-                new MaterialAlertDialogBuilder(requireContext())
-                        .setMessage(R.string.home_reset_confirm)
-                        .setPositiveButton(R.string.home_reset_tiles, (d, w) -> {
-                            HomeTileStore.reset(requireContext());
-                            mBoard.setTiles(HomeTileStore.load(requireContext()));
-                            refreshInstances();
-                        })
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show());
+        view.findViewById(R.id.home_edit_more).setOnClickListener(this::showMoreMenu);
 
         // Back leaves the edit mode before it does anything else
         mExitEditCallback = new OnBackPressedCallback(false) {
@@ -88,6 +96,8 @@ public class RightPaneHomeFragment extends Fragment implements HomeTileBoard.Lis
     @Override
     public void onResume() {
         super.onResume();
+        // The tile opacity and the frosted glass are set in Launcher appearance
+        if (mBoard != null) mBoard.refreshStyle();
         refreshInstances();
     }
 
@@ -184,7 +194,7 @@ public class RightPaneHomeFragment extends Fragment implements HomeTileBoard.Lis
                 Tools.shareLog(context);
                 break;
             case INSTANCE:
-                selectInstance(tile);
+                if (selectInstance(tile)) refreshInstances();
                 break;
             default:
                 break;
@@ -228,6 +238,11 @@ public class RightPaneHomeFragment extends Fragment implements HomeTileBoard.Lis
     }
 
     @Override
+    public void onTileTap(@NonNull HomeTile tile) {
+        if (HomeTileType.SEPARATOR.name().equals(tile.type)) showSeparatorDialog(tile);
+    }
+
+    @Override
     public void onEmptyLongPress() {
         mBoard.setEditMode(true);
         showAddTileDialog();
@@ -242,6 +257,135 @@ public class RightPaneHomeFragment extends Fragment implements HomeTileBoard.Lis
     @Override
     public void onTilesChanged(@NonNull List<HomeTile> tiles) {
         HomeTileStore.save(requireContext().getApplicationContext(), tiles);
+    }
+
+    // ─── Separator text ──────────────────────────────────────────────────────
+
+    private void showSeparatorDialog(@NonNull HomeTile tile) {
+        EditText input = new EditText(requireContext());
+        input.setSingleLine(true);
+        input.setHint(R.string.home_separator_hint);
+        input.setText(tile.label == null ? "" : tile.label);
+        input.setSelection(input.getText().length());
+        int padding = Math.round(24 * getResources().getDisplayMetrics().density);
+        FrameLayout container = new FrameLayout(requireContext());
+        container.setPadding(padding, padding / 2, padding, 0);
+        container.addView(input, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.home_separator_title)
+                .setView(container)
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    String text = input.getText().toString().trim();
+                    tile.label = text.isEmpty() ? null : text;
+                    if (mBoard == null) return;
+                    mBoard.refreshTile(tile);
+                    HomeTileStore.save(requireContext().getApplicationContext(), mBoard.getTiles());
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    // ─── More: reset, share, import ──────────────────────────────────────────
+
+    private void showMoreMenu(View anchor) {
+        PopupMenu menu = new PopupMenu(requireContext(), anchor);
+        menu.getMenu().add(0, 1, 0, R.string.home_reset_layout);
+        menu.getMenu().add(0, 2, 1, R.string.home_share_layout);
+        menu.getMenu().add(0, 3, 2, R.string.home_import_layout);
+        menu.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1:
+                    confirmReset();
+                    return true;
+                case 2:
+                    shareLayout();
+                    return true;
+                case 3:
+                    mImportLauncher.launch(new String[]{"application/json", "text/plain", "*/*"});
+                    return true;
+                default:
+                    return false;
+            }
+        });
+        menu.show();
+    }
+
+    private MainMenuFragment mainMenu() {
+        return getParentFragment() instanceof MainMenuFragment ? (MainMenuFragment) getParentFragment() : null;
+    }
+
+    private void confirmReset() {
+        new MaterialAlertDialogBuilder(requireContext())
+                .setMessage(R.string.home_reset_confirm)
+                .setPositiveButton(R.string.home_reset_layout, (d, w) -> {
+                    HomeTileStore.reset(requireContext().getApplicationContext());
+                    if (mBoard == null) return;
+                    mBoard.setTiles(HomeTileStore.load(requireContext()));
+                    refreshInstances();
+                    MainMenuFragment mainMenu = mainMenu();
+                    // An empty saved order is the default order, the sidebar itself is rebuilt with the screen
+                    if (mainMenu != null) mainMenu.resetSidebarOrder();
+                })
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+    }
+
+    /** Writes the layout to a .json file and opens the share sheet for it */
+    private void shareLayout() {
+        MainMenuFragment mainMenu = mainMenu();
+        final String json = HomeTileStore.toJson(mBoard.getTiles(),
+                mainMenu == null ? new ArrayList<>() : mainMenu.getSidebarOrder());
+        final Context context = requireContext();
+        MojoApplication.sExecutorService.execute(() -> {
+            File file = new File(Tools.DIR_GAME_HOME, "home_layout.json");
+            try {
+                File parent = file.getParentFile();
+                if (parent != null) parent.mkdirs();
+                try (FileOutputStream out = new FileOutputStream(file)) {
+                    out.write(json.getBytes(StandardCharsets.UTF_8));
+                }
+                Tools.runOnUiThread(() -> Tools.openPath(context, file, true));
+            } catch (IOException e) {
+                Tools.runOnUiThread(() -> Toast.makeText(context, R.string.home_export_failed, Toast.LENGTH_LONG).show());
+            }
+        });
+    }
+
+    /** Reads the picked file and replaces the layout with the one in it */
+    private void importLayout(@Nullable Uri uri) {
+        if (uri == null || mBoard == null) return;
+        final Context context = requireContext().getApplicationContext();
+        MojoApplication.sExecutorService.execute(() -> {
+            String text = null;
+            try (InputStream in = context.getContentResolver().openInputStream(uri)) {
+                if (in != null) {
+                    ByteArrayOutputStream out = new ByteArrayOutputStream();
+                    byte[] buffer = new byte[8192];
+                    int read;
+                    while ((read = in.read(buffer)) != -1) {
+                        out.write(buffer, 0, read);
+                        if (out.size() > MAX_IMPORT_BYTES) throw new IOException("Too big for a layout");
+                    }
+                    text = out.toString("UTF-8");
+                }
+            } catch (IOException | SecurityException ignored) {
+            }
+            final HomeTileStore.Layout layout = HomeTileStore.parse(text);
+            Tools.runOnUiThread(() -> {
+                if (layout == null) {
+                    Toast.makeText(context, R.string.home_import_invalid, Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if (mBoard == null || !isAdded()) return;
+                HomeTileStore.save(context, layout.tiles);
+                mBoard.setTiles(layout.tiles);
+                refreshInstances();
+                MainMenuFragment mainMenu = mainMenu();
+                if (mainMenu != null) mainMenu.setSidebarOrder(layout.sidebar);
+                Toast.makeText(context, R.string.home_import_done, Toast.LENGTH_SHORT).show();
+            });
+        });
     }
 
     // ─── Dialogs ─────────────────────────────────────────────────────────────
@@ -286,15 +430,18 @@ public class RightPaneHomeFragment extends Fragment implements HomeTileBoard.Lis
             Instances loaded = null;
             try {
                 loaded = Instances.loadDisplay();
-            } catch (IOException ignored) {
+            } catch (Exception e) {
+                android.util.Log.w(TAG, "Couldn't list the instances", e);
             }
             final Instances instances = loaded;
             View root = getView();
             if (root == null) return;
             root.post(() -> {
-                if (mBoard == null) return;
+                if (mBoard == null || !isAdded()) return;
                 if (instances == null || instances.list.isEmpty()) {
-                    Toast.makeText(requireContext(), R.string.home_pick_instance_empty, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(),
+                            instances == null ? R.string.home_instance_load_failed : R.string.home_pick_instance_empty,
+                            Toast.LENGTH_LONG).show();
                     return;
                 }
                 presentInstancePicker(instances.list);

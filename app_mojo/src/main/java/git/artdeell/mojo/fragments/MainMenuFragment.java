@@ -29,13 +29,16 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.kdt.mcgui.ProgressLayout;
+import com.kdt.mcgui.ReorderableLinearLayout;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.kdt.mcgui.mcVersionSpinner;
 
 import git.artdeell.mojo.CustomControlsActivity;
 import git.artdeell.mojo.R;
 
+import git.artdeell.mojo.LauncherActivity;
 import git.artdeell.mojo.Tools;
+import git.artdeell.mojo.home.HomeTileStore;
 import git.artdeell.mojo.contracts.OpenDocumentWithExtension;
 import git.artdeell.mojo.extra.ExtraConstants;
 import git.artdeell.mojo.extra.ExtraCore;
@@ -47,6 +50,7 @@ import git.artdeell.mojo.utils.LauncherBackground;
 import git.artdeell.mojo.utils.ThemeColors;
 import git.artdeell.mojo.utils.WorldUtils;
 
+import java.util.List;
 import java.io.File;
 
 /**
@@ -64,6 +68,12 @@ public class MainMenuFragment extends Fragment {
     /* The sidebar and the pane that replaces it while the content picker is open, null in portrait */
     private View mLeftSidebar;
     private FrameLayout mLeftPaneContainer;
+    /* The buttons of the sidebar, they can be put in another order. Null in portrait */
+    private ReorderableLinearLayout mSidebarContent;
+    private static final List<String> DEFAULT_SIDEBAR_ORDER = java.util.Arrays.asList(
+            "sidebar_header_quick", "mod_store_button", "custom_control_button", "sidebar_divider",
+            "sidebar_header_tools", "open_files_button", "open_directory_button", "install_jar_button",
+            "share_logs_button");
     /* A custom background is set: it shows through the main menu, which then is partly see-through */
     private boolean mHasWallpaper;
     /* Intercepts back when the right pane shows something above the home screen */
@@ -147,8 +157,40 @@ public class MainMenuFragment extends Fragment {
     private void updatePaneBackground() {
         if (mRightPane == null) return;
         boolean atHome = getChildFragmentManager().getBackStackEntryCount() == 0;
-        if (mHasWallpaper && atHome) mRightPane.setBackground(null);
-        else mRightPane.setBackgroundResource(R.drawable.bg_right_pane);
+        if (!mHasWallpaper) {
+            mRightPane.setBackgroundResource(R.drawable.bg_right_pane);
+        } else if (atHome) {
+            mRightPane.setBackground(null);
+        } else {
+            // The screens in the pane show the (then blurred) wallpaper through a translucent panel
+            GradientDrawable panel = new GradientDrawable();
+            panel.setColor(ColorUtils.setAlphaComponent(ThemeColors.surface(requireContext()), 0xD9));
+            panel.setCornerRadius(24f * getResources().getDisplayMetrics().density);
+            mRightPane.setBackground(panel);
+        }
+        // The wallpaper is only sharp on the home screen, the other screens get it blurred
+        if (getActivity() instanceof LauncherActivity) ((LauncherActivity) getActivity()).refreshWallpaperFocus();
+    }
+
+    // ─── Sidebar order ───────────────────────────────────────────────────────
+
+    /** @return the ids of the sidebar buttons in their current order, empty in portrait */
+    @NonNull
+    public List<String> getSidebarOrder() {
+        return mSidebarContent == null ? new java.util.ArrayList<>() : mSidebarContent.getOrder();
+    }
+
+    /** Back to the order of the layout file */
+    public void resetSidebarOrder() {
+        HomeTileStore.saveSidebarOrder(requireContext().getApplicationContext(), new java.util.ArrayList<>());
+        if (mSidebarContent != null) mSidebarContent.setOrder(DEFAULT_SIDEBAR_ORDER);
+    }
+
+    /** Puts the sidebar buttons in this order and keeps it */
+    public void setSidebarOrder(@NonNull List<String> order) {
+        if (mSidebarContent == null || order.isEmpty()) return;
+        mSidebarContent.setOrder(order);
+        HomeTileStore.saveSidebarOrder(requireContext().getApplicationContext(), mSidebarContent.getOrder());
     }
 
     private void applyWallpaperBackdrop(@NonNull View root) {
@@ -455,6 +497,14 @@ public class MainMenuFragment extends Fragment {
         mBottomBar = view.findViewById(R.id.bottom_bar);
         mLeftSidebar = view.findViewById(R.id.left_sidebar);
         mLeftPaneContainer = view.findViewById(R.id.left_pane_container);
+        View sidebarContent = view.findViewById(R.id.left_sidebar_content);
+        if (sidebarContent instanceof ReorderableLinearLayout) {
+            mSidebarContent = (ReorderableLinearLayout) sidebarContent;
+            mSidebarContent.setOrder(HomeTileStore.loadSidebarOrder(requireContext()));
+            mSidebarContent.enableReordering();
+            mSidebarContent.setOnOrderChangedListener(() -> HomeTileStore.saveSidebarOrder(
+                    requireContext().getApplicationContext(), mSidebarContent.getOrder()));
+        }
         getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
         if (isTwoPane()) applyWallpaperBackdrop(view);
 
@@ -511,6 +561,7 @@ public class MainMenuFragment extends Fragment {
         mBottomBar = null;
         mLeftSidebar = null;
         mLeftPaneContainer = null;
+        mSidebarContent = null;
         mVersionSpinner = null;
     }
 
