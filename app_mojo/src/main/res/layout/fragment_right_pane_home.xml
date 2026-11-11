@@ -5,59 +5,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <git.artdeell.mojo.home.HomeTileBoard
-        android:id="@+id/home_tile_board"
+    <!-- The wallpaper when it isn't fullscreen: only here, like it was before the tiles -->
+    <com.kdt.mcgui.LauncherWallpaperView
+        android:id="@+id/pane_wallpaper"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <LinearLayout
-        android:id="@+id/home_edit_bar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center_horizontal"
-        android:layout_margin="12dp"
-        android:background="@drawable/bg_home_edit_bar"
-        android:elevation="6dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
-        android:paddingHorizontal="8dp"
-        android:paddingTop="8dp"
-        android:visibility="gone">
+    <!-- Only scrolls when "Infinite tiles" is on, otherwise the board is exactly as tall as the pane -->
+    <ScrollView
+        android:id="@+id/home_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:overScrollMode="never">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="8dp"
-            android:text="@string/home_edit_hint"
-            android:textAppearance="?attr/textAppearanceLabelSmall"
-            android:textColor="?attr/colorOnSurfaceVariant" />
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/home_edit_add"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/home_add_tile" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/home_edit_more"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/home_more" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/home_edit_done"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/home_edit_done" />
-        </LinearLayout>
-    </LinearLayout>
+        <git.artdeell.mojo.home.HomeTileBoard
+            android:id="@+id/home_tile_board"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </ScrollView>
 </FrameLayout>

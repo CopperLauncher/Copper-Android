@@ -886,16 +886,16 @@
     <string name="home_add_tile">Add tile</string>
     <string name="home_edit_done">Done</string>
     <string name="home_no_space">No free space for this tile. Remove or shrink a tile first.</string>
-    <string name="home_reset_confirm">Reset the home screen tiles and the order of the sidebar to the defaults?</string>
+    <string name="home_reset_confirm">Reset the tiles on both sides to the defaults?</string>
     <string name="home_tile_remove">Remove tile</string>
-    <string name="home_pick_instance_title">Pick an instance</string>
+    <string name="home_pick_instance_title">Add an instance tile</string>
     <string name="home_pick_instance_empty">There are no instances yet.</string>
     <string name="home_instance_missing">Instance not found</string>
     <string name="home_instance_edit">Edit instance</string>
     <string name="home_instance_manage">Manage content</string>
     <string name="home_instance_browse">Browse content</string>
     <string name="home_instance_actions_title">%1$s</string>
-    <string name="home_edit_hint">Drag to move · corner handle resizes · tap a separator to write on it</string>
+    <string name="home_edit_hint">Drag tiles to move them, even to the other side. Tap a text or separator tile to write on it.</string>
 
     <!-- Background blur -->
     <string name="preference_bg_blur_title">Background blur</string>
@@ -918,4 +918,18 @@
     <string name="preference_tile_opacity_summary">How solid the background of the tiles on the home screen is.</string>
     <string name="preference_tile_blur_title">Frosted tiles</string>
     <string name="preference_tile_blur_summary">Shows a blurred copy of the wallpaper behind the tiles. Lower the tile opacity to see it. Not available for video wallpapers.</string>
+    <string name="home_tile_text">Text</string>
+    <string name="home_text_title">Text tile</string>
+    <string name="home_text_hint">Text of the tile</string>
+    <string name="home_add_left">Add left</string>
+    <string name="home_add_right">Add right</string>
+    <string name="home_instance_add">Add as a tile</string>
+    <string name="preference_bg_fullscreen_title">Fullscreen wallpaper</string>
+    <string name="preference_bg_fullscreen_summary">On: the wallpaper fills the whole launcher. Off: it is only behind the home screen of the right side, like before.</string>
+    <string name="preference_bg_other_screens_title">Wallpaper on other screens</string>
+    <string name="preference_bg_other_screens_summary">Also show the wallpaper, blurred, behind settings, accounts and the other screens.</string>
+    <string name="preference_bg_overlay_title">Cover on other screens</string>
+    <string name="preference_bg_overlay_summary">How much of a solid color covers the wallpaper on the other screens. 0 shows it untouched, raise it if the text is hard to read.</string>
+    <string name="preference_tiles_infinite_title">Infinite tiles</string>
+    <string name="preference_tiles_infinite_summary">Lets the home screen scroll, so you can keep adding tiles below. The left side always scrolls.</string>
 </resources>

@@ -12,7 +12,14 @@ public final class HomeTileStyle {
     /** Shows a blurred copy of the wallpaper behind the tile background */
     public static final String PREF_BLUR = "home_tile_blur";
 
+    /** Lets the home screen scroll, so there is no end to the tiles that can be added to it */
+    public static final String PREF_INFINITE = "home_tiles_infinite";
+
     private HomeTileStyle() {}
+
+    public static boolean isInfinite(@NonNull Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_INFINITE, false);
+    }
 
     public static int getOpacity(@NonNull Context context) {
         int opacity = PreferenceManager.getDefaultSharedPreferences(context).getInt(PREF_OPACITY, 100);

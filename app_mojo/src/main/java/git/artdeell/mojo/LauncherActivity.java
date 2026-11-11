@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.system.Os;
 import android.view.View;
@@ -83,10 +84,14 @@ public class LauncherActivity extends BaseActivity {
         public void onFragmentViewCreated(@NonNull FragmentManager fm, @NonNull Fragment f,
                                           @NonNull View v, @Nullable Bundle savedInstanceState) {
             // The screens that fill the launcher (settings, accounts, ...) show the wallpaper, blurred,
-            // through a translucent panel. The screens of the main menu are handled by the main menu.
+            // unless that is turned off. The main menu handles the screens of its own pane.
             if(fm != getSupportFragmentManager() || f instanceof MainMenuFragment || f instanceof DialogFragment) return;
-            if(!LauncherBackground.exists()) return;
-            v.setBackgroundColor(ColorUtils.setAlphaComponent(ThemeColors.surface(LauncherActivity.this), 0xCC));
+            if(!LauncherBackground.isFullscreenActive(LauncherActivity.this)
+                    || !LauncherBackground.showOnOtherScreens(LauncherActivity.this)) return;
+            // No cover unless Launcher appearance asks for one
+            int overlay = LauncherBackground.getOverlay(LauncherActivity.this);
+            v.setBackgroundColor(overlay == 0 ? Color.TRANSPARENT
+                    : ColorUtils.setAlphaComponent(ThemeColors.surface(LauncherActivity.this), Math.round(overlay * 2.55f)));
         }
     };
 

@@ -48,12 +48,28 @@ public class LauncherWallpaperView extends FrameLayout {
     private boolean mActive = true;
     /** The home screen is in front, the wallpaper is blurred only as much as the setting says */
     private boolean mFocused = true;
+    /** The view of the right pane (the wallpaper isn't fullscreen) and not the one behind the whole launcher */
+    private boolean mPane;
+    private boolean mWindowVisible = true;
+    /** The blurred copy the frosted tiles draw, null for videos */
+    private Bitmap mBackdrop;
+    private boolean mPublished;
     private int mLoadId;
     private String mStamp;
 
     private final SharedPreferences.OnSharedPreferenceChangeListener mPrefListener = (prefs, key) -> {
-        if (LauncherBackground.PREF_BLUR.equals(key)) post(this::applyBlur);
-        else if (LauncherBackground.PREF_KIND.equals(key)) post(this::reloadIfChanged);
+        if (LauncherBackground.PREF_BLUR.equals(key)) {
+            post(this::applyBlur);
+        } else if (LauncherBackground.PREF_KIND.equals(key)) {
+            post(this::reloadIfChanged);
+        } else if (LauncherBackground.PREF_FULLSCREEN.equals(key)
+                || LauncherBackground.PREF_OTHER_SCREENS.equals(key)) {
+            post(() -> {
+                reloadIfChanged();
+                applyBlur();
+                applyState();
+            });
+        }
     };
 
     public LauncherWallpaperView(@NonNull Context context) {
@@ -94,6 +110,42 @@ public class LauncherWallpaperView extends FrameLayout {
         mLoadId++;
         mVideo.release();
         mStamp = null;
+        unpublishBackdrop();
+    }
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        super.onWindowVisibilityChanged(visibility);
+        mWindowVisible = visibility == VISIBLE;
+        applyState();
+    }
+
+    /**
+     * This is the view of the right pane: it only shows the wallpaper when it isn't fullscreen.
+     * The view behind the whole launcher is the other way around.
+     */
+    public void setPane(boolean pane) {
+        if (mPane == pane) return;
+        mPane = pane;
+        reloadIfChanged();
+        applyBlur();
+        applyState();
+    }
+
+    /** Fullscreen is for the view behind the launcher, the pane view is for the wallpaper that isn't fullscreen */
+    private boolean modeMatches() {
+        return LauncherBackground.isFullscreen(getContext()) != mPane;
+    }
+
+    /** The pane is always its home screen, the view behind the launcher may be asked to hide on the other screens */
+    private boolean visibleWhenUnfocused() {
+        return mPane || LauncherBackground.showOnOtherScreens(getContext());
+    }
+
+    private void unpublishBackdrop() {
+        if (!mPublished) return;
+        mPublished = false;
+        WallpaperBackdrop.set(null, null);
     }
 
     /** Only the main menu shows the wallpaper, the other screens cover it, so nothing has to play behind them */
@@ -119,6 +171,13 @@ public class LauncherWallpaperView extends FrameLayout {
 
     /** Loads the background again if it was replaced or removed since it was loaded */
     public void reloadIfChanged() {
+        if (!modeMatches()) {
+            // The other one of the two views shows the wallpaper, this one doesn't even load it
+            if (mHasMedia) clear();
+            mLoadId++;
+            mStamp = null;
+            return;
+        }
         if (!currentStamp().equals(mStamp)) reload();
     }
 
@@ -137,7 +196,7 @@ public class LauncherWallpaperView extends FrameLayout {
             mImage.setVisibility(GONE);
             mVideo.setVisibility(VISIBLE);
             // There is no frame to blur for the tiles, they stay translucent only
-            WallpaperBackdrop.set(null, this);
+            mBackdrop = null;
             mVideo.setVideoPath(file.getAbsolutePath());
             mIsVideo = true;
             mHasMedia = true;
@@ -157,7 +216,8 @@ public class LauncherWallpaperView extends FrameLayout {
                     clear();
                     return;
                 }
-                WallpaperBackdrop.set(backdrop, this);
+                mBackdrop = backdrop;
+                if (mPublished) WallpaperBackdrop.set(backdrop, this);
                 mDecoded = drawable;
                 mIsVideo = false;
                 mHasMedia = true;
@@ -169,7 +229,8 @@ public class LauncherWallpaperView extends FrameLayout {
     }
 
     private void clear() {
-        WallpaperBackdrop.set(null, null);
+        unpublishBackdrop();
+        mBackdrop = null;
         stopAnimation();
         mDecoded = null;
         mHasMedia = false;
@@ -182,8 +243,15 @@ public class LauncherWallpaperView extends FrameLayout {
     }
 
     private void applyState() {
-        boolean show = mHasMedia && mActive;
+        boolean show = mHasMedia && mActive && mWindowVisible && modeMatches() && (mFocused || visibleWhenUnfocused());
         setVisibility(show ? VISIBLE : GONE);
+        // Only the view that is showing is the one the frosted tiles take the wallpaper from
+        if (show && !mPublished) {
+            mPublished = true;
+            WallpaperBackdrop.set(mBackdrop, this);
+        } else if (!show) {
+            unpublishBackdrop();
+        }
         if (mIsVideo) {
             if (show) mVideo.resumePlayback();
             else mVideo.pausePlayback();
@@ -196,8 +264,8 @@ public class LauncherWallpaperView extends FrameLayout {
 
     private void applyBlur() {
         if (!mHasMedia) return;
-        int blur = LauncherBackground.getBlur(getContext());
-        if (!mFocused) blur = Math.max(blur, UNFOCUSED_BLUR);
+        int setting = LauncherBackground.getBlur(getContext());
+        int blur = mFocused || mPane ? setting : Math.max(setting, UNFOCUSED_BLUR);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             RenderEffect effect = null;
             if (blur > 0) {
@@ -217,8 +285,10 @@ public class LauncherWallpaperView extends FrameLayout {
             mScrim.setAlpha(0f);
             return;
         }
+        // Videos and animated images can't be blurred here, the setting dims them instead. What
+        // the other screens add on their own never dims: there is no dark cover unless it is asked for
         if (!mIsVideo) mImage.setImageDrawable(mDecoded);
-        mScrim.setAlpha(blur / 100f * MAX_DIM_ALPHA);
+        mScrim.setAlpha(setting / 100f * MAX_DIM_ALPHA);
     }
 
     /** A tiny copy of the wallpaper, drawn stretched behind the frosted tiles. Null if there is no frame to take */

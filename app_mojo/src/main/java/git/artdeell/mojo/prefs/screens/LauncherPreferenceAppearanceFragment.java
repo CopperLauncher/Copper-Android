@@ -38,7 +38,31 @@ public class LauncherPreferenceAppearanceFragment extends LauncherPreferenceFrag
         addPreferencesFromResource(R.xml.pref_appearance);
         setupCustomColorVisibility();
         setupBackground();
+        setupWallpaperModes();
         setupAnimationPreference();
+    }
+
+    /**
+     * The options for the other screens only mean something while the wallpaper is fullscreen, so
+     * they are only there then, and the cover only while the other screens show the wallpaper.
+     */
+    private void setupWallpaperModes() {
+        Preference fullscreen = requirePreference(LauncherBackground.PREF_FULLSCREEN);
+        Preference otherScreens = requirePreference(LauncherBackground.PREF_OTHER_SCREENS);
+        Preference overlay = requirePreference(LauncherBackground.PREF_OVERLAY);
+        boolean full = LauncherBackground.isFullscreen(requireContext());
+        otherScreens.setVisible(full);
+        overlay.setVisible(full && LauncherBackground.showOnOtherScreens(requireContext()));
+        fullscreen.setOnPreferenceChangeListener((preference, value) -> {
+            boolean enabled = Boolean.TRUE.equals(value);
+            otherScreens.setVisible(enabled);
+            overlay.setVisible(enabled && LauncherBackground.showOnOtherScreens(requireContext()));
+            return true;
+        });
+        otherScreens.setOnPreferenceChangeListener((preference, value) -> {
+            overlay.setVisible(Boolean.TRUE.equals(value) && LauncherBackground.isFullscreen(requireContext()));
+            return true;
+        });
     }
 
     private void setupBackground() {

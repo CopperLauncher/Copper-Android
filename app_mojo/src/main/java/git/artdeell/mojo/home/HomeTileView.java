@@ -81,6 +81,7 @@ final class HomeTileView extends ViewGroup {
         mType = type;
         mCallbacks = callbacks;
         if (type == HomeTileType.SEPARATOR) buildSeparator();
+        else if (type == HomeTileType.TEXT) buildText();
         else if (type == HomeTileType.INSTANCE) buildInstance();
         else buildAction();
         applyStyle();
@@ -101,6 +102,17 @@ final class HomeTileView extends ViewGroup {
         mTitle.setGravity(Gravity.CENTER);
         addView(mLineA);
         addView(mLineB);
+        addView(mTitle);
+        bindLabel();
+    }
+
+    /** A title like "Quick Actions": text with no tile behind it */
+    private void buildText() {
+        mTitle = newText(12, true);
+        mTitle.setTextColor(ThemeColors.get(this, com.google.android.material.R.attr.colorOnSurfaceVariant));
+        mTitle.setAllCaps(true);
+        mTitle.setLetterSpacing(0.08f);
+        mTitle.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         addView(mTitle);
         bindLabel();
     }
@@ -176,9 +188,9 @@ final class HomeTileView extends ViewGroup {
 
     // ─── Content ─────────────────────────────────────────────────────────────
 
-    /** Separator tiles: shows the text of the tile in the middle of the line */
+    /** Separator and text tiles: shows the text of the tile */
     void bindLabel() {
-        if (mType != HomeTileType.SEPARATOR) return;
+        if (mType != HomeTileType.SEPARATOR && mType != HomeTileType.TEXT) return;
         mTitle.setText(tile.label == null ? "" : tile.label);
         requestLayout();
     }
@@ -214,7 +226,7 @@ final class HomeTileView extends ViewGroup {
 
     /** Reads the tile opacity and the frosted glass setting again */
     void applyStyle() {
-        if (mType == HomeTileType.SEPARATOR) return;
+        if (mType == HomeTileType.SEPARATOR || mType == HomeTileType.TEXT) return;
         if (mBackground == null) {
             mBackground = new TileBackground(this, mCorner);
             GradientDrawable mask = new GradientDrawable();
@@ -242,6 +254,7 @@ final class HomeTileView extends ViewGroup {
         setMeasuredDimension(w, h);
         mIconRect = mTitleRect = mSubtitleRect = mEditRect = mPlayRect = mLineARect = mLineBRect = null;
         if (mType == HomeTileType.SEPARATOR) planSeparator(w, h);
+        else if (mType == HomeTileType.TEXT) planText(w, h);
         else if (mType == HomeTileType.INSTANCE) planInstance(w, h);
         else planAction(w, h);
         measureTo(mIcon, mIconRect);
@@ -395,6 +408,13 @@ final class HomeTileView extends ViewGroup {
         } else {
             mPlayRect = rect((w - button) / 2, y, button, button);
         }
+    }
+
+    private void planText(int w, int h) {
+        int pad = dp(12);
+        int textHeight = Math.min(h, mTitle.getLineHeight());
+        mTitleRect = rect(pad, (h - textHeight) / 2, Math.max(0, w - 2 * pad), textHeight);
+        setTextStyle(mTitle, 1, Gravity.START | Gravity.CENTER_VERTICAL);
     }
 
     /** A line, with the label of the tile in the middle of it when there is one */
