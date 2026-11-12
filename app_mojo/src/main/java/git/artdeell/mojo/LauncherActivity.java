@@ -9,6 +9,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import androidx.preference.PreferenceManager;
 import android.content.pm.PackageManager;
@@ -218,7 +219,9 @@ public class LauncherActivity extends BaseActivity {
         }
         boolean seeThrough = LauncherBackground.isFullscreenActive(this) && LauncherBackground.showOnOtherScreens(this);
         if(!seeThrough) {
-            v.setBackground(((OriginalBackground) saved).drawable);
+            // A screen that isn't see-through is always solid, whatever it had before
+            Drawable original = ((OriginalBackground) saved).drawable;
+            v.setBackground(original != null ? original : new ColorDrawable(ThemeColors.surface(this)));
             return;
         }
         // No cover unless Launcher appearance asks for one
@@ -227,13 +230,18 @@ public class LauncherActivity extends BaseActivity {
                 : ColorUtils.setAlphaComponent(ThemeColors.surface(this), Math.round(overlay * 2.55f)));
     }
 
+    /** Applies the wallpaper settings to the screen that fills the launcher right now, if there is one */
+    private void refreshScreenBackground() {
+        Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+        if(current != null && current.getView() != null && isFullScreenScreen(getSupportFragmentManager(), current)) {
+            applyScreenBackground(current.getView());
+        }
+    }
+
     private final SharedPreferences.OnSharedPreferenceChangeListener mBackgroundPrefListener = (prefs, key) -> {
         if(LauncherBackground.PREF_FULLSCREEN.equals(key) || LauncherBackground.PREF_OTHER_SCREENS.equals(key)
                 || LauncherBackground.PREF_OVERLAY.equals(key) || LauncherBackground.PREF_KIND.equals(key)) {
-            Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
-            if(current != null && current.getView() != null && isFullScreenScreen(getSupportFragmentManager(), current)) {
-                applyScreenBackground(current.getView());
-            }
+            refreshScreenBackground();
         }
     };
 
@@ -270,7 +278,9 @@ public class LauncherActivity extends BaseActivity {
 
         IconCacheJanitor.runJanitor();
 
-        getWindow().setBackgroundDrawable(null);
+        // Not null: with no background nothing clears the pixels behind a see-through screen or a hidden
+        // wallpaper, and the old ones show through and smear. A solid color costs next to nothing.
+        getWindow().setBackgroundDrawable(new ColorDrawable(ThemeColors.surface(this)));
         bindViews();
         PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(mBackgroundPrefListener);
         mRequestPermissionLauncher = this.registerForActivityResult(
@@ -341,6 +351,9 @@ public class LauncherActivity extends BaseActivity {
     protected void onStart() {
         super.onStart();
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(mFragmentCallbackListener, true);
+        // A screen that was restored (the theme changed, the screen rotated) made its views during
+        // super.onStart(), before the callbacks above existed, so it has to be caught up with
+        refreshScreenBackground();
         AnimationManager.installFragmentTransitions(this);
     }
 
