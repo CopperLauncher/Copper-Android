@@ -1,19 +1,28 @@
 package com.kdt;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.Editable;
 import android.util.AttributeSet;
-import android.view.View;
+import android.util.TypedValue;
+import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 
 import git.artdeell.mojo.Logger;
 import git.artdeell.mojo.R;
@@ -22,39 +31,40 @@ import git.artdeell.mojo.utils.ThemeColors;
 
 /**
  * A class able to display logs to the user.
- * It has support for the Logger class
+ * It has support for the Logger class.
+ * Works like a terminal: only the visible lines are laid out, the history is a capped ring
+ * buffer and every line is length-limited, so a flood of output can never exhaust memory or
+ * grow a single view past the GPU texture limit.
  */
 public class LoggerView extends ConstraintLayout {
-    /**
-     * Max number of lines kept in the on-screen buffer. Without a cap, the backing text keeps
-     * growing for the whole game session and every single append forces the TextView to re-lay
-     * out an ever-larger block of text, so it gets progressively laggier the longer a heavy/
-     * modded instance keeps logging. Trimming the oldest lines once this is exceeded keeps each
-     * append's cost roughly constant instead of growing without bound.
-     */
-    private static final int MAX_LOG_LINES = 2000;
-    /**
-     * Incoming log lines are coalesced and flushed to the TextView on this interval instead of
-     * doing one append (and one relayout/scroll) per line. Modded instances can log many lines
-     * within a single frame, so batching cuts the number of UI updates drastically under load
-     * while still feeling instant to the user.
-     */
-    private static final long BATCH_INTERVAL_MS = 150L;
+    /** Max number of lines kept in the buffer. The oldest lines are dropped past this. */
+    private static final int MAX_LOG_LINES = 5000;
+    /** Longer lines are cut so one huge line cannot blow up a single row. */
+    private static final int MAX_LINE_LENGTH = 2000;
+    /** Max number of lines taken from one flush. If more arrive, only the newest are kept. */
+    private static final int MAX_LINES_PER_FLUSH = MAX_LOG_LINES;
+    /** Hard cap on text waiting for the next flush, so a burst cannot eat memory. */
+    private static final int MAX_PENDING_LINES = 20000;
+    private static final long BATCH_INTERVAL_MS = 100L;
     /** Alpha of the console background, so the game stays faintly visible behind the log */
     private static final int CONSOLE_BACKGROUND_ALPHA = 0xE6;
 
     private final Handler mHandler = new Handler(Looper.getMainLooper());
-    private final StringBuilder mPendingLog = new StringBuilder();
+    private final ArrayDeque<String> mPendingLines = new ArrayDeque<>();
     private final Object mPendingLock = new Object();
     private final Runnable mFlushRunnable = this::flushPendingLog;
     private boolean mFlushScheduled = false;
-    private int mBufferedLineCount = 0;
+
+    private final ArrayDeque<String> mLines = new ArrayDeque<>();
+    private final LogAdapter mAdapter = new LogAdapter();
+    private boolean mAutoScroll = true;
 
     private Logger.eventLogListener mLogListener;
     private CompoundButton mLogToggle;
-    private DefocusableScrollView mScrollView;
-    private TextView mLogTextView;
+    private RecyclerView mLogList;
+    private LinearLayoutManager mLayoutManager;
     private TextView mEmptyStateView;
+    private boolean mLogShown = false;
 
 
     public LoggerView(@NonNull Context context) {
@@ -79,17 +89,17 @@ public class LoggerView extends ConstraintLayout {
     private void init(){
         inflate(getContext(), R.layout.view_logger, this);
 
-        // Material 3 surface colors, resolved from the theme so they follow light/dark mode
-        // and the dynamic color palette. Translucent so the game stays faintly visible.
         findViewById(R.id.log_content_panel).setBackgroundColor(ColorUtils.setAlphaComponent(
                 ThemeColors.get(getContext(), com.google.android.material.R.attr.colorSurfaceContainerLowest),
                 CONSOLE_BACKGROUND_ALPHA));
 
-        mLogTextView = findViewById(R.id.content_log_view);
-        mLogTextView.setTypeface(Typeface.MONOSPACE);
-        mLogTextView.setMaxLines(Integer.MAX_VALUE);
-        mLogTextView.setEllipsize(null);
-        mLogTextView.setVisibility(GONE);
+        mLogList = findViewById(R.id.content_log_list);
+        mLayoutManager = new LinearLayoutManager(getContext());
+        mLogList.setLayoutManager(mLayoutManager);
+        mLogList.setAdapter(mAdapter);
+        mLogList.setItemAnimator(null);
+        mLogList.setHasFixedSize(false);
+        mLogList.setVisibility(GONE);
 
         mEmptyStateView = findViewById(R.id.content_log_empty);
 
@@ -97,15 +107,14 @@ public class LoggerView extends ConstraintLayout {
         mLogToggle = findViewById(R.id.content_log_toggle_log);
         mLogToggle.setOnCheckedChangeListener(
                 (compoundButton, isChecked) -> {
-                    mLogTextView.setVisibility(isChecked ? VISIBLE : GONE);
+                    mLogShown = isChecked;
+                    mLogList.setVisibility(isChecked ? VISIBLE : GONE);
                     mEmptyStateView.setVisibility(isChecked ? GONE : VISIBLE);
                     if(isChecked) {
                         Logger.setLogListener(mLogListener);
                     }else{
-                        clearPendingLog();
-                        mLogTextView.setText("");
                         Logger.setLogListener(null); // Makes the JNI code be able to skip expensive logger callbacks
-                        // NOTE: was tested by rapidly smashing the log on/off button, no sync issues found :)
+                        clearLog();
                     }
                 });
         mLogToggle.setChecked(false);
@@ -116,30 +125,25 @@ public class LoggerView extends ConstraintLayout {
         // Share the log file (mclo.gs upload or raw file share)
         findViewById(R.id.content_log_share).setOnClickListener(view -> Tools.shareLog(getContext()));
 
-        // Set the scroll view
-        mScrollView = findViewById(R.id.content_log_scroll);
-        mScrollView.setKeepFocusing(true);
-        // Jump straight to the bottom instead of an animated smooth-scroll - with a batch of new
-        // lines landing every 150ms, an eased scroll never actually finishes before the next
-        // batch retriggers it, which just wastes frames.
-        mScrollView.setSmoothScrollingEnabled(false);
-
         //Set up the autoscroll switch
         CompoundButton autoscrollToggle = findViewById(R.id.content_log_toggle_autoscroll);
         autoscrollToggle.setOnCheckedChangeListener(
                 (compoundButton, isChecked) -> {
-                    if(isChecked) mScrollView.fullScroll(View.FOCUS_DOWN);
-                    mScrollView.setKeepFocusing(isChecked);
+                    mAutoScroll = isChecked;
+                    if(isChecked) scrollToEnd();
                 }
         );
         autoscrollToggle.setChecked(true);
 
         // Listen to logs. This can be called rapidly from a background thread, so it only ever
-        // does cheap buffering here - the actual TextView update is batched in flushPendingLog().
+        // buffers here, and the list update is batched in flushPendingLog().
         mLogListener = text -> {
-            if(mLogTextView.getVisibility() != VISIBLE) return;
+            if(!mLogShown || text == null) return;
             synchronized (mPendingLock) {
-                mPendingLog.append(text).append('\n');
+                for (String line : text.split("\n", -1)) {
+                    mPendingLines.addLast(limitLine(line));
+                    if (mPendingLines.size() > MAX_PENDING_LINES) mPendingLines.pollFirst();
+                }
                 if (mFlushScheduled) return;
                 mFlushScheduled = true;
             }
@@ -147,61 +151,118 @@ public class LoggerView extends ConstraintLayout {
         };
     }
 
-    /** Runs on the main thread: appends everything buffered since the last flush in one shot. */
+    private static String limitLine(String line) {
+        if (line.length() <= MAX_LINE_LENGTH) return line;
+        return line.substring(0, MAX_LINE_LENGTH) + "…";
+    }
+
+    /** Runs on the main thread: moves everything buffered since the last flush into the list. */
     private void flushPendingLog() {
-        String batch;
+        List<String> batch;
         synchronized (mPendingLock) {
             mFlushScheduled = false;
-            if (mPendingLog.length() == 0) return;
-            batch = mPendingLog.toString();
-            mPendingLog.setLength(0);
+            if (mPendingLines.isEmpty()) return;
+            while (mPendingLines.size() > MAX_LINES_PER_FLUSH) mPendingLines.pollFirst();
+            batch = new ArrayList<>(mPendingLines);
+            mPendingLines.clear();
         }
-        mBufferedLineCount += countNewlines(batch);
-        mLogTextView.append(batch);
-        trimExcessLines();
-        if (mScrollView.isKeepFocusing()) mScrollView.fullScroll(View.FOCUS_DOWN);
-    }
+        if (!mLogShown) return;
 
-    /** Drops the oldest lines once the buffer grows past {@link #MAX_LOG_LINES}. */
-    private void trimExcessLines() {
-        int excess = mBufferedLineCount - MAX_LOG_LINES;
-        if (excess <= 0) return;
-        CharSequence text = mLogTextView.getText();
-        if (!(text instanceof Editable)) return;
-        Editable editable = (Editable) text;
-
-        int cut = -1, found = 0, len = editable.length();
-        for (int i = 0; i < len; i++) {
-            if (editable.charAt(i) == '\n') {
-                found++;
-                if (found == excess) {
-                    cut = i + 1;
-                    break;
-                }
+        int removed = 0;
+        for (String line : batch) {
+            mLines.addLast(line);
+            if (mLines.size() > MAX_LOG_LINES) {
+                mLines.pollFirst();
+                removed++;
             }
         }
-        if (cut > 0) {
-            editable.delete(0, cut);
-            mBufferedLineCount -= excess;
+        int added = batch.size();
+        if (removed > 0) {
+            // Everything shifted, rebind what is on screen instead of animating thousands of rows
+            mAdapter.dataChanged();
+        } else {
+            mAdapter.rangeInserted(mLines.size() - added, added);
         }
+        if (mAutoScroll) scrollToEnd();
     }
 
-    /** Cancels any pending flush and drops buffered-but-not-yet-shown lines. */
-    private void clearPendingLog() {
+    private void scrollToEnd() {
+        int count = mAdapter.getItemCount();
+        if (count > 0) mLogList.scrollToPosition(count - 1);
+    }
+
+    /** Cancels any pending flush and drops every line, buffered or shown. */
+    private void clearLog() {
         mHandler.removeCallbacks(mFlushRunnable);
         synchronized (mPendingLock) {
             mFlushScheduled = false;
-            mPendingLog.setLength(0);
+            mPendingLines.clear();
         }
-        mBufferedLineCount = 0;
+        mLines.clear();
+        mAdapter.dataChanged();
     }
 
-    private static int countNewlines(CharSequence s) {
-        int count = 0;
-        for (int i = 0; i < s.length(); i++) {
-            if (s.charAt(i) == '\n') count++;
-        }
-        return count;
-    }
+    private class LogAdapter extends RecyclerView.Adapter<LogAdapter.LineHolder> {
+        private String[] mSnapshot = new String[0];
 
+        String get(int position) {
+            return mSnapshot[position];
+        }
+
+        private void rebuildSnapshot() {
+            mSnapshot = mLines.toArray(new String[0]);
+        }
+
+        void dataChanged() {
+            rebuildSnapshot();
+            notifyDataSetChanged();
+        }
+
+        void rangeInserted(int positionStart, int itemCount) {
+            rebuildSnapshot();
+            notifyItemRangeInserted(positionStart, itemCount);
+        }
+
+        @NonNull
+        @Override
+        public LineHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            TextView tv = new TextView(parent.getContext());
+            tv.setLayoutParams(new RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            tv.setTypeface(Typeface.MONOSPACE);
+            tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            tv.setLineSpacing(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2,
+                    parent.getResources().getDisplayMetrics()), 1f);
+            tv.setTextColor(ThemeColors.get(parent.getContext(),
+                    com.google.android.material.R.attr.colorOnSurface));
+            tv.setOnLongClickListener(v -> {
+                ClipboardManager cm = (ClipboardManager) v.getContext()
+                        .getSystemService(Context.CLIPBOARD_SERVICE);
+                if (cm != null) {
+                    cm.setPrimaryClip(ClipData.newPlainText("log", ((TextView) v).getText()));
+                    Toast.makeText(v.getContext(), android.R.string.copy, Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            });
+            return new LineHolder(tv);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull LineHolder holder, int position) {
+            holder.text.setText(get(position));
+        }
+
+        @Override
+        public int getItemCount() {
+            return mLines.size();
+        }
+
+        class LineHolder extends RecyclerView.ViewHolder {
+            final TextView text;
+            LineHolder(@NonNull TextView itemView) {
+                super(itemView);
+                text = itemView;
+            }
+        }
+    }
 }

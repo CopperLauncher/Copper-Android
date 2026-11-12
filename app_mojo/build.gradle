@@ -26,7 +26,7 @@ def getVersionName = {
     }else {
         def branchName = currentBranch.getName()
         def commitAbbreviation = latestCommit.abbreviatedId
-        return "1.0.2-${dateToday}-${commitAbbreviation}-${branchName}"
+        return "1.0.3-${dateToday}-${commitAbbreviation}-${branchName}"
     }
 }
 

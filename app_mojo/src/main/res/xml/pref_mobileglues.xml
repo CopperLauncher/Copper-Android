@@ -8,21 +8,21 @@
         <androidx.preference.ListPreference
             android:key="mg_angle"
             android:title="@string/option_angle"
-            android:icon="@drawable/ic_px_image_renderer"
+            android:icon="@drawable/ic_px_mg_angle"
             android:persistent="false"
             app:useSimpleSummaryProvider="true" />
 
         <androidx.preference.ListPreference
             android:key="mg_no_error"
             android:title="@string/option_no_error"
-            android:icon="@drawable/ic_px_memory_warning"
+            android:icon="@drawable/ic_px_mg_no_error"
             android:persistent="false"
             app:useSimpleSummaryProvider="true" />
 
         <androidx.preference.ListPreference
             android:key="mg_depth_clear"
             android:title="@string/option_angle_clear_workaround"
-            android:icon="@drawable/ic_px_experiment"
+            android:icon="@drawable/ic_px_mg_depth"
             android:persistent="false"
             app:useSimpleSummaryProvider="true" />
 
@@ -30,7 +30,7 @@
             android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="mg_fsr1"
             android:title="@string/option_enable_fsr1"
-            android:icon="@drawable/ic_px_resolution"
+            android:icon="@drawable/ic_px_mg_fsr"
             android:persistent="false" />
     </PreferenceCategory>
 
@@ -38,12 +38,12 @@
         <Preference
             android:key="mg_glsl_cache"
             android:title="@string/option_glsl_cache"
-            android:icon="@drawable/ic_px_ram"
+            android:icon="@drawable/ic_px_mg_cache"
             android:persistent="false" />
 
         <Preference
             android:key="mg_glsl_cache_delete"
-            android:icon="@drawable/ic_px_trash"
+            android:icon="@drawable/ic_px_mg_cache_clear"
             android:persistent="false"
             android:visible="false" />
     </PreferenceCategory>
@@ -53,21 +53,21 @@
             android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="mg_ext_cs"
             android:title="@string/option_ext_cs"
-            android:icon="@drawable/ic_px_experiment"
+            android:icon="@drawable/ic_px_mg_compute"
             android:persistent="false" />
 
         <androidx.preference.SwitchPreferenceCompat
             android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="mg_ext_timer_query"
             android:title="@string/option_ext_timer_query"
-            android:icon="@drawable/ic_px_speed"
+            android:icon="@drawable/ic_px_mg_timer"
             android:persistent="false" />
 
         <androidx.preference.SwitchPreferenceCompat
             android:widgetLayout="@layout/preference_widget_material_switch"
             android:key="mg_ext_dsa"
             android:title="@string/option_ext_direct_state_access"
-            android:icon="@drawable/ic_px_alt_sliders"
+            android:icon="@drawable/ic_px_mg_dsa"
             android:persistent="false" />
     </PreferenceCategory>
 
@@ -75,21 +75,21 @@
         <androidx.preference.ListPreference
             android:key="mg_gl_version"
             android:title="@string/option_custom_gl_version"
-            android:icon="@drawable/ic_px_sliders"
+            android:icon="@drawable/ic_px_mg_version"
             android:persistent="false"
             app:useSimpleSummaryProvider="true" />
 
         <Preference
             android:key="mg_multidraw"
             android:title="@string/option_multidraw"
-            android:icon="@drawable/ic_px_zap"
+            android:icon="@drawable/ic_px_mg_multidraw"
             android:fragment="git.artdeell.mojo.prefs.screens.MobileGluesMultidrawFragment" />
 
         <Preference
             android:key="mg_reset"
             android:title="@string/mg_reset_title"
             android:summary="@string/mg_reset_summary"
-            android:icon="@drawable/ic_px_refresh"
+            android:icon="@drawable/ic_px_mg_reset"
             android:persistent="false" />
     </PreferenceCategory>
 

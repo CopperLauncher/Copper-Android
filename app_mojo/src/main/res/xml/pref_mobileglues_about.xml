@@ -8,7 +8,7 @@
             android:key="mg_about_author"
             android:title="@string/mg_about_developers"
             android:summary="@string/info_author"
-            android:icon="@drawable/ic_px_book"
+            android:icon="@drawable/ic_px_mg_author"
             android:persistent="false"
             android:selectable="false" />
 
@@ -26,14 +26,14 @@
             android:key="mg_repo_release"
             android:title="@string/repo_release"
             android:summary="https://github.com/MobileGL-Dev/MobileGlues-release"
-            android:icon="@drawable/ic_px_open_in_new"
+            android:icon="@drawable/ic_px_mg_release"
             android:persistent="false" />
 
         <Preference
             android:key="mg_repo_renderer"
             android:title="@string/repo_renderer"
             android:summary="https://github.com/MobileGL-Dev/MobileGlues"
-            android:icon="@drawable/ic_px_open_in_new"
+            android:icon="@drawable/ic_px_mg_source"
             android:persistent="false" />
     </PreferenceCategory>
 
@@ -42,7 +42,7 @@
             android:key="mg_credits"
             android:title="@string/mg_credits_title"
             android:summary="@string/mg_credits_summary"
-            android:icon="@drawable/ic_px_open_in_new"
+            android:icon="@drawable/ic_px_mg_credits"
             android:persistent="false" />
     </PreferenceCategory>
 </PreferenceScreen>

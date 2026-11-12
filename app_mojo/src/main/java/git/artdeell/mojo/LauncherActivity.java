@@ -42,6 +42,7 @@ import git.artdeell.mojo.extra.ExtraConstants;
 import git.artdeell.mojo.extra.ExtraCore;
 import git.artdeell.mojo.extra.ExtraListener;
 import git.artdeell.mojo.fragments.MainMenuFragment;
+import git.artdeell.mojo.fragments.RightPaneHomeFragment;
 import git.artdeell.mojo.fragments.MicrosoftLoginFragment;
 import git.artdeell.mojo.fragments.SelectAuthFragment;
 import git.artdeell.mojo.fragments.SettingsHostFragment;
@@ -194,7 +195,10 @@ public class LauncherActivity extends BaseActivity {
     }
 
     private boolean isFullScreenScreen(@NonNull FragmentManager fm, @NonNull Fragment f) {
-        return fm == getSupportFragmentManager() && !(f instanceof MainMenuFragment) && !(f instanceof DialogFragment);
+        // The callbacks also report the screens inside the main menu, the home of its right pane
+        // must never get the cover of the other screens
+        return fm == getSupportFragmentManager() && !(f instanceof MainMenuFragment)
+                && !(f instanceof RightPaneHomeFragment) && !(f instanceof DialogFragment);
     }
 
     /** Remembers what a screen had as its background, to give it back when it isn't see-through anymore */
@@ -248,9 +252,19 @@ public class LauncherActivity extends BaseActivity {
     /** The wallpaper is sharp (as sharp as the blur setting says) behind the home screen only, every other screen blurs it */
     public void refreshWallpaperFocus() {
         if(mWallpaper == null) return;
+        applyWallpaperFocus();
+        // Fragment callbacks can run before the back stack and the panes have settled, so the
+        // check is repeated once they have. Otherwise the wallpaper can stay blurred on the home screen.
+        mWallpaper.post(this::applyWallpaperFocus);
+    }
+
+    private void applyWallpaperFocus() {
+        if(mWallpaper == null) return;
         Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
         mWallpaper.setFocused(current instanceof MainMenuFragment && !((MainMenuFragment) current).isRightPaneActive());
     }
+
+    private final FragmentManager.OnBackStackChangedListener mWallpaperFocusListener = this::refreshWallpaperFocus;
 
     @Override
     protected boolean shouldIgnoreNotch() {
@@ -350,7 +364,10 @@ public class LauncherActivity extends BaseActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        getSupportFragmentManager().unregisterFragmentLifecycleCallbacks(mFragmentCallbackListener);
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(mFragmentCallbackListener, true);
+        getSupportFragmentManager().removeOnBackStackChangedListener(mWallpaperFocusListener);
+        getSupportFragmentManager().addOnBackStackChangedListener(mWallpaperFocusListener);
         // A screen that was restored (the theme changed, the screen rotated) made its views during
         // super.onStart(), before the callbacks above existed, so it has to be caught up with
         refreshScreenBackground();
@@ -369,6 +386,7 @@ public class LauncherActivity extends BaseActivity {
         ExtraCore.removeExtraListenerFromValue(ExtraConstants.LAUNCH_GAME, mLaunchGameListener);
 
         getSupportFragmentManager().unregisterFragmentLifecycleCallbacks(mFragmentCallbackListener);
+        getSupportFragmentManager().removeOnBackStackChangedListener(mWallpaperFocusListener);
     }
 
     /** Custom implementation to feel more natural when a backstack isn't present */

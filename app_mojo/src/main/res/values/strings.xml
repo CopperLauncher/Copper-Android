@@ -928,7 +928,7 @@
     <string name="preference_bg_other_screens_title">Wallpaper on other screens</string>
     <string name="preference_bg_other_screens_summary">Also show the wallpaper, blurred, behind settings, accounts and the other screens.</string>
     <string name="preference_bg_overlay_title">Cover on other screens</string>
-    <string name="preference_bg_overlay_summary">How much of a solid color covers the wallpaper on the other screens. 0 shows it untouched, raise it if the text is hard to read.</string>
+    <string name="preference_bg_overlay_summary">How much of a solid color covers the wallpaper on the other screens. 0 shows it untouched, raise it if the text is hard to read. The home screen is never covered.</string>
     <string name="preference_tiles_infinite_title">Infinite tiles</string>
     <string name="preference_tiles_infinite_summary">On: both sides always have an empty row below the tiles, so you can keep adding tiles and scroll to them. Off: tiles can only go where there is room on the screen or between the ones that are there.</string>
 </resources>

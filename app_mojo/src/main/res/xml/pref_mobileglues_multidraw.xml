@@ -7,7 +7,7 @@
         <Preference
             android:key="mg_md_global"
             android:title="@string/md_global_order_title"
-            android:icon="@drawable/ic_px_alt_sliders"
+            android:icon="@drawable/ic_px_mg_order"
             android:persistent="false"
             android:fragment="git.artdeell.mojo.prefs.screens.MobileGluesMultidrawOrderFragment" />
 
@@ -15,7 +15,7 @@
             android:key="mg_md_bench_all"
             android:title="@string/md_bench_run_all"
             android:summary="@string/md_home_untuned_desc"
-            android:icon="@drawable/ic_px_speed"
+            android:icon="@drawable/ic_px_mg_bench"
             android:persistent="false" />
     </PreferenceCategory>
 
