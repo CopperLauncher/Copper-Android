@@ -23,6 +23,7 @@ import androidx.preference.PreferenceManager;
 import git.artdeell.mojo.MojoApplication;
 import git.artdeell.mojo.home.WallpaperBackdrop;
 import git.artdeell.mojo.utils.LauncherBackground;
+import git.artdeell.mojo.utils.ThemeColors;
 
 import java.io.File;
 
@@ -161,6 +162,8 @@ public class LauncherWallpaperView extends FrameLayout {
         if (mFocused == focused) return;
         mFocused = focused;
         applyBlur();
+        // Whether the wallpaper shows at all depends on it: the other screens may be set not to show it
+        applyState();
     }
 
     private String currentStamp() {
@@ -244,7 +247,15 @@ public class LauncherWallpaperView extends FrameLayout {
 
     private void applyState() {
         boolean show = mHasMedia && mActive && mWindowVisible && modeMatches() && (mFocused || visibleWhenUnfocused());
-        setVisibility(show ? VISIBLE : GONE);
+        // The launcher's window has no background of its own, so something has to paint behind every
+        // screen. The view behind the launcher therefore stays, as a plain color, while the wallpaper
+        // is hidden: a hidden wallpaper would leave stale pixels that stack up on every redraw.
+        boolean keepBase = !mPane && mHasMedia && modeMatches();
+        setBackgroundColor(keepBase ? ThemeColors.surface(getContext()) : Color.TRANSPARENT);
+        setVisibility(show || keepBase ? VISIBLE : GONE);
+        mImage.setVisibility(show && !mIsVideo ? VISIBLE : GONE);
+        mVideo.setVisibility(show && mIsVideo ? VISIBLE : GONE);
+        mScrim.setVisibility(show ? VISIBLE : GONE);
         // Only the view that is showing is the one the frosted tiles take the wallpaper from
         if (show && !mPublished) {
             mPublished = true;

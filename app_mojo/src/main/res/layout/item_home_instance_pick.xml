@@ -54,16 +54,4 @@
         android:padding="12dp"
         android:scaleType="fitCenter"
         android:src="@drawable/ic_add" />
-
-    <ImageButton
-        android:id="@+id/pick_play"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/main_play"
-        android:focusable="false"
-        android:focusableInTouchMode="false"
-        android:padding="10dp"
-        android:scaleType="fitCenter"
-        android:src="@drawable/ic_px_play" />
 </LinearLayout>

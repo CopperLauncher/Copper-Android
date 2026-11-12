@@ -8,6 +8,9 @@ import android.Manifest;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
+import androidx.preference.PreferenceManager;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.graphics.Color;
@@ -85,13 +88,7 @@ public class LauncherActivity extends BaseActivity {
                                           @NonNull View v, @Nullable Bundle savedInstanceState) {
             // The screens that fill the launcher (settings, accounts, ...) show the wallpaper, blurred,
             // unless that is turned off. The main menu handles the screens of its own pane.
-            if(fm != getSupportFragmentManager() || f instanceof MainMenuFragment || f instanceof DialogFragment) return;
-            if(!LauncherBackground.isFullscreenActive(LauncherActivity.this)
-                    || !LauncherBackground.showOnOtherScreens(LauncherActivity.this)) return;
-            // No cover unless Launcher appearance asks for one
-            int overlay = LauncherBackground.getOverlay(LauncherActivity.this);
-            v.setBackgroundColor(overlay == 0 ? Color.TRANSPARENT
-                    : ColorUtils.setAlphaComponent(ThemeColors.surface(LauncherActivity.this), Math.round(overlay * 2.55f)));
+            if(isFullScreenScreen(fm, f)) applyScreenBackground(v);
         }
     };
 
@@ -195,6 +192,51 @@ public class LauncherActivity extends BaseActivity {
         refreshWallpaperFocus();
     }
 
+    private boolean isFullScreenScreen(@NonNull FragmentManager fm, @NonNull Fragment f) {
+        return fm == getSupportFragmentManager() && !(f instanceof MainMenuFragment) && !(f instanceof DialogFragment);
+    }
+
+    /** Remembers what a screen had as its background, to give it back when it isn't see-through anymore */
+    private static final class OriginalBackground {
+        final Drawable drawable;
+
+        OriginalBackground(Drawable drawable) {
+            this.drawable = drawable;
+        }
+    }
+
+    /**
+     * Makes the screen see-through, so the wallpaper behind it shows, or gives it its own background
+     * back. It runs when the screen is created and again when Launcher appearance changes, so the
+     * screen that is open follows the settings at once.
+     */
+    private void applyScreenBackground(@NonNull View v) {
+        Object saved = v.getTag(R.id.launcher_screen_original_bg);
+        if(!(saved instanceof OriginalBackground)) {
+            saved = new OriginalBackground(v.getBackground());
+            v.setTag(R.id.launcher_screen_original_bg, saved);
+        }
+        boolean seeThrough = LauncherBackground.isFullscreenActive(this) && LauncherBackground.showOnOtherScreens(this);
+        if(!seeThrough) {
+            v.setBackground(((OriginalBackground) saved).drawable);
+            return;
+        }
+        // No cover unless Launcher appearance asks for one
+        int overlay = LauncherBackground.getOverlay(this);
+        v.setBackgroundColor(overlay == 0 ? Color.TRANSPARENT
+                : ColorUtils.setAlphaComponent(ThemeColors.surface(this), Math.round(overlay * 2.55f)));
+    }
+
+    private final SharedPreferences.OnSharedPreferenceChangeListener mBackgroundPrefListener = (prefs, key) -> {
+        if(LauncherBackground.PREF_FULLSCREEN.equals(key) || LauncherBackground.PREF_OTHER_SCREENS.equals(key)
+                || LauncherBackground.PREF_OVERLAY.equals(key) || LauncherBackground.PREF_KIND.equals(key)) {
+            Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+            if(current != null && current.getView() != null && isFullScreenScreen(getSupportFragmentManager(), current)) {
+                applyScreenBackground(current.getView());
+            }
+        }
+    };
+
     /** The wallpaper is sharp (as sharp as the blur setting says) behind the home screen only, every other screen blurs it */
     public void refreshWallpaperFocus() {
         if(mWallpaper == null) return;
@@ -230,6 +272,7 @@ public class LauncherActivity extends BaseActivity {
 
         getWindow().setBackgroundDrawable(null);
         bindViews();
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(mBackgroundPrefListener);
         mRequestPermissionLauncher = this.registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isAllowed -> {
@@ -304,6 +347,7 @@ public class LauncherActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(mBackgroundPrefListener);
         mProgressLayout.cleanUpObservers();
         ProgressKeeper.removeTaskCountListener(mProgressLayout);
         ProgressKeeper.removeTaskCountListener(mProgressServiceKeeper);

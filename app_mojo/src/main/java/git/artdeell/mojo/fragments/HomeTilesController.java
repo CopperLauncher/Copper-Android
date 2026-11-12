@@ -60,7 +60,6 @@ public final class HomeTilesController {
 
     private final MainMenuFragment mHost;
     private HomeTileBoard mLeft, mRight;
-    private boolean mWasEditing;
 
     private final HomeTileBoard.Listener mLeftListener = new SideListener(Side.LEFT);
     private final HomeTileBoard.Listener mRightListener = new SideListener(Side.RIGHT);
@@ -74,8 +73,9 @@ public final class HomeTilesController {
     void attachLeft(@NonNull HomeTileBoard board) {
         mLeft = board;
         board.setColumns(HomeTileStore.SIDEBAR_COLUMNS);
-        // The sidebar scrolls whatever the setting is, it always did
+        // The sidebar always scrolls, "Infinite tiles" decides whether it can also keep growing
         board.setScrollable(true);
+        board.setInfinite(HomeTileStyle.isInfinite(mHost.requireContext()));
         board.setListener(mLeftListener);
         board.setTiles(HomeTileStore.loadSidebar(mHost.requireContext()));
         refreshInstances();
@@ -85,7 +85,9 @@ public final class HomeTilesController {
     public void attachRight(@NonNull HomeTileBoard board) {
         mRight = board;
         board.setColumns(HomeTileStore.COLUMNS);
-        board.setScrollable(HomeTileStyle.isInfinite(mHost.requireContext()));
+        boolean infinite = HomeTileStyle.isInfinite(mHost.requireContext());
+        board.setScrollable(infinite);
+        board.setInfinite(infinite);
         board.setListener(mRightListener);
         board.setTiles(HomeTileStore.load(mHost.requireContext()));
         refreshInstances();
@@ -145,12 +147,7 @@ public final class HomeTilesController {
     }
 
     private void updateEditUi() {
-        boolean editing = HomeTileBoard.anyEditing();
-        if (editing && !mWasEditing && mHost.getContext() != null) {
-            Toast.makeText(mHost.requireContext(), R.string.home_edit_hint, Toast.LENGTH_LONG).show();
-        }
-        mWasEditing = editing;
-        mHost.setHomeEditing(editing, mRight != null);
+        mHost.setHomeEditing(HomeTileBoard.anyEditing(), mRight != null);
     }
 
     void onAddClicked(Side side) {
@@ -381,8 +378,7 @@ public final class HomeTilesController {
     }
 
     /**
-     * Lists the instances. Each has a button that adds it as a tile and one that starts it right away;
-     * tapping the row adds it too.
+     * Lists the instances. Each has a button that adds it as a tile; tapping the row adds it too.
      */
     private void showInstancePicker(Side side) {
         MojoApplication.sExecutorService.execute(() -> {
@@ -429,13 +425,6 @@ public final class HomeTilesController {
                 add.setOnClickListener(v -> {
                     if (holder[0] != null) holder[0].dismiss();
                     addInstanceTile(side, instance);
-                });
-                ImageButton play = row.findViewById(R.id.pick_play);
-                play.setOnClickListener(v -> {
-                    if (holder[0] != null) holder[0].dismiss();
-                    Instances.setSelectedInstance(instance);
-                    ExtraCore.setValue(ExtraConstants.REFRESH_VERSION_SPINNER, true);
-                    ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
                 });
                 return row;
             }

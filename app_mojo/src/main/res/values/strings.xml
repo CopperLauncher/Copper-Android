@@ -895,7 +895,6 @@
     <string name="home_instance_manage">Manage content</string>
     <string name="home_instance_browse">Browse content</string>
     <string name="home_instance_actions_title">%1$s</string>
-    <string name="home_edit_hint">Drag tiles to move them, even to the other side. Tap a text or separator tile to write on it.</string>
 
     <!-- Background blur -->
     <string name="preference_bg_blur_title">Background blur</string>
@@ -917,7 +916,7 @@
     <string name="preference_tile_opacity_title">Tile opacity</string>
     <string name="preference_tile_opacity_summary">How solid the background of the tiles on the home screen is.</string>
     <string name="preference_tile_blur_title">Frosted tiles</string>
-    <string name="preference_tile_blur_summary">Shows a blurred copy of the wallpaper behind the tiles. Lower the tile opacity to see it. Not available for video wallpapers.</string>
+    <string name="preference_tile_blur_summary">Shows a blurred copy of the wallpaper behind the tiles. The tile opacity then says how much of the tile color is over it, at the most three quarters. Not available for video wallpapers.</string>
     <string name="home_tile_text">Text</string>
     <string name="home_text_title">Text tile</string>
     <string name="home_text_hint">Text of the tile</string>
@@ -931,5 +930,5 @@
     <string name="preference_bg_overlay_title">Cover on other screens</string>
     <string name="preference_bg_overlay_summary">How much of a solid color covers the wallpaper on the other screens. 0 shows it untouched, raise it if the text is hard to read.</string>
     <string name="preference_tiles_infinite_title">Infinite tiles</string>
-    <string name="preference_tiles_infinite_summary">Lets the home screen scroll, so you can keep adding tiles below. The left side always scrolls.</string>
+    <string name="preference_tiles_infinite_summary">On: both sides always have an empty row below the tiles, so you can keep adding tiles and scroll to them. Off: tiles can only go where there is room on the screen or between the ones that are there.</string>
 </resources>

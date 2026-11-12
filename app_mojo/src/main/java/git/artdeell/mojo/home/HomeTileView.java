@@ -181,8 +181,6 @@ final class HomeTileView extends ViewGroup {
         button.setScaleType(ImageView.ScaleType.FIT_CENTER);
         button.setPadding(dp(6), dp(6), dp(6), dp(6));
         button.setContentDescription(getResources().getString(description));
-        // A long press on a button drags the whole tile
-        button.setOnLongClickListener(v -> performLongClick());
         return button;
     }
 
@@ -529,7 +527,9 @@ final class HomeTileView extends ViewGroup {
                 }
             }
             int color = ThemeColors.surfaceContainerHigh(mHost.getContext());
-            mFill.setColor(ColorUtils.setAlphaComponent(color, Math.round(mOpacity * 2.55f)));
+            // A frosted tile never covers the blurred wallpaper completely, or it would not show at any opacity
+            float alpha = mFrosted ? mOpacity * 0.75f : mOpacity;
+            mFill.setColor(ColorUtils.setAlphaComponent(color, Math.round(alpha * 2.55f)));
             canvas.drawRoundRect(mBounds, mRadius, mRadius, mFill);
         }
 

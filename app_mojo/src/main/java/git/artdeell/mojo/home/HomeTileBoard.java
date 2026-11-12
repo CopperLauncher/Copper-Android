@@ -12,7 +12,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
 import android.util.TypedValue;
-import android.view.GestureDetector;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -28,6 +28,7 @@ import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.utils.ThemeColors;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +61,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     private enum Mode { NONE, DRAG, RESIZE, REMOVE }
 
     private static final int MAX_ROWS = 200;
+    /** How long a tile or the empty space is pressed before the edit mode starts, longer than a normal long press */
+    private static final long LONG_PRESS_MS = 900;
     private static final List<HomeTileBoard> sBoards = new CopyOnWriteArrayList<>();
 
     private final List<HomeTile> mTiles = new ArrayList<>();
@@ -69,6 +72,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
 
     private int mColumns = HomeTileStore.COLUMNS;
     private boolean mScrollable;
+    /** Scrollable only: there is always an empty row below the tiles and a tile can be taken further down */
+    private boolean mInfinite = true;
     private int mRows = HomeTileStore.MIN_ROWS;
     private float mCellW, mCellH;
     private boolean mGridReady;
@@ -81,8 +86,18 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF mRect = new RectF();
     private final int[] mLocation = new int[2];
-    private final GestureDetector mDetector;
     private final WallpaperBackdrop.Listener mBackdropListener = this::invalidateTiles;
+
+    // The press that starts the edit mode
+    private final Runnable mLongPress = this::onLongPressFired;
+    private boolean mPressArmed;
+    private HomeTile mPressTile;
+    private float mPressRawX, mPressRawY;
+
+    // The other tiles move out of the way (down) while a tile is held over them. Where they go,
+    // and how far each view is shifted for it so far
+    private Map<HomeTile, int[]> mPush;
+    private final Map<HomeTile, float[]> mPushOffsets = new HashMap<>();
 
     // The gesture on a tile
     private HomeTile mActive;
@@ -107,22 +122,27 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
             if (mActive == null || mMode != Mode.DRAG) return;
             ScrollView scroll = findScrollView();
             if (scroll != null && mHover == null) {
-                Rect visible = new Rect();
-                scroll.getLocalVisibleRect(visible);
                 scroll.getLocationOnScreen(mLocation);
-                int edge = dp(56), step = dp(10);
+                int edge = dp(56);
                 int top = mLocation[1], bottom = mLocation[1] + scroll.getHeight();
                 if (mRawY < top + edge && scroll.getScrollY() > 0) {
-                    scroll.scrollBy(0, -step);
+                    scroll.scrollBy(0, -scrollStep((top + edge - mRawY) / edge));
                     updateDrag(mRawX, mRawY);
                 } else if (mRawY > bottom - edge) {
-                    scroll.scrollBy(0, step);
+                    scroll.scrollBy(0, scrollStep((mRawY - (bottom - edge)) / edge));
                     updateDrag(mRawX, mRawY);
                 }
             }
             postOnAnimation(this);
         }
     };
+
+    /** Pixels per frame: slow when the finger just reaches the edge, a little faster at the very edge */
+    private int scrollStep(float depth) {
+        float density = getResources().getDisplayMetrics().density;
+        float clamped = Math.max(0f, Math.min(1f, depth));
+        return Math.max(1, Math.round(density * (0.8f + 2.2f * clamped)));
+    }
 
     public HomeTileBoard(Context context) {
         this(context, null);
@@ -134,19 +154,6 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         mGap = dp(3);
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         setWillNotDraw(false);
-        mDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
-            @Override
-            public boolean onDown(MotionEvent e) {
-                return true;
-            }
-
-            @Override
-            public void onLongPress(MotionEvent e) {
-                if (mActive == null && mListener != null && hitTile(e.getX(), e.getY()) == null) {
-                    mListener.onEmptyLongPress();
-                }
-            }
-        });
     }
 
     private int dp(float value) {
@@ -176,6 +183,17 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     public void setScrollable(boolean scrollable) {
         if (mScrollable == scrollable) return;
         mScrollable = scrollable;
+        mTilesNeedFit = true;
+        requestLayout();
+    }
+
+    /**
+     * Scrollable boards only. Infinite: there is always an empty row below the tiles, so tiles can be
+     * added for ever. Not infinite: the board is as tall as its tiles and its view, and that is where tiles can go.
+     */
+    public void setInfinite(boolean infinite) {
+        if (mInfinite == infinite) return;
+        mInfinite = infinite;
         mTilesNeedFit = true;
         requestLayout();
     }
@@ -218,11 +236,6 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         view.setEditing(mEditMode);
         view.setOnClickListener(v -> {
             if (mListener != null && !mEditMode) mListener.onTileClick(tile);
-        });
-        view.setOnLongClickListener(v -> {
-            if (mEditMode) return true;
-            startEditWithDrag(tile);
-            return true;
         });
         mViews.put(tile, view);
         addView(view);
@@ -313,7 +326,9 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         WallpaperBackdrop.removeListener(mBackdropListener);
         sBoards.remove(this);
         removeCallbacks(mAutoScroll);
+        cancelLongPress();
         cancelGesture();
+        resetPushViews(false);
         clearProxy();
     }
 
@@ -338,6 +353,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     }
 
     private void startEditWithDrag(HomeTile tile) {
+        cancelLongPress();
         setEditMode(true);
         ViewParent parent = getParent();
         if (parent != null) parent.requestDisallowInterceptTouchEvent(true);
@@ -393,8 +409,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     private int contentRows() {
         int bottom = 0;
         for (HomeTile tile : mTiles) bottom = Math.max(bottom, tile.y + tile.h);
-        int rows = bottom + 1;
-        if (mActive != null || mExternalShown) rows = Math.max(rows, mDragRows);
+        int rows = bottom + (mInfinite ? 1 : 0);
+        if (mInfinite && (mActive != null || mExternalShown)) rows = Math.max(rows, mDragRows);
         return Math.min(Math.max(rows, 1), MAX_ROWS);
     }
 
@@ -417,7 +433,12 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
 
     /** How far down a tile of this height can go */
     private int maxY(int h) {
-        return Math.max(0, (mScrollable ? MAX_ROWS : mRows) - h);
+        return Math.max(0, maxRows() - h);
+    }
+
+    /** The row count a tile can't go past */
+    private int maxRows() {
+        return mScrollable && mInfinite ? MAX_ROWS : mRows;
     }
 
     /** Puts every tile inside the grid and out of the way of the others. @return whether anything moved */
@@ -427,7 +448,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         for (HomeTile tile : new ArrayList<>(mTiles)) {
             HomeTileType type = tile.getType();
             int w = Math.max(1, Math.min(tile.w, mColumns));
-            int h = type != null && type.lockHeight ? 1 : Math.max(1, mScrollable ? tile.h : Math.min(tile.h, mRows));
+            int h = type != null && type.lockHeight ? 1 : Math.max(1, Math.min(tile.h, maxRows()));
             int x = Math.max(0, Math.min(tile.x, mColumns - w));
             int y = Math.max(0, Math.min(tile.y, maxY(h)));
             boolean moved = x != tile.x || y != tile.y || w != tile.w || h != tile.h;
@@ -467,7 +488,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         HomeTileType type = tile.getType();
         boolean lockHeight = type != null && type.lockHeight;
         int w = Math.min(tile.w, mColumns);
-        int h = lockHeight ? 1 : (mScrollable ? tile.h : Math.min(tile.h, mRows));
+        int h = lockHeight ? 1 : Math.min(tile.h, maxRows());
         while (w >= 1 && h >= 1) {
             for (int y = 0; y <= maxY(h); y++) {
                 for (int x = 0; x + w <= mColumns; x++) {
@@ -489,7 +510,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         int[] best = null;
         int bestDistance = Integer.MAX_VALUE;
         // On a scrollable board the places below the tiles are all free, a few rows past the wanted one are enough
-        int lastY = mScrollable ? Math.min(maxY(h), Math.max(mRows, wantedY + h) + 1) : maxY(h);
+        int lastY = mScrollable && mInfinite ? Math.min(maxY(h), Math.max(mRows, wantedY + h) + 1) : maxY(h);
         for (int y = 0; y <= lastY; y++) {
             for (int x = 0; x + w <= mColumns; x++) {
                 if (!isFree(self, x, y, w, h)) continue;
@@ -522,7 +543,51 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         mLastY = ev.getY();
         mRawX = ev.getRawX();
         mRawY = ev.getRawY();
+        // The board times the long press itself: the one of a view would start the edit mode too soon
+        switch (ev.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                cancelLongPress();
+                if (mActive == null) {
+                    mPressArmed = true;
+                    mPressTile = hitTile(ev.getX(), ev.getY());
+                    mPressRawX = ev.getRawX();
+                    mPressRawY = ev.getRawY();
+                    postDelayed(mLongPress, LONG_PRESS_MS);
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                if (mPressArmed && Math.hypot(ev.getRawX() - mPressRawX, ev.getRawY() - mPressRawY) > mTouchSlop) {
+                    cancelLongPress();
+                }
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                cancelLongPress();
+                break;
+            default:
+                break;
+        }
         return super.dispatchTouchEvent(ev);
+    }
+
+    private void cancelLongPress() {
+        mPressArmed = false;
+        mPressTile = null;
+        removeCallbacks(mLongPress);
+    }
+
+    private void onLongPressFired() {
+        if (!mPressArmed || mActive != null) return;
+        HomeTile tile = mPressTile;
+        cancelLongPress();
+        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        if (tile != null) {
+            // While editing a tile is dragged as soon as it is touched, so there is nothing to start
+            if (!mEditMode) startEditWithDrag(tile);
+        } else if (mListener != null) {
+            mListener.onEmptyLongPress();
+        }
     }
 
     @Override
@@ -568,7 +633,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
             default:
                 break;
         }
-        return mDetector.onTouchEvent(ev) || mActive != null;
+        // The empty space takes the touch as well, to get the rest of it for the long press
+        return true;
     }
 
     /** Decides what a touch that landed on a tile in the edit mode does */
@@ -607,6 +673,8 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         mDropValid = true;
         mHover = null;
         mDragRows = 0;
+        mPush = null;
+        mPushOffsets.clear();
         startProxy(view);
         view.setAlpha(0.25f);
         moveProxy(rawX - mGrabX, rawY - mGrabY);
@@ -627,7 +695,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
             int newW = Math.round((x - mPad - mActive.x * mCellW) / mCellW);
             int newH = Math.round((y - mPad - mActive.y * mCellH) / mCellH);
             newW = Math.max(1, Math.min(newW, mColumns - mActive.x));
-            newH = type != null && type.lockHeight ? 1 : Math.max(1, Math.min(newH, (mScrollable ? MAX_ROWS : mRows) - mActive.y));
+            newH = type != null && type.lockHeight ? 1 : Math.max(1, Math.min(newH, maxRows() - mActive.y));
             if ((newW != mActive.w || newH != mActive.h) && isFree(mActive, mActive.x, mActive.y, newW, newH)) {
                 mActive.w = newW;
                 mActive.h = newH;
@@ -652,6 +720,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         if (other != null) {
             mHover = other;
             mDropValid = false;
+            showPush(null);
             other.showExternalPreview(mActive, screenLeft, screenTop);
             invalidate();
             return;
@@ -664,19 +733,123 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         int wantedY = Math.round((top - mPad - mGap) / mCellH);
         wantedX = Math.max(0, Math.min(wantedX, mColumns - mActive.w));
         wantedY = Math.max(0, Math.min(wantedY, maxY(mActive.h)));
-        int[] spot = nearestFree(mActive, wantedX, wantedY, mActive.w, mActive.h);
-        mDropValid = spot != null;
-        if (spot != null) {
-            mDropX = spot[0];
-            mDropY = spot[1];
-            growForDrop(mDropY + mActive.h);
+        // Held over other tiles they make room, they are pushed down for as long as they still fit
+        Map<HomeTile, int[]> push = computePush(mActive, wantedX, wantedY, mActive.w, mActive.h);
+        if (push != null) {
+            mDropX = wantedX;
+            mDropY = wantedY;
+            mDropValid = true;
+            showPush(push);
+            growForDrop(Math.max(wantedY + mActive.h, pushBottom(push)));
+        } else {
+            showPush(null);
+            int[] spot = nearestFree(mActive, wantedX, wantedY, mActive.w, mActive.h);
+            mDropValid = spot != null;
+            if (spot != null) {
+                mDropX = spot[0];
+                mDropY = spot[1];
+                growForDrop(mDropY + mActive.h);
+            }
         }
         invalidate();
     }
 
+    // ─── Pushing the other tiles away ────────────────────────────────────────
+
+    /**
+     * Where the other tiles would have to go for a tile of this size to be at x, y: the tiles in the
+     * way are pushed down, and so are the ones they in turn run into. Tiles that aren't in the way stay.
+     * @param dragged the tile that is moved, if it is on this board
+     * @return the new place of every tile that has to move, empty when nothing is in the way, null
+     * when they wouldn't fit
+     */
+    @Nullable
+    private Map<HomeTile, int[]> computePush(@Nullable HomeTile dragged, int x, int y, int w, int h) {
+        List<HomeTile> order = new ArrayList<>();
+        for (HomeTile tile : mTiles) {
+            if (tile != dragged) order.add(tile);
+        }
+        Collections.sort(order, (a, b) -> a.y != b.y ? a.y - b.y : a.x - b.x);
+        List<int[]> placed = new ArrayList<>();
+        placed.add(new int[]{x, y, w, h});
+        Map<HomeTile, int[]> moved = new HashMap<>();
+        int limit = maxRows();
+        for (HomeTile tile : order) {
+            int newY = tile.y;
+            boolean again = true;
+            while (again) {
+                again = false;
+                for (int[] rect : placed) {
+                    if (tile.x < rect[0] + rect[2] && tile.x + tile.w > rect[0]
+                            && newY < rect[1] + rect[3] && newY + tile.h > rect[1]) {
+                        newY = rect[1] + rect[3];
+                        again = true;
+                        break;
+                    }
+                }
+            }
+            if (newY + tile.h > limit) return null;
+            if (newY != tile.y) moved.put(tile, new int[]{tile.x, newY});
+            placed.add(new int[]{tile.x, newY, tile.w, tile.h});
+        }
+        return moved;
+    }
+
+    private int pushBottom(Map<HomeTile, int[]> push) {
+        int bottom = 0;
+        for (Map.Entry<HomeTile, int[]> entry : push.entrySet()) {
+            bottom = Math.max(bottom, entry.getValue()[1] + entry.getKey().h);
+        }
+        return bottom;
+    }
+
+    /** Slides the views of the pushed tiles to where they would go, and the others back, without changing any tile */
+    private void showPush(@Nullable Map<HomeTile, int[]> push) {
+        mPush = push == null || push.isEmpty() ? null : push;
+        for (HomeTile tile : mTiles) {
+            if (tile == mActive) continue;
+            HomeTileView view = mViews.get(tile);
+            if (view == null) continue;
+            int[] place = mPush == null ? null : mPush.get(tile);
+            float dx = place == null ? 0f : (place[0] - tile.x) * mCellW;
+            float dy = place == null ? 0f : (place[1] - tile.y) * mCellH;
+            float[] shown = mPushOffsets.get(tile);
+            if (shown == null ? (dx == 0f && dy == 0f) : (shown[0] == dx && shown[1] == dy)) continue;
+            mPushOffsets.put(tile, new float[]{dx, dy});
+            view.animate().translationX(dx).translationY(dy).setDuration(120).start();
+        }
+    }
+
+    /** The tiles that were pushed stay where they were pushed to */
+    private void applyPushPositions() {
+        if (mPush != null) {
+            for (Map.Entry<HomeTile, int[]> entry : mPush.entrySet()) {
+                entry.getKey().x = entry.getValue()[0];
+                entry.getKey().y = entry.getValue()[1];
+            }
+        }
+        mPush = null;
+        resetPushViews(false);
+        requestLayout();
+    }
+
+    /** Puts the views back in their place, the tiles whose place changed are laid out there anyway */
+    private void resetPushViews(boolean animate) {
+        for (HomeTileView view : mViews.values()) {
+            view.animate().cancel();
+            if (animate) {
+                view.animate().translationX(0f).translationY(0f).setDuration(120).start();
+            } else {
+                view.setTranslationX(0f);
+                view.setTranslationY(0f);
+            }
+        }
+        mPushOffsets.clear();
+    }
+
     /** A scrollable board gets taller while a tile is held low, so it can be taken further down */
     private void growForDrop(int bottomRow) {
-        if (!mScrollable) return;
+        if (!mScrollable || !mInfinite) return;
         int rows = Math.min(MAX_ROWS, bottomRow + 1);
         if (rows > mDragRows) {
             mDragRows = rows;
@@ -703,20 +876,30 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     private void showExternalPreview(HomeTile tile, float screenLeft, float screenTop) {
         HomeTileType type = tile.getType();
         int w = Math.min(tile.w, mColumns);
-        int h = type != null && type.lockHeight ? 1 : (mScrollable ? tile.h : Math.min(tile.h, mRows));
+        int h = type != null && type.lockHeight ? 1 : Math.min(tile.h, maxRows());
         getLocationOnScreen(mLocation);
         float left = screenLeft - mLocation[0], top = screenTop - mLocation[1];
         int wantedX = Math.max(0, Math.min(Math.round((left - mPad - mGap) / mCellW), mColumns - w));
         int wantedY = Math.max(0, Math.min(Math.round((top - mPad - mGap) / mCellH), maxY(h)));
-        int[] spot = nearestFree(null, wantedX, wantedY, w, h);
         mExternalShown = true;
-        mExternalValid = spot != null;
         mExternalW = w;
         mExternalH = h;
-        if (spot != null) {
-            mExternalX = spot[0];
-            mExternalY = spot[1];
-            growForDrop(mExternalY + h);
+        Map<HomeTile, int[]> push = computePush(null, wantedX, wantedY, w, h);
+        if (push != null) {
+            mExternalValid = true;
+            mExternalX = wantedX;
+            mExternalY = wantedY;
+            showPush(push);
+            growForDrop(Math.max(wantedY + h, pushBottom(push)));
+        } else {
+            showPush(null);
+            int[] spot = nearestFree(null, wantedX, wantedY, w, h);
+            mExternalValid = spot != null;
+            if (spot != null) {
+                mExternalX = spot[0];
+                mExternalY = spot[1];
+                growForDrop(mExternalY + h);
+            }
         }
         invalidate();
     }
@@ -726,6 +909,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         mExternalShown = false;
         mExternalValid = false;
         if (mActive == null) mDragRows = 0;
+        showPush(null);
         requestLayout();
         invalidate();
     }
@@ -763,6 +947,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
             int x = target.mExternalX, y = target.mExternalY, w = target.mExternalW, h = target.mExternalH;
             target.mExternalShown = false;
             target.mExternalValid = false;
+            target.applyPushPositions();
             detachTile(tile);
             tile.x = x;
             tile.y = y;
@@ -781,10 +966,16 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         if (target != null) target.clearExternalPreview();
 
         boolean moved = false;
-        if (commit && mHover == null && mDropValid && (tile.x != mDropX || tile.y != mDropY)) {
+        if (commit && mHover == null && mDropValid
+                && (tile.x != mDropX || tile.y != mDropY || mPush != null)) {
             tile.x = mDropX;
             tile.y = mDropY;
+            applyPushPositions();
             moved = true;
+        } else if (mPush != null) {
+            // Dropped nowhere: whatever was pushed away comes back
+            mPush = null;
+            resetPushViews(true);
         }
         if (moved) notifyChanged();
         else if (commit && mTapCandidate && mListener != null) mListener.onTileTap(tile);
