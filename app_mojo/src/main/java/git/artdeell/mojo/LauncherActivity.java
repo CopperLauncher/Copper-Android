@@ -8,8 +8,13 @@ import android.Manifest;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import androidx.preference.PreferenceManager;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.system.Os;
 import android.view.View;
@@ -19,6 +24,9 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.graphics.ColorUtils;
+import androidx.fragment.app.DialogFragment;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -26,6 +34,7 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
 import androidx.fragment.app.FragmentManager;
 
+import com.kdt.mcgui.LauncherWallpaperView;
 import com.kdt.mcgui.ProgressLayout;
 
 import git.artdeell.mojo.authenticator.accounts.Accounts;
@@ -51,7 +60,9 @@ import git.artdeell.mojo.services.ProgressServiceKeeper;
 import git.artdeell.mojo.tasks.mojson.MoJsonExtras;
 import git.artdeell.mojo.tasks.AsyncVersionList;
 import git.artdeell.mojo.tasks.mojson.MoJsonDownloader;
+import git.artdeell.mojo.utils.LauncherBackground;
 import git.artdeell.mojo.utils.NotificationUtils;
+import git.artdeell.mojo.utils.ThemeColors;
 
 public class LauncherActivity extends BaseActivity {
     public static final String SETTING_FRAGMENT_TAG = "SETTINGS_FRAGMENT";
@@ -59,6 +70,7 @@ public class LauncherActivity extends BaseActivity {
     private static final long SHORTCUT_LAUNCH_DELAY_MS = 500L;
     private FragmentContainerView mFragmentView;
     private ImageButton mSettingsButton;
+    private LauncherWallpaperView mWallpaper;
     private ProgressLayout mProgressLayout;
     private ProgressServiceKeeper mProgressServiceKeeper;
     private NotificationManager mNotificationManager;
@@ -70,6 +82,14 @@ public class LauncherActivity extends BaseActivity {
         public void onFragmentResumed(@NonNull FragmentManager fm, @NonNull Fragment f) {
             // Also called for the screens of the right pane of the main menu
             updateSettingsButton();
+        }
+
+        @Override
+        public void onFragmentViewCreated(@NonNull FragmentManager fm, @NonNull Fragment f,
+                                          @NonNull View v, @Nullable Bundle savedInstanceState) {
+            // The screens that fill the launcher (settings, accounts, ...) show the wallpaper, blurred,
+            // unless that is turned off. The main menu handles the screens of its own pane.
+            if(isFullScreenScreen(fm, f)) applyScreenBackground(v);
         }
     };
 
@@ -168,6 +188,68 @@ public class LauncherActivity extends BaseActivity {
         boolean atHome = current instanceof MainMenuFragment && !((MainMenuFragment) current).isRightPaneActive();
         mSettingsButton.setImageDrawable(ContextCompat.getDrawable(this,
                 atHome ? R.drawable.ic_px_sliders : R.drawable.ic_px_home));
+        // The wallpaper is behind every screen
+        if(mWallpaper != null) mWallpaper.setActive(true);
+        refreshWallpaperFocus();
+    }
+
+    private boolean isFullScreenScreen(@NonNull FragmentManager fm, @NonNull Fragment f) {
+        return fm == getSupportFragmentManager() && !(f instanceof MainMenuFragment) && !(f instanceof DialogFragment);
+    }
+
+    /** Remembers what a screen had as its background, to give it back when it isn't see-through anymore */
+    private static final class OriginalBackground {
+        final Drawable drawable;
+
+        OriginalBackground(Drawable drawable) {
+            this.drawable = drawable;
+        }
+    }
+
+    /**
+     * Makes the screen see-through, so the wallpaper behind it shows, or gives it its own background
+     * back. It runs when the screen is created and again when Launcher appearance changes, so the
+     * screen that is open follows the settings at once.
+     */
+    private void applyScreenBackground(@NonNull View v) {
+        Object saved = v.getTag(R.id.launcher_screen_original_bg);
+        if(!(saved instanceof OriginalBackground)) {
+            saved = new OriginalBackground(v.getBackground());
+            v.setTag(R.id.launcher_screen_original_bg, saved);
+        }
+        boolean seeThrough = LauncherBackground.isFullscreenActive(this) && LauncherBackground.showOnOtherScreens(this);
+        if(!seeThrough) {
+            // A screen that isn't see-through is always solid, whatever it had before
+            Drawable original = ((OriginalBackground) saved).drawable;
+            v.setBackground(original != null ? original : new ColorDrawable(ThemeColors.surface(this)));
+            return;
+        }
+        // No cover unless Launcher appearance asks for one
+        int overlay = LauncherBackground.getOverlay(this);
+        v.setBackgroundColor(overlay == 0 ? Color.TRANSPARENT
+                : ColorUtils.setAlphaComponent(ThemeColors.surface(this), Math.round(overlay * 2.55f)));
+    }
+
+    /** Applies the wallpaper settings to the screen that fills the launcher right now, if there is one */
+    private void refreshScreenBackground() {
+        Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+        if(current != null && current.getView() != null && isFullScreenScreen(getSupportFragmentManager(), current)) {
+            applyScreenBackground(current.getView());
+        }
+    }
+
+    private final SharedPreferences.OnSharedPreferenceChangeListener mBackgroundPrefListener = (prefs, key) -> {
+        if(LauncherBackground.PREF_FULLSCREEN.equals(key) || LauncherBackground.PREF_OTHER_SCREENS.equals(key)
+                || LauncherBackground.PREF_OVERLAY.equals(key) || LauncherBackground.PREF_KIND.equals(key)) {
+            refreshScreenBackground();
+        }
+    };
+
+    /** The wallpaper is sharp (as sharp as the blur setting says) behind the home screen only, every other screen blurs it */
+    public void refreshWallpaperFocus() {
+        if(mWallpaper == null) return;
+        Fragment current = getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+        mWallpaper.setFocused(current instanceof MainMenuFragment && !((MainMenuFragment) current).isRightPaneActive());
     }
 
     @Override
@@ -196,8 +278,11 @@ public class LauncherActivity extends BaseActivity {
 
         IconCacheJanitor.runJanitor();
 
-        getWindow().setBackgroundDrawable(null);
+        // Not null: with no background nothing clears the pixels behind a see-through screen or a hidden
+        // wallpaper, and the old ones show through and smear. A solid color costs next to nothing.
+        getWindow().setBackgroundDrawable(new ColorDrawable(ThemeColors.surface(this)));
         bindViews();
+        PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(mBackgroundPrefListener);
         mRequestPermissionLauncher = this.registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
                 isAllowed -> {
@@ -251,24 +336,31 @@ public class LauncherActivity extends BaseActivity {
         super.onResume();
         ContextExecutor.setActivity(this);
         InstanceInstaller.postInstallCheck(this);
+        updateSettingsButton();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         ContextExecutor.clearActivity();
+        // Nothing has to play while the launcher isn't in front
+        if(mWallpaper != null) mWallpaper.setActive(false);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         getSupportFragmentManager().registerFragmentLifecycleCallbacks(mFragmentCallbackListener, true);
+        // A screen that was restored (the theme changed, the screen rotated) made its views during
+        // super.onStart(), before the callbacks above existed, so it has to be caught up with
+        refreshScreenBackground();
         AnimationManager.installFragmentTransitions(this);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(mBackgroundPrefListener);
         mProgressLayout.cleanUpObservers();
         ProgressKeeper.removeTaskCountListener(mProgressLayout);
         ProgressKeeper.removeTaskCountListener(mProgressServiceKeeper);
@@ -381,5 +473,6 @@ public class LauncherActivity extends BaseActivity {
         mFragmentView = findViewById(R.id.container_fragment);
         mSettingsButton = findViewById(R.id.setting_button);
         mProgressLayout = findViewById(R.id.progress_layout);
+        mWallpaper = findViewById(R.id.launcher_wallpaper);
     }
 }

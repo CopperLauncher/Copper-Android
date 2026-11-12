@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Two-pane landscape main menu: the portrait buttons stay in the left sidebar while every screen
+    Two-pane landscape main menu: tiles in the left sidebar while every screen
     (add instance, accounts, editors, modpack search, ...) opens in the right pane.
 -->
 <androidx.constraintlayout.widget.ConstraintLayout
@@ -19,94 +19,23 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.33" />
 
-    <!-- ══════════════ LEFT SIDEBAR: the portrait menu buttons, Wiki and Discord are on the home screen of the right pane ══════════════ -->
+    <!-- ══════════════ LEFT SIDEBAR: a scrollable board of tiles, the same kind of tiles as the home screen has.
+         Long press a tile or the empty space to edit it, tiles can be dragged over to the home screen and back. ══════════════ -->
     <ScrollView
         android:id="@+id/left_sidebar"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:fillViewport="true"
+        android:overScrollMode="never"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/pane_guideline"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
-            android:id="@+id/left_sidebar_content"
+        <git.artdeell.mojo.home.HomeTileBoard
+            android:id="@+id/sidebar_tile_board"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-			<TextView
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:text="@string/mcl_section_quick_actions"
-				android:textAllCaps="true"
-				android:textAppearance="?attr/textAppearanceLabelMedium"
-				android:textColor="?attr/colorOnSurfaceVariant"
-				android:letterSpacing="0.08"
-				android:paddingHorizontal="@dimen/padding_heavy"
-				android:paddingTop="@dimen/padding_large"
-				android:paddingBottom="@dimen/padding_medium" />
-
-			<com.kdt.mcgui.LauncherMenuButton
-				android:id="@+id/mod_store_button"
-				style="@style/LauncherMenuButton.Universal"
-				android:layout_width="match_parent"
-				android:drawableStart="@drawable/ic_add"
-				android:text="@string/mcl_button_mod_store" />
-
-			<com.kdt.mcgui.LauncherMenuButton
-				android:id="@+id/custom_control_button"
-				style="@style/LauncherMenuButton.Universal"
-				android:layout_width="match_parent"
-				android:drawableStart="@drawable/ic_px_gamepad"
-				android:text="@string/mcl_option_customcontrol" />
-
-			<com.google.android.material.divider.MaterialDivider
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:layout_marginTop="@dimen/padding_medium" />
-
-			<TextView
-				android:layout_width="match_parent"
-				android:layout_height="wrap_content"
-				android:text="@string/mcl_section_instance_tools"
-				android:textAllCaps="true"
-				android:textAppearance="?attr/textAppearanceLabelMedium"
-				android:textColor="?attr/colorOnSurfaceVariant"
-				android:letterSpacing="0.08"
-				android:paddingHorizontal="@dimen/padding_heavy"
-				android:paddingTop="@dimen/padding_large"
-				android:paddingBottom="@dimen/padding_medium" />
-
-			<com.kdt.mcgui.LauncherMenuButton
-				android:id="@+id/open_files_button"
-				style="@style/LauncherMenuButton.Universal"
-				android:layout_width="match_parent"
-				android:drawableStart="@drawable/ic_folder_managed"
-				android:text="@string/mcl_button_manage_mods" />
-
-			<com.kdt.mcgui.LauncherMenuButton
-				android:id="@+id/open_directory_button"
-				style="@style/LauncherMenuButton.Universal"
-				android:layout_width="match_parent"
-				android:drawableStart="@drawable/ic_px_folder"
-				android:text="@string/mcl_button_open_directory" />
-
-			<com.kdt.mcgui.LauncherMenuButton
-				android:id="@+id/install_jar_button"
-				style="@style/LauncherMenuButton.Universal"
-				android:layout_width="match_parent"
-				android:drawableStart="@drawable/ic_px_java_run"
-				android:text="@string/main_install_jar_file" />
-
-			<com.kdt.mcgui.LauncherMenuButton
-				android:id="@+id/share_logs_button"
-				style="@style/LauncherMenuButton.Universal"
-				android:layout_width="match_parent"
-				android:drawableStart="@drawable/ic_px_sharelog"
-				android:text="@string/main_share_logs" />
-        </LinearLayout>
+            android:layout_height="wrap_content" />
     </ScrollView>
 
     <!-- Replaces the sidebar while Browse/Manage Content is open, see ContentPickerFragment -->
@@ -152,6 +81,72 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/pane_guideline">
+
+        <!-- Replace the version bar and the play button while the tiles are edited, so they never cover a tile -->
+        <LinearLayout
+            android:id="@+id/home_edit_controls"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/bg_home_edit_bar"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="4dp"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/home_edit_add_left"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="4dp"
+                android:text="@string/home_add_left"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/home_edit_add_right"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="4dp"
+                android:text="@string/home_add_right"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/home_edit_more"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="4dp"
+                android:text="@string/home_more"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/home_edit_done"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginVertical="4dp"
+                android:layout_weight="1"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minWidth="0dp"
+                android:paddingHorizontal="4dp"
+                android:text="@string/home_edit_done"
+                android:textSize="12sp" />
+        </LinearLayout>
 
         <com.kdt.mcgui.mcVersionSpinner
             android:id="@+id/mc_version_spinner"

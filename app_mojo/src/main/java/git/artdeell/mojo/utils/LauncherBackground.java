@@ -23,13 +23,21 @@ import java.io.OutputStream;
 
 /**
  * The custom launcher background: an image (static or animated GIF/WebP) or a video (MP4).
- * The picked file is copied into the launcher data folder, and shown on the home screen of the
- * right pane of the two-pane landscape main menu.
+ * The picked file is copied into the launcher data folder, and shown behind the whole launcher
+ * by {@link com.kdt.mcgui.LauncherWallpaperView}.
  */
 public final class LauncherBackground {
     public static final String PREF_KIND = "custom_launcher_bg_kind";
     public static final String KIND_IMAGE = "image";
     public static final String KIND_VIDEO = "video";
+    /** Blur of the background in percent, 0 to 100 */
+    public static final String PREF_BLUR = "launcher_bg_blur";
+    /** On: the background fills the launcher. Off: it is only on the home screen of the right pane, like before */
+    public static final String PREF_FULLSCREEN = "launcher_bg_fullscreen";
+    /** Fullscreen only: whether the screens other than the home screen show the (blurred) background */
+    public static final String PREF_OTHER_SCREENS = "launcher_bg_other_screens";
+    /** Fullscreen only: how much of the surface color covers the background on the other screens, 0 to 100 */
+    public static final String PREF_OVERLAY = "launcher_bg_overlay";
 
     /** Larger images are scaled down while decoding, a background never needs more than this */
     private static final int MAX_IMAGE_SIDE = 2048;
@@ -40,6 +48,31 @@ public final class LauncherBackground {
     public static File getFile() {
         // DIR_DATA is only known at runtime, so this can't be a constant
         return new File(Tools.DIR_DATA, "custom_launcher_bg");
+    }
+
+    /** @return the blur of the background in percent */
+    public static int getBlur(@NonNull Context context) {
+        int blur = PreferenceManager.getDefaultSharedPreferences(context).getInt(PREF_BLUR, 0);
+        return Math.max(0, Math.min(100, blur));
+    }
+
+    public static boolean isFullscreen(@NonNull Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_FULLSCREEN, true);
+    }
+
+    public static boolean showOnOtherScreens(@NonNull Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getBoolean(PREF_OTHER_SCREENS, true);
+    }
+
+    /** @return the cover of the other screens in percent, 0 shows the background untouched */
+    public static int getOverlay(@NonNull Context context) {
+        int overlay = PreferenceManager.getDefaultSharedPreferences(context).getInt(PREF_OVERLAY, 0);
+        return Math.max(0, Math.min(100, overlay));
+    }
+
+    /** @return whether there is a background and it fills the launcher */
+    public static boolean isFullscreenActive(@NonNull Context context) {
+        return exists() && isFullscreen(context);
     }
 
     public static boolean exists() {

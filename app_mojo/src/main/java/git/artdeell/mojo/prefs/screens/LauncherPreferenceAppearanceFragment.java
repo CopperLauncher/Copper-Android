@@ -7,10 +7,12 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import git.artdeell.mojo.MojoApplication;
+import git.artdeell.mojo.home.HomeTileStyle;
 import git.artdeell.mojo.utils.LauncherBackground;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.preference.ListPreference;
 import androidx.preference.MultiSelectListPreference;
 import androidx.preference.Preference;
@@ -38,13 +40,49 @@ public class LauncherPreferenceAppearanceFragment extends LauncherPreferenceFrag
         addPreferencesFromResource(R.xml.pref_appearance);
         setupCustomColorVisibility();
         setupBackground();
+        setupWallpaperModes();
         setupAnimationPreference();
+    }
+
+    /**
+     * Everything about the wallpaper only means something while there is one, so it is only shown
+     * then. The options for the other screens also need it to be fullscreen, and the cover needs the
+     * other screens to show it. Runs when the screen opens and whenever one of those changes.
+     * @param fullscreen the new value of the fullscreen option while it is being changed, otherwise null
+     * @param otherScreens the same for the option of the other screens
+     */
+    private void updateWallpaperPreferences(@Nullable Boolean fullscreen, @Nullable Boolean otherScreens) {
+        boolean has = LauncherBackground.exists();
+        boolean full = fullscreen != null ? fullscreen : LauncherBackground.isFullscreen(requireContext());
+        boolean others = otherScreens != null ? otherScreens : LauncherBackground.showOnOtherScreens(requireContext());
+        setVisible("remove_custom_launcher_bg", has);
+        setVisible(LauncherBackground.PREF_FULLSCREEN, has);
+        setVisible(LauncherBackground.PREF_BLUR, has);
+        setVisible(LauncherBackground.PREF_OTHER_SCREENS, has && full);
+        setVisible(LauncherBackground.PREF_OVERLAY, has && full && others);
+        setVisible(HomeTileStyle.PREF_BLUR, has);
+    }
+
+    private void setVisible(String key, boolean visible) {
+        Preference preference = findPreference(key);
+        if (preference != null) preference.setVisible(visible);
+    }
+
+    private void setupWallpaperModes() {
+        requirePreference(LauncherBackground.PREF_FULLSCREEN).setOnPreferenceChangeListener((preference, value) -> {
+            updateWallpaperPreferences(Boolean.TRUE.equals(value), null);
+            return true;
+        });
+        requirePreference(LauncherBackground.PREF_OTHER_SCREENS).setOnPreferenceChangeListener((preference, value) -> {
+            updateWallpaperPreferences(null, Boolean.TRUE.equals(value));
+            return true;
+        });
+        updateWallpaperPreferences(null, null);
     }
 
     private void setupBackground() {
         Preference setPreference = requirePreference("set_custom_launcher_bg");
         Preference removePreference = requirePreference("remove_custom_launcher_bg");
-        removePreference.setEnabled(LauncherBackground.exists());
 
         setPreference.setOnPreferenceClickListener(preference -> {
             // GIFs are images, videos need to be MP4 or anything else Android can play
@@ -53,7 +91,7 @@ public class LauncherPreferenceAppearanceFragment extends LauncherPreferenceFrag
         });
         removePreference.setOnPreferenceClickListener(preference -> {
             LauncherBackground.remove(requireContext());
-            removePreference.setEnabled(false);
+            updateWallpaperPreferences(null, null);
             Toast.makeText(requireContext(), R.string.preference_custom_bg_removed, Toast.LENGTH_SHORT).show();
             return true;
         });
@@ -70,8 +108,7 @@ public class LauncherPreferenceAppearanceFragment extends LauncherPreferenceFrag
             activity.runOnUiThread(() -> {
                 Toast.makeText(appContext, success ? R.string.preference_custom_bg_set_success
                         : R.string.preference_custom_bg_error, Toast.LENGTH_SHORT).show();
-                Preference removePreference = findPreference("remove_custom_launcher_bg");
-                if (removePreference != null) removePreference.setEnabled(LauncherBackground.exists());
+                updateWallpaperPreferences(null, null);
             });
         });
     }

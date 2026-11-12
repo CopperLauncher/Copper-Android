@@ -7,6 +7,9 @@ import static git.artdeell.mojo.Tools.shareLog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,9 +21,11 @@ import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.graphics.ColorUtils;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
@@ -32,7 +37,9 @@ import com.kdt.mcgui.mcVersionSpinner;
 import git.artdeell.mojo.CustomControlsActivity;
 import git.artdeell.mojo.R;
 
+import git.artdeell.mojo.LauncherActivity;
 import git.artdeell.mojo.Tools;
+import git.artdeell.mojo.home.HomeTileBoard;
 import git.artdeell.mojo.contracts.OpenDocumentWithExtension;
 import git.artdeell.mojo.extra.ExtraConstants;
 import git.artdeell.mojo.extra.ExtraCore;
@@ -40,8 +47,11 @@ import git.artdeell.mojo.instances.Instance;
 import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.utils.FileUtils;
+import git.artdeell.mojo.utils.LauncherBackground;
+import git.artdeell.mojo.utils.ThemeColors;
 import git.artdeell.mojo.utils.WorldUtils;
 
+import java.util.List;
 import java.io.File;
 
 /**
@@ -59,8 +69,25 @@ public class MainMenuFragment extends Fragment {
     /* The sidebar and the pane that replaces it while the content picker is open, null in portrait */
     private View mLeftSidebar;
     private FrameLayout mLeftPaneContainer;
+    /* The tiles of the sidebar and of the home screen, null in portrait */
+    private HomeTilesController mHomeTiles;
+    /* The buttons that replace the version bar while the tiles are edited */
+    private View mEditControls;
+    private View mAddRightButton;
+    private View[] mVersionBarViews = new View[0];
+    private boolean mEditing;
+    private OnBackPressedCallback mEditBackCallback;
+    /* A custom background is set: it shows through the main menu, which then is partly see-through */
+    private boolean mHasWallpaper;
+    /* The other screens show the wallpaper too */
+    private boolean mShowOthers = true;
     /* Intercepts back when the right pane shows something above the home screen */
     private OnBackPressedCallback mRightPaneBackCallback;
+
+    private final ActivityResultLauncher<String[]> mLayoutImportLauncher =
+            registerForActivityResult(new ActivityResultContracts.OpenDocument(), uri -> {
+                if (mHomeTiles != null) mHomeTiles.importLayout(uri);
+            });
 
     private final ActivityResultLauncher<Object> mModInstallerLauncher =
             registerForActivityResult(new OpenDocumentWithExtension("jar"), (data)->{
@@ -70,6 +97,7 @@ public class MainMenuFragment extends Fragment {
     private final FragmentManager.OnBackStackChangedListener mBackStackListener = () -> {
         mRightPaneBackCallback.setEnabled(isRightPaneActive());
         updateBottomBar();
+        updatePaneBackground();
         updateLeftPaneVisibility();
         // Back at the home screen: instances may have been created, renamed or deleted
         if (mVersionSpinner != null && getChildFragmentManager().getBackStackEntryCount() == 0) {
@@ -129,7 +157,77 @@ public class MainMenuFragment extends Fragment {
     private void updateBottomBar() {
         if (mBottomBar == null) return;
         boolean atHome = getChildFragmentManager().getBackStackEntryCount() == 0;
-        mBottomBar.setVisibility(atHome ? View.VISIBLE : View.GONE);
+        // While the tiles are edited the bar holds the edit buttons, wherever the right pane is
+        mBottomBar.setVisibility(atHome || mEditing ? View.VISIBLE : View.GONE);
+    }
+
+    /** The edit buttons take the place of the version bar and the play button while the tiles are edited */
+    void setHomeEditing(boolean editing, boolean rightAvailable) {
+        mEditing = editing;
+        if (mEditControls != null) mEditControls.setVisibility(editing ? View.VISIBLE : View.GONE);
+        if (mAddRightButton != null) mAddRightButton.setVisibility(rightAvailable ? View.VISIBLE : View.GONE);
+        for (View view : mVersionBarViews) {
+            if (view != null) view.setVisibility(editing ? View.GONE : View.VISIBLE);
+        }
+        if (mEditBackCallback != null) mEditBackCallback.setEnabled(editing);
+        updateBottomBar();
+    }
+
+    /** @return the controller of the tiles, null in portrait */
+    @Nullable
+    public HomeTilesController getHomeTiles() {
+        return mHomeTiles;
+    }
+
+    void launchLayoutImport() {
+        mLayoutImportLauncher.launch(new String[]{"application/json", "text/plain", "*/*"});
+    }
+
+    /**
+     * With a fullscreen wallpaper the home screen shows it through, and so do the sidebar and the
+     * bottom bar, as translucent panels. The other screens show it as well unless that is turned off,
+     * with a cover over it that is as strong as Launcher appearance says, none by default.
+     */
+    private void updatePaneBackground() {
+        if (mRightPane == null) return;
+        boolean atHome = getChildFragmentManager().getBackStackEntryCount() == 0;
+        boolean wallpaperHere = mHasWallpaper && (atHome || mShowOthers);
+        View root = getView();
+        if (root != null && mHasWallpaper) {
+            root.setBackgroundColor(wallpaperHere ? Color.TRANSPARENT : ThemeColors.surfaceContainer(requireContext()));
+        }
+        if (!mHasWallpaper || !wallpaperHere && !atHome) {
+            mRightPane.setBackgroundResource(R.drawable.bg_right_pane);
+        } else if (atHome) {
+            mRightPane.setBackground(null);
+        } else {
+            int overlay = LauncherBackground.getOverlay(requireContext());
+            if (overlay == 0) {
+                mRightPane.setBackground(null);
+            } else {
+                GradientDrawable panel = new GradientDrawable();
+                panel.setColor(ColorUtils.setAlphaComponent(ThemeColors.surface(requireContext()), Math.round(overlay * 2.55f)));
+                panel.setCornerRadius(24f * getResources().getDisplayMetrics().density);
+                mRightPane.setBackground(panel);
+            }
+        }
+        // The wallpaper is only as sharp as the setting says on the home screen, the other screens get it blurred
+        if (getActivity() instanceof LauncherActivity) ((LauncherActivity) getActivity()).refreshWallpaperFocus();
+    }
+
+    private void applyWallpaperBackdrop(@NonNull View root) {
+        mHasWallpaper = LauncherBackground.isFullscreenActive(requireContext());
+        mShowOthers = LauncherBackground.showOnOtherScreens(requireContext());
+        if (!mHasWallpaper) return;
+        int panel = ColorUtils.setAlphaComponent(ThemeColors.surfaceContainer(requireContext()), 0xB8);
+        root.setBackgroundColor(Color.TRANSPARENT);
+        if (mLeftSidebar != null) mLeftSidebar.setBackgroundColor(panel);
+        if (mBottomBar != null) {
+            GradientDrawable bar = new GradientDrawable();
+            bar.setColor(panel);
+            bar.setCornerRadius(24f * getResources().getDisplayMetrics().density);
+            mBottomBar.setBackground(bar);
+        }
     }
 
     // ─── Browse / Manage Content ─────────────────────────────────────────────
@@ -147,7 +245,7 @@ public class MainMenuFragment extends Fragment {
      * The manage variant also exposes the per-instance version/loader filter.
      * Landscape docks it in the left pane, portrait shows it as a dialog.
      */
-    private void showContentPicker(boolean manage) {
+    public void showContentPicker(boolean manage) {
         if (isTwoPane()) openContentPickerPane(manage);
         else showContentPickerDialog(manage);
     }
@@ -399,6 +497,14 @@ public class MainMenuFragment extends Fragment {
             }
         };
         requireActivity().getOnBackPressedDispatcher().addCallback(this, mRightPaneBackCallback);
+        // Added last, so back leaves the edit mode before it does anything else
+        mEditBackCallback = new OnBackPressedCallback(false) {
+            @Override
+            public void handleOnBackPressed() {
+                if (mHomeTiles != null) mHomeTiles.exitEditMode();
+            }
+        };
+        requireActivity().getOnBackPressedDispatcher().addCallback(this, mEditBackCallback);
     }
 
     @Override
@@ -422,7 +528,14 @@ public class MainMenuFragment extends Fragment {
         mBottomBar = view.findViewById(R.id.bottom_bar);
         mLeftSidebar = view.findViewById(R.id.left_sidebar);
         mLeftPaneContainer = view.findViewById(R.id.left_pane_container);
+        mEditControls = view.findViewById(R.id.home_edit_controls);
+        mAddRightButton = view.findViewById(R.id.home_edit_add_right);
+        mVersionBarViews = new View[]{mVersionSpinner, mEditProfileButton, mPlayButton};
         getChildFragmentManager().addOnBackStackChangedListener(mBackStackListener);
+        if (isTwoPane()) {
+            applyWallpaperBackdrop(view);
+            setupHomeTiles(view);
+        }
 
         FragmentManager childManager = getChildFragmentManager();
         if (isTwoPane()) {
@@ -441,9 +554,7 @@ public class MainMenuFragment extends Fragment {
             childManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         }
 
-        ViewGroup staggerParent = isTwoPane()
-                ? view.findViewById(R.id.left_sidebar_content)
-                : (mNewsButton != null ? (ViewGroup) mNewsButton.getParent() : null);
+        ViewGroup staggerParent = !isTwoPane() && mNewsButton != null ? (ViewGroup) mNewsButton.getParent() : null;
         AnimationManager.staggerIn(staggerParent);
 
         if (mNewsButton != null) {
@@ -456,17 +567,33 @@ public class MainMenuFragment extends Fragment {
         if (mDiscordButton != null)
             mDiscordButton.setOnClickListener(v -> Tools.openURL(requireActivity(), getString(R.string.social_media_invite)));
 
-        mCustomControlButton.setOnClickListener(v -> startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
-        mInstallJarButton.setOnClickListener(v -> runInstallerWithConfirmation());
+        // In landscape these are tiles of the sidebar, see HomeTilesController
+        if (mCustomControlButton != null)
+            mCustomControlButton.setOnClickListener(v -> startActivity(new Intent(requireContext(), CustomControlsActivity.class)));
+        if (mInstallJarButton != null)
+            mInstallJarButton.setOnClickListener(v -> runInstallerWithConfirmation());
         mEditProfileButton.setOnClickListener(v -> mVersionSpinner.openProfileEditor(requireActivity()));
 
         mPlayButton.setOnClickListener(v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));
 
-        mShareLogsButton.setOnClickListener((v) -> shareLog(requireContext()));
+        if (mShareLogsButton != null) mShareLogsButton.setOnClickListener((v) -> shareLog(requireContext()));
 
-        mModStoreButton.setOnClickListener(v -> showContentPicker(false));
-        mManageContentButton.setOnClickListener(v -> showContentPicker(true));
-        mOpenDirectoryButton.setOnClickListener((v)-> openGameDirectory(v.getContext()));
+        if (mModStoreButton != null) mModStoreButton.setOnClickListener(v -> showContentPicker(false));
+        if (mManageContentButton != null) mManageContentButton.setOnClickListener(v -> showContentPicker(true));
+        if (mOpenDirectoryButton != null) mOpenDirectoryButton.setOnClickListener((v)-> openGameDirectory(v.getContext()));
+    }
+
+    /** Landscape: the tiles of the sidebar and the buttons that edit them */
+    private void setupHomeTiles(@NonNull View view) {
+        mHomeTiles = new HomeTilesController(this);
+        view.findViewById(R.id.home_edit_add_left).setOnClickListener(
+                v -> mHomeTiles.onAddClicked(HomeTilesController.Side.LEFT));
+        view.findViewById(R.id.home_edit_add_right).setOnClickListener(
+                v -> mHomeTiles.onAddClicked(HomeTilesController.Side.RIGHT));
+        view.findViewById(R.id.home_edit_more).setOnClickListener(v -> mHomeTiles.showMoreMenu(v));
+        view.findViewById(R.id.home_edit_done).setOnClickListener(v -> mHomeTiles.exitEditMode());
+        HomeTileBoard sidebar = view.findViewById(R.id.sidebar_tile_board);
+        if (sidebar != null) mHomeTiles.attachLeft(sidebar);
     }
 
     @Override
@@ -477,10 +604,16 @@ public class MainMenuFragment extends Fragment {
         mBottomBar = null;
         mLeftSidebar = null;
         mLeftPaneContainer = null;
+        if (mHomeTiles != null) mHomeTiles.detachAll();
+        mHomeTiles = null;
+        mEditControls = null;
+        mAddRightButton = null;
+        mVersionBarViews = new View[0];
+        mEditing = false;
         mVersionSpinner = null;
     }
 
-    private void openGameDirectory(Context context) {
+    public void openGameDirectory(Context context) {
         Instance instance = Instances.loadSelectedInstance();
         if(instance == null) {
             Toast.makeText(context, R.string.no_instance, Toast.LENGTH_LONG).show();
@@ -497,12 +630,13 @@ public class MainMenuFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        if (mHomeTiles != null) mHomeTiles.onResume();
         ExtraCore.setValue(ExtraConstants.REFRESH_ACCOUNT_SPINNER, true);
         // Runs after the task listeners, which could have changed the bar
         if (mBottomBar != null) mBottomBar.post(this::updateBottomBar);
     }
 
-    private void runInstallerWithConfirmation() {
+    public void runInstallerWithConfirmation() {
         if(!ProgressLayout.ensureNoOngoingTasks(requireContext())) return;
         mModInstallerLauncher.launch(null);
     }

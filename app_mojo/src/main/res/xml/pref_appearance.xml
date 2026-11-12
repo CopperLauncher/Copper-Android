@@ -49,6 +49,63 @@
             android:title="@string/preference_remove_custom_bg_title"
             android:summary="@string/preference_remove_custom_bg_summary"
             android:icon="@drawable/ic_px_bg_remove" />
+        <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
+            android:defaultValue="true"
+            android:key="launcher_bg_fullscreen"
+            android:summary="@string/preference_bg_fullscreen_summary"
+            android:title="@string/preference_bg_fullscreen_title" />
+        <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
+            android:defaultValue="true"
+            android:key="launcher_bg_other_screens"
+            android:summary="@string/preference_bg_other_screens_summary"
+            android:title="@string/preference_bg_other_screens_title" />
+        <git.artdeell.mojo.prefs.CustomSeekBarPreference
+            android:defaultValue="0"
+            android:key="launcher_bg_blur"
+            android:max="100"
+            android:summary="@string/preference_bg_blur_summary"
+            android:title="@string/preference_bg_blur_title"
+            app:min="0"
+            app:seekBarIncrement="1"
+            app:selectable="false"
+            app:showSeekBarValue="true" />
+        <git.artdeell.mojo.prefs.CustomSeekBarPreference
+            android:defaultValue="0"
+            android:key="launcher_bg_overlay"
+            android:max="100"
+            android:summary="@string/preference_bg_overlay_summary"
+            android:title="@string/preference_bg_overlay_title"
+            app:min="0"
+            app:seekBarIncrement="1"
+            app:selectable="false"
+            app:showSeekBarValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/preference_category_home_tiles">
+        <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
+            android:defaultValue="false"
+            android:key="home_tiles_infinite"
+            android:summary="@string/preference_tiles_infinite_summary"
+            android:title="@string/preference_tiles_infinite_title" />
+        <git.artdeell.mojo.prefs.CustomSeekBarPreference
+            android:defaultValue="100"
+            android:key="home_tile_opacity"
+            android:max="100"
+            android:summary="@string/preference_tile_opacity_summary"
+            android:title="@string/preference_tile_opacity_title"
+            app:min="0"
+            app:seekBarIncrement="1"
+            app:selectable="false"
+            app:showSeekBarValue="true" />
+        <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
+            android:defaultValue="false"
+            android:key="home_tile_blur"
+            android:summary="@string/preference_tile_blur_summary"
+            android:title="@string/preference_tile_blur_title" />
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/preference_category_animations">
