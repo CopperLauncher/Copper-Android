@@ -326,7 +326,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         WallpaperBackdrop.removeListener(mBackdropListener);
         sBoards.remove(this);
         removeCallbacks(mAutoScroll);
-        cancelLongPress();
+        cancelEditPress();
         cancelGesture();
         resetPushViews(false);
         clearProxy();
@@ -353,7 +353,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     }
 
     private void startEditWithDrag(HomeTile tile) {
-        cancelLongPress();
+        cancelEditPress();
         setEditMode(true);
         ViewParent parent = getParent();
         if (parent != null) parent.requestDisallowInterceptTouchEvent(true);
@@ -546,7 +546,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         // The board times the long press itself: the one of a view would start the edit mode too soon
         switch (ev.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
-                cancelLongPress();
+                cancelEditPress();
                 if (mActive == null) {
                     mPressArmed = true;
                     mPressTile = hitTile(ev.getX(), ev.getY());
@@ -557,13 +557,13 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (mPressArmed && Math.hypot(ev.getRawX() - mPressRawX, ev.getRawY() - mPressRawY) > mTouchSlop) {
-                    cancelLongPress();
+                    cancelEditPress();
                 }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                cancelLongPress();
+                cancelEditPress();
                 break;
             default:
                 break;
@@ -571,7 +571,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
         return super.dispatchTouchEvent(ev);
     }
 
-    private void cancelLongPress() {
+    private void cancelEditPress() {
         mPressArmed = false;
         mPressTile = null;
         removeCallbacks(mLongPress);
@@ -580,7 +580,7 @@ public class HomeTileBoard extends ViewGroup implements HomeTileView.Callbacks {
     private void onLongPressFired() {
         if (!mPressArmed || mActive != null) return;
         HomeTile tile = mPressTile;
-        cancelLongPress();
+        cancelEditPress();
         performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
         if (tile != null) {
             // While editing a tile is dragged as soon as it is touched, so there is nothing to start
