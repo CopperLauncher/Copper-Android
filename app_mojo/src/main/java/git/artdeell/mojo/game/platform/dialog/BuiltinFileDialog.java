@@ -1,7 +1,13 @@
 package git.artdeell.mojo.game.platform.dialog;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -18,11 +24,14 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import git.artdeell.mojo.R;
+import git.artdeell.mojo.Tools;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -42,14 +51,46 @@ import java.util.concurrent.CountDownLatch;
 public final class BuiltinFileDialog {
     private static final String UP_BUTTON_TEXT = "..";
 
+    /** Request code for shared storage access, only triggered when the user picks a shared external root. */
+    private static final int REQ_SHARED_STORAGE = 0xC0DE;
+
     private static WeakReference<Dialog> sCurrentDialog;
     private static WeakReference<ResultCallback> sCurrentCallback;
+
+    /** Pending shared-storage navigation, cleared once the permission request completes. */
+    private static Activity pendingSharedHost;
+    private static State pendingSharedState;
+    private static File pendingSharedDir;
 
     private BuiltinFileDialog() {}
 
     /** Receives the picked paths, or null when the dialog was cancelled. */
     public interface ResultCallback {
         void onResult(@Nullable String[] paths);
+    }
+
+    private static boolean isSharedExternal(File directory) {
+        File external = android.os.Environment.getExternalStorageDirectory();
+        if (external == null) return false;
+        String abs = directory.getAbsolutePath();
+        return abs.equals(external.getAbsolutePath())
+            || abs.startsWith(external.getAbsolutePath() + File.separator);
+    }
+
+    private static boolean sharedStoragePermissionGranted(Activity host) {
+        return ContextCompat.checkSelfPermission(host, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED
+            && ContextCompat.checkSelfPermission(host, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private static void requestSharedStorage(Activity host, State state, File directory) {
+        pendingSharedHost = host;
+        pendingSharedState = state;
+        pendingSharedDir = directory;
+        ActivityCompat.requestPermissions(host,
+            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE},
+            REQ_SHARED_STORAGE);
     }
 
     /**
@@ -164,6 +205,32 @@ public final class BuiltinFileDialog {
         if (callback != null) callback.onResult(null);
     }
 
+    /**
+     * Host activities must forward {@link Activity#onRequestPermissionsResult} here so the
+     * built-in file manager can retry shared external storage navigation after the user
+     * grants or denies storage permission.
+     */
+    public static void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                                  @NonNull int[] grantResults) {
+        if (requestCode != REQ_SHARED_STORAGE) return;
+        boolean granted = grantResults.length > 0;
+        for (int result : grantResults) {
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                granted = false;
+                break;
+            }
+        }
+        Activity host = pendingSharedHost;
+        State state = pendingSharedState;
+        File directory = pendingSharedDir;
+        pendingSharedHost = null;
+        pendingSharedState = null;
+        pendingSharedDir = null;
+        if (granted && host != null && state != null && directory != null) {
+            navigateTo(host, state, directory);
+        }
+    }
+
     private static void clearCurrent(Dialog dialog) {
         synchronized (BuiltinFileDialog.class) {
             if (sCurrentDialog != null && sCurrentDialog.get() == dialog) {
@@ -223,7 +290,7 @@ public final class BuiltinFileDialog {
 
         root.addView(buildBottomBar(host, state, defaultPath));
 
-        navigateTo(state, state.currentDir);
+        navigateTo(host, state, state.currentDir);
         return root;
     }
 
@@ -239,7 +306,7 @@ public final class BuiltinFileDialog {
         upButton.setOnClickListener(v -> {
             File parent = state.currentDir.getParentFile();
             if (parent != null) {
-                navigateTo(state, parent);
+                navigateTo(host, state, parent);
             } else {
                 openRootsDialog(host, state);
             }
@@ -388,7 +455,7 @@ public final class BuiltinFileDialog {
             Toast.makeText(host, R.string.file_manager_overwrite_title, Toast.LENGTH_SHORT).show();
             return;
         }
-        navigateTo(state, state.currentDir);
+        navigateTo(host, state, state.currentDir);
     }
 
     /** Shows rename/delete actions for a file or folder entry. */
@@ -439,7 +506,7 @@ public final class BuiltinFileDialog {
             Toast.makeText(host, R.string.file_manager_overwrite_title, Toast.LENGTH_SHORT).show();
             return;
         }
-        navigateTo(state, state.currentDir);
+        navigateTo(host, state, state.currentDir);
     }
 
     /** Confirms deletion then removes the entry (recursively for folders). */
@@ -457,7 +524,7 @@ public final class BuiltinFileDialog {
         if (!ok) {
             Toast.makeText(host, R.string.file_manager_overwrite_title, Toast.LENGTH_SHORT).show();
         }
-        navigateTo(state, state.currentDir);
+        navigateTo(host, state, state.currentDir);
     }
 
     private static boolean deleteRecursively(File file) {
@@ -472,12 +539,26 @@ public final class BuiltinFileDialog {
         return file.delete();
     }
 
-    private static void navigateTo(State state, File directory) {
+    private static void navigateTo(Activity host, State state, File directory) {
         if (directory == null || !directory.isDirectory()) return;
+        if (isSharedExternal(directory) && !sharedStoragePermissionGranted(host)) {
+            requestSharedStorage(host, state, directory);
+            return;
+        }
         state.currentDir = directory;
         state.selection.clear();
         List<File> entries = new ArrayList<>();
         File[] listed = directory.listFiles();
+        if (listed == null && isSharedExternal(directory)) {
+            if (Build.VERSION.SDK_INT >= 30 && !android.os.Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        Uri.parse("package:" + host.getPackageName()));
+                Tools.runOnUiThread(() -> host.startActivity(intent));
+            } else {
+                Toast.makeText(host, "Shared storage access is required", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
         if (listed != null) entries.addAll(Arrays.asList(listed));
         Collections.sort(entries, (a, b) -> {
             if (a.isDirectory() != b.isDirectory()) return a.isDirectory() ? -1 : 1;
@@ -496,7 +577,7 @@ public final class BuiltinFileDialog {
                 .setTitle(R.string.file_manager_roots)
                 .setItems(names, (d, which) -> {
                     d.dismiss();
-                    navigateTo(state, roots.get(which));
+                    navigateTo(host, state, roots.get(which));
                 })
                 .setNegativeButton(R.string.global_cancel, null)
                 .show();
@@ -623,7 +704,7 @@ public final class BuiltinFileDialog {
         void onRowClick(int position) {
             File entry = entries.get(position);
             if (entry.isDirectory()) {
-                navigateTo(state, entry);
+                navigateTo(host, state, entry);
                 return;
             }
             if (state.type == FileDialogBridge.DIALOG_OPEN_FILE && !state.allowMultiple) {

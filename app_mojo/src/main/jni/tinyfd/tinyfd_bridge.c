@@ -67,6 +67,44 @@ Java_git_artdeell_mojo_game_platform_dialog_FileDialogBridge_nativeInit(JNIEnv *
     m_color_picker = (*env)->GetStaticMethodID(env, clazz, "colorPicker",
             "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
     m_beep = (*env)->GetStaticMethodID(env, clazz, "beep", "()V");
+
+    // Cache the host activity from ActivityThread so dialogs can show in the game VM.
+    // sHostActivity is a static field - it's per-VM, so the launcher VM's value
+    // (set via Platform.init) is not visible here. ActivityThread.currentActivity()
+    // only exists on API 28+, so guard against older APIs.
+    jclass build_version = (*env)->FindClass(env, "android/os/Build$VERSION");
+    if (build_version != NULL) {
+        jfieldID sdk_int = (*env)->GetStaticFieldID(env, build_version,
+                "SDK_INT", "I");
+        if (sdk_int != NULL) {
+            jint sdk = (*env)->GetStaticIntField(env, build_version, sdk_int);
+            if (sdk >= 28) {
+                jclass activity_thread = (*env)->FindClass(env,
+                        "android/app/ActivityThread");
+                if (activity_thread != NULL) {
+                    jmethodID current_activity = (*env)->GetStaticMethodID(env,
+                            activity_thread, "currentActivity",
+                            "()Landroid/app/Activity;");
+                    if (current_activity != NULL) {
+                        jobject activity = (*env)->CallStaticObjectMethod(env,
+                                activity_thread, current_activity);
+                        if (activity != NULL) {
+                            jmethodID set_host = (*env)->GetStaticMethodID(env,
+                                    clazz, "setHostActivity",
+                                    "(Landroid/app/Activity;)V");
+                            if (set_host != NULL) {
+                                (*env)->CallStaticVoidMethod(env, clazz,
+                                        set_host, activity);
+                            }
+                            (*env)->DeleteLocalRef(env, activity);
+                        }
+                    }
+                    (*env)->DeleteLocalRef(env, activity_thread);
+                }
+            }
+        }
+        (*env)->DeleteLocalRef(env, build_version);
+    }
 }
 
 // --- Shared helpers for the Android tinyfd backend -------------------------
