@@ -68,6 +68,7 @@ import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.utils.lifecycle.ContextExecutor;
 import git.artdeell.mojo.game.platform.Platform;
 import git.artdeell.mojo.game.platform.backend.DummyBackend;
+import git.artdeell.mojo.game.platform.dialog.BuiltinFileDialog;
 import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.prefs.QuickSettingSideDialog;
@@ -602,5 +603,12 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         if(Tools.isAndroid8OrHigher() && checkCaptureDispatchConditions(ev))
             return launcherGLView.dispatchCapturedPointerEvent(ev);
         else return super.dispatchTrackballEvent(ev);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        BuiltinFileDialog.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 }

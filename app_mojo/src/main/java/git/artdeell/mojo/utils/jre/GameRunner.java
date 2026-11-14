@@ -133,7 +133,7 @@ public class GameRunner {
     private static void applyGraphicsBackend(Instance instance, String versionId) {
         String backend = instance.getLaunchBackend();
         if(backend == null || "default".equals(backend)) return;
-        if(!Tools.isMcVersionAtLeast(versionId, 26, 2)) return;
+        if(!Tools.isMcVersionAtLeast(versionId, 1, 21)) return;
         try {
             MCOptionUtils.load(instance.getGameDirectory().getAbsolutePath());
             if(!backend.equals(MCOptionUtils.get("preferredGraphicsBackend"))) {
@@ -405,6 +405,7 @@ public class GameRunner {
             Map<String, byte[]> bridgeClasses = readBridgeClasses(bridgeJar);
             File[] result = new File[classpath.length];
             boolean patched = false;
+            boolean hasNfdJar = false;
             for (int i = 0; i < classpath.length; i++) {
                 File entry = classpath[i];
                 String name = entry.getName().toLowerCase();
@@ -413,14 +414,24 @@ public class GameRunner {
                     // original lwjgl-tinyfd classes stay untouched.
                     result[i] = entry;
                 } else if (name.contains("-nfd")) {
+                    hasNfdJar = true;
                     result[i] = patchDialogJar(bridgeDir, entry, bridgeClasses, "org/lwjgl/util/nfd/", DIALOG_BRIDGE_NFD_CLASSES);
                     patched |= result[i] != entry;
                 } else {
                     result[i] = entry;
                 }
             }
+            if (!hasNfdJar) {
+                File nfdJar = writeBridgePackageJar(bridgeDir, "filedialog_nfd.jar",
+                        bridgeClasses, "org/lwjgl/util/nfd/");
+                if (nfdJar != null) {
+                    result = java.util.Arrays.copyOf(result, result.length + 1);
+                    result[result.length - 1] = nfdJar;
+                    patched = true;
+                }
+            }
             if (patched) {
-                Log.i("GameRunner", "File dialog bridge injected into the lwjgl dialog jars");
+                Log.i("GameRunner", "File dialog bridge injected into the game classpath");
             }
             return result;
         } catch (Throwable t) {
@@ -489,6 +500,36 @@ public class GameRunner {
         } catch (IOException e) {
             Log.w("GameRunner", "Failed to patch the dialog jar " + source.getName(), e);
             return source;
+        }
+        return output;
+    }
+
+    /**
+     * Writes a jar holding only one bridge package. Games that do not ship
+     * lwjgl-nfd still need the NFD API types referenced by NativeFileDialog,
+     * including mods that call NFD directly.
+     */
+    private static File writeBridgePackageJar(File bridgeDir, String jarName,
+                                              Map<String, byte[]> bridgeClasses,
+                                              String packageName) {
+        File output = new File(bridgeDir, jarName);
+        int written = 0;
+        try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output))) {
+            for (Map.Entry<String, byte[]> bridgeClass : bridgeClasses.entrySet()) {
+                String name = bridgeClass.getKey();
+                if (!name.startsWith(packageName) || !name.endsWith(".class")) continue;
+                zout.putNextEntry(new ZipEntry(name));
+                zout.write(bridgeClass.getValue());
+                zout.closeEntry();
+                written++;
+            }
+        } catch (IOException e) {
+            Log.w("GameRunner", "Failed to write " + jarName, e);
+            return null;
+        }
+        if (written == 0) {
+            output.delete();
+            return null;
         }
         return output;
     }
