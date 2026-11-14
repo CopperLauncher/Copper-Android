@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- krypton_wrapper-release.aar only ships libng_gl4es.so (no Java code) and declares minSdk 24 -->
+    <uses-sdk tools:overrideLibrary="io.github.maxjubayeryt.nggl4es" />
+
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature
         android:name="android.hardware.type.pc"
