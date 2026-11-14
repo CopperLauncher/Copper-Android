@@ -70,6 +70,7 @@ import git.artdeell.mojo.game.platform.Platform;
 import git.artdeell.mojo.game.platform.backend.DummyBackend;
 import git.artdeell.mojo.game.platform.dialog.BuiltinFileDialog;
 import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
+import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.prefs.QuickSettingSideDialog;
 import git.artdeell.mojo.services.GameService;
