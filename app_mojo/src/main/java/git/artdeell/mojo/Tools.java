@@ -52,6 +52,8 @@ import androidx.fragment.app.FragmentManager;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import git.artdeell.mojo.awt.AWTActivity;
 import git.artdeell.mojo.game.GameActivity;
@@ -80,6 +82,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.ref.WeakReference;
@@ -88,8 +91,12 @@ import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 @SuppressWarnings("IOStreamConstructor")
 public final class Tools {
@@ -839,6 +846,115 @@ public final class Tools {
     public static String validOrNullString(String string) {
         if(!isValidString(string)) return null;
         return string;
+    }
+
+    /**
+     * Check whether a Minecraft version is at least {@code major.minor}.
+     * Handles release versions like "26.2", snapshot versions like
+     * "26.2-snapshot-1" and loader version ids like
+     * "fabric-loader-0.17.4-26.2" or "1.20.1-forge-47.2.0".
+     * The real game version is first read out of the client jar version.json,
+     * so renamed or custom version ids are detected reliably; id parsing is
+     * only the fallback for versions without a jar (or jars without a
+     * version.json, like old ones).
+     */
+    public static boolean isMcVersionAtLeast(String versionId, int major, int minor) {
+        String mc = getMcVersionFromClientJar(versionId);
+        if(mc == null) mc = extractMcVersion(versionId);
+        if(mc == null || mc.isEmpty()) return false;
+        String[] parts = mc.split("\\.");
+        try {
+            int vMajor = Integer.parseInt(parts[0]);
+            if(vMajor > major) return true;
+            if(vMajor < major) return false;
+            if(parts.length < 2) return minor == 0;
+            // Snapshots append a suffix to the minor segment, keep the numeric prefix
+            String minorPart = parts[1];
+            int digitsEnd = 0;
+            while(digitsEnd < minorPart.length() && Character.isDigit(minorPart.charAt(digitsEnd))) digitsEnd++;
+            if(digitsEnd == 0) return false;
+            return Integer.parseInt(minorPart.substring(0, digitsEnd)) >= minor;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Extract the plain Minecraft version out of a possibly loader-prefixed version id.
+     * Forge ids carry the game version before "-forge-", fabric-like ids after the last
+     * dash. NeoForge/BTA ids have no embedded game version and are returned as-is.
+     */
+    private static String extractMcVersion(String versionId) {
+        if(versionId == null) return null;
+        int forgeIndex = versionId.indexOf("-forge-");
+        if(forgeIndex != -1) return versionId.substring(0, forgeIndex);
+        if(versionId.contains("-loader-")) {
+            int lastDash = versionId.lastIndexOf('-');
+            if(lastDash != -1) return versionId.substring(lastDash + 1);
+        }
+        return versionId;
+    }
+
+    /** Plain Minecraft version per version id, null when the client jar has none. */
+    private static final Map<String, String> MC_JAR_VERSION_CACHE = new HashMap<>();
+
+    /**
+     * Read the real Minecraft version out of the version's client jar
+     * version.json. Loader version dirs inherit the jar from the base version
+     * they were installed over, so inheritsFrom is followed first. Renamed or
+     * custom version ids resolve to what the jar actually is instead of what
+     * the id claims. Returns null when the version has no client jar (or the
+     * jar has no version.json, like old versions): callers fall back to
+     * parsing the version id itself.
+     */
+    public static String getMcVersionFromClientJar(String versionId) {
+        if(versionId == null) return null;
+        synchronized (MC_JAR_VERSION_CACHE) {
+            String cached = MC_JAR_VERSION_CACHE.get(versionId);
+            if(cached != null) return cached.isEmpty() ? null : cached;
+        }
+        String version = readMcVersionFromClientJar(versionId);
+        synchronized (MC_JAR_VERSION_CACHE) {
+            MC_JAR_VERSION_CACHE.put(versionId, version == null ? "" : version);
+        }
+        return version;
+    }
+
+    private static String readMcVersionFromClientJar(String versionId) {
+        try {
+            File versionJson = new File(DIR_HOME_VERSION, versionId + "/" + versionId + ".json");
+            if(!versionJson.isFile()) return null;
+            String jarOwner = versionId;
+            JsonObject info = JsonParser.parseString(read(versionJson)).getAsJsonObject();
+            // Loader jsons have no jar of their own, follow inheritsFrom down
+            for(int depth = 0; depth < 5; depth++) {
+                String inherits = info.has("inheritsFrom") ? info.get("inheritsFrom").getAsString() : null;
+                if(inherits == null || inherits.equals(versionId)) break;
+                versionId = inherits;
+                jarOwner = versionId;
+                versionJson = new File(DIR_HOME_VERSION, versionId + "/" + versionId + ".json");
+                if(!versionJson.isFile()) break;
+                info = JsonParser.parseString(read(versionJson)).getAsJsonObject();
+            }
+            File jar = new File(DIR_HOME_VERSION, jarOwner + "/" + jarOwner + ".jar");
+            if(!jar.isFile()) return null;
+            try (ZipFile zip = new ZipFile(jar)) {
+                ZipEntry entry = zip.getEntry("version.json");
+                if(entry == null) return null;
+                JsonObject json;
+                try (InputStream in = zip.getInputStream(entry)) {
+                    json = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+                }
+                String id = json.has("name") ? json.get("name").getAsString() : null;
+                if(id == null || id.isEmpty())
+                    id = json.has("id") ? json.get("id").getAsString() : null;
+                // Snapshots may carry their full id, strip the snapshot suffix
+                return id == null || id.isEmpty() ? null : extractMcVersion(id);
+            }
+        } catch (Exception e) {
+            Log.w("Tools", "Failed to read the client jar version of " + versionId, e);
+            return null;
+        }
     }
 
     public static void runOnUiThread(Runnable runnable) {
