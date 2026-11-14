@@ -1,10 +1,10 @@
 package org.lwjgl.util.nfd;
 
 /**
- * Compile-time stand-in for the classic-API path set struct that only exists
- * in lwjgl-nfd 3.2.x-3.3.1. Excluded from the built jar (see build.gradle):
- * at runtime the real class always comes from the game's lwjgl-nfd.jar.
- * Only the shape used by NativeFileDialog is provided.
+ * Stand-in for the classic-API path set struct that only exists in lwjgl-nfd
+ * 3.2.x-3.3.1. Newer lwjgl-nfd releases dropped it, so games without that
+ * jar get this class from the launcher bridge. It is only used as an opaque
+ * address by the native path set table; no struct fields are read or written.
  */
 public class NFDPathSet extends org.lwjgl.system.Struct<NFDPathSet> {
     protected NFDPathSet(long address, java.nio.ByteBuffer container) {

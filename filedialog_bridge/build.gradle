@@ -7,15 +7,28 @@ java {
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+configurations {
+    nfdTypes {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
 dependencies {
     // Only types are needed; the game provides LWJGL at runtime.
     compileOnly 'org.lwjgl:lwjgl:3.3.6'
     compileOnly 'org.lwjgl:lwjgl-nfd:3.3.6'
+    // Shipped so games without lwjgl-nfd still get the NFD argument types
+    // that NativeFileDialog references.
+    nfdTypes 'org.lwjgl:lwjgl-nfd:3.3.6'
 }
 
-// NFDPathSet is a compile-time stand-in for the struct that only exists in
-// lwjgl-nfd 3.2.x-3.3.1. It must not ship: the game's own lwjgl-nfd.jar
-// provides the real class at runtime.
+// Ship the NFD argument structs that flashback-style mods reference even
+// when the game has no lwjgl-nfd jar. NativeFileDialog and NFDPathSet come
+// from this project's own source set and replace the upstream classes.
 jar {
-    exclude 'org/lwjgl/util/nfd/NFDPathSet.class'
+    from({ configurations.nfdTypes.collect { zipTree(it) } }) {
+        include 'org/lwjgl/util/nfd/**'
+        exclude 'org/lwjgl/util/nfd/NativeFileDialog.class'
+    }
 }

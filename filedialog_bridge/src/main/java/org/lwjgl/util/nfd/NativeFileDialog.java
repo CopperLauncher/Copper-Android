@@ -37,7 +37,7 @@ public class NativeFileDialog {
 
     static {
         try {
-            System.loadLibrary("pojavexec");
+            System.loadLibrary("mojort");
         } catch (Throwable t) {
             // The bridge calls below will throw UnsatisfiedLinkError individually.
             System.err.println("[NativeFileDialog] Failed to load the launcher bridge library: " + t);
@@ -478,7 +478,7 @@ public class NativeFileDialog {
 
     public static native int nNFD_PathSet_EnumNext(long enumerator, long outPath);
 
-    // --- Bridge into the launcher (implemented in libpojavexec.so) ---
+    // --- Bridge into the launcher (implemented in libmojort.so) ---
 
     private static native int bridgeNFDOpen(String[] filterSpecs, String defaultPath, long[] outAddress);
 
