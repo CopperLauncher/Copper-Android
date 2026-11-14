@@ -87,6 +87,39 @@ public abstract class GLESRenderSpec implements RenderSpec {
         }
     }
 
+   public static class NGGL4ESRenderSpec extends GLESRenderSpec {
+       public boolean compatibleDevice(Context context) {
+       return JREUtils.getDetectedVersion() >= 3 && new File(Tools.NATIVE_LIB_DIR, this.library()).exists();
+      }
+       public String name() {
+         return "NG-GL4ES";
+       }
+
+       public int displayName() {
+         return R.string.mcl_setting_renderer_nggl4es;
+       }
+
+       public void setupEnvironment(Context context, Map<String, String> envMap) {
+         envMap.put("LIBGL_USE_MC_COLOR", "1");
+         envMap.put("LIBGL_GL", "31");
+         envMap.put("LIBGL_ES", "3");
+         envMap.put("LIBGL_NORMALIZE", "1");
+         envMap.put("LIBGL_NOERROR", "1");
+       }
+
+       public String tag() {
+         return Renderers.NGGL4ES_RENDERER;
+       }
+
+       public  String library() {
+         return "libng_gl4es.so";
+       }
+
+       protected int glesVersion() {
+         return 3;
+       }
+     }
+
      public static class MgRenderSpec extends GLESRenderSpec {
        public boolean compatibleDevice(Context context) {
          return JREUtils.getDetectedVersion() >= 3 && new File(Tools.NATIVE_LIB_DIR, this.library()).exists(); 
