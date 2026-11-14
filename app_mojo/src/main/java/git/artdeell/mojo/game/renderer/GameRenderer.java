@@ -20,8 +20,11 @@ import git.artdeell.mojo.Tools;
 import git.artdeell.mojo.game.renderer.impl.GLESRenderSpec;
 import git.artdeell.mojo.game.renderer.impl.MesaRenderSpec;
 import git.artdeell.mojo.game.renderer.impl.PluginRenderSpec;
+import git.artdeell.mojo.game.renderer.impl.PluginV2RenderSpec;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.utils.plugins.PluginManager;
+import git.artdeell.mojo.utils.plugins.RendererPlugin;
+import git.artdeell.mojo.utils.plugins.RendererV2Plugin;
 
 import java.io.File;
 import java.util.HashMap;
@@ -53,9 +56,9 @@ public class GameRenderer {
     private RenderSpec currentRenderer;
     private Map<String, String> environment = new HashMap<>();
 
-    public GameRenderer(String currentRenderer) {
-        this.currentRenderer = getKnownRenderer(currentRenderer);
-        if(this.currentRenderer == null) this.currentRenderer = getKnownRenderer(GL4ES_RENDERER);
+    public GameRenderer(Context context, String currentRenderer) {
+        this.currentRenderer = getKnownRenderer(currentRenderer, context);
+        if(this.currentRenderer == null) this.currentRenderer = getKnownRenderer(GL4ES_RENDERER, context);
         if(this.currentRenderer == null) throw new IllegalStateException("Failed to create the current renderer!");
         // Setting it up here so SDL/GLFW can take it later
         MojoExec.setUseBigCoreAffinity(LauncherPreferences.PREF_BIG_CORE_AFFINITY);
@@ -63,6 +66,45 @@ public class GameRenderer {
 
     /**
      * Map renderer string to a known RenderSpec
+     *
+     * @param renderer renderer string
+     * @param context  application context (used to resolve plugin metadata)
+     * @return RenderSpec instance if found, null otherwise
+     */
+    public static RenderSpec getKnownRenderer(String renderer, Context context) {
+        switch (renderer) {
+            // For compatibility
+            case "opengles2_4":
+            case "opengles2_5":
+            case GL4ES_RENDERER: return new GLESRenderSpec.GL4ESRenderSpec();
+            case LTW_RENDERER: return new GLESRenderSpec.LTWRenderSpec();
+            case ZINK_RENDERER: return new MesaRenderSpec.ZinkRenderSpec();
+            case FREEDRENO_RENDERER: return new MesaRenderSpec.FreedrenoRenderSpec();
+            case MESA_RENDERER: return new MesaRenderSpec();
+            case MESA_RENDERER_EXT: return new MesaRenderSpec.ExtMesaRenderSpec();
+            case LEGACYZINK_RENDERER: return new MesaRenderSpec.LegacyZinkRenderSpec();
+            case MOBILEGLUES_RENDERER: return new GLESRenderSpec.MgRenderSpec();
+            case SFPEW_RENDERER: return new GLESRenderSpec.SFPEWRenderSpec();
+            default:
+                if (renderer != null && renderer.startsWith(PluginManager.RENDERER_TAG_PREFIX)) {
+                    String pkg = renderer.substring(PluginManager.RENDERER_TAG_PREFIX.length());
+                    // Check V2 plugins first
+                    for (RendererV2Plugin p : PluginManager.getRendererV2Plugins(context)) {
+                        if (p.packageName.equals(pkg)) return new PluginV2RenderSpec(pkg);
+                    }
+                    // Then V1 plugins
+                    for (RendererPlugin p : PluginManager.getRendererPlugins(context)) {
+                        if (p.packageName.equals(pkg)) return new PluginRenderSpec(pkg);
+                    }
+                }
+                Log.e(TAG, "Unknown renderer " + renderer);
+                return null;
+        }
+    }
+
+    /**
+     * Map renderer string to a known RenderSpec (V1 plugins only, no context).
+     * Use {@link #getKnownRenderer(String, Context)} for V2 plugin support.
      *
      * @param renderer renderer string
      * @return RenderSpec instance if found, null otherwise
