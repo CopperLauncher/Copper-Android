@@ -101,7 +101,7 @@ public abstract class GLESRenderSpec implements RenderSpec {
 
        public void setupEnvironment(Context context, Map<String, String> envMap) {
          envMap.put("LIBGL_USE_MC_COLOR", "1");
-         envMap.put("LIBGL_GL", "31");
+         envMap.put("LIBGL_GL", "33");
          envMap.put("LIBGL_ES", "3");
          envMap.put("LIBGL_NORMALIZE", "1");
          envMap.put("LIBGL_NOERROR", "1");
