@@ -105,6 +105,6 @@ public class PluginV2RenderSpec implements RenderSpec {
 
         String eglPath = plugin.resolveEglPath();
         if (eglPath == null) return false;
-        return MojoExec.prepareEgl(eglPath, true, false, 0);
+        return MojoExec.prepareEgl(eglPath, true, plugin.useGles, 0);
     }
 }
