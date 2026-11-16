@@ -94,9 +94,12 @@
     <string name="file_manager_nothing_selected">Nothing is selected</string>
     <string name="file_manager_root_game">Game files</string>
     <string name="file_manager_root_app">App files</string>
+    <string name="file_manager_root_shared">Shared storage</string>
+    <string name="file_manager_storage_permission">Storage access is needed to use shared storage.</string>
     <string name="file_manager_title_save">Save file</string>
     <string name="file_manager_title_folder">Select a folder</string>
     <string name="file_manager_title_open">Select a file</string>
+    <string name="file_manager_title_browse">Browse files</string>
     <string name="file_manager_new_folder">New folder</string>
     <string name="file_manager_folder_name_hint">Folder name</string>
     <string name="file_manager_rename">Rename</string>

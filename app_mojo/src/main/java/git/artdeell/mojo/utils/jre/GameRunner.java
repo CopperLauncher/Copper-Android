@@ -384,12 +384,9 @@ public class GameRunner {
     }
 
     /**
-     * Rewrites the lwjgl-tinyfd and lwjgl-nfd jars on the game classpath so their
-     * dialog binding classes come from the launcher bridge instead of the bundled
-     * native glue libraries (which have no Android file picker). The lwjgl jars
-     * stay on the classpath as themselves: MC 26.2+ extracts their native
-     * libraries through its own bootstrap, and Forge resolves each package from
-     * exactly one module, so a separate bridge jar would fail as a split package.
+     * Replaces TinyFD and NFD binding classes inside their existing jars. Keeping
+     * the classes in their original jars avoids split packages in Forge and newer
+     * modular clients. TinyFD native loads are redirected to the launcher bridge.
      */
     private static File[] patchFileDialogJars(AppCompatActivity activity, File[] classpath) {
         try {
@@ -405,30 +402,28 @@ public class GameRunner {
             Map<String, byte[]> bridgeClasses = readBridgeClasses(bridgeJar);
             File[] result = new File[classpath.length];
             boolean patched = false;
-            boolean hasNfdJar = false;
             for (int i = 0; i < classpath.length; i++) {
                 File entry = classpath[i];
                 String name = entry.getName().toLowerCase();
-                if (name.contains("tinyfd")) {
-                    // tinyfd is served by the vendored native implementation; the
-                    // original lwjgl-tinyfd classes stay untouched.
-                    result[i] = entry;
-                } else if (name.contains("-nfd")) {
-                    hasNfdJar = true;
+                if (name.contains("tinyfd") || containsClass(entry,
+                        "org/lwjgl/util/tinyfd/TinyFileDialogs.class")) {
+                    result[i] = patchDialogJar(bridgeDir, entry, bridgeClasses,
+                            "org/lwjgl/util/tinyfd/", DIALOG_BRIDGE_TINYFD_CLASSES);
+                    patched |= result[i] != entry;
+                } else if (name.contains("-nfd") || containsClass(entry,
+                        "org/lwjgl/util/nfd/NativeFileDialog.class")) {
                     result[i] = patchDialogJar(bridgeDir, entry, bridgeClasses, "org/lwjgl/util/nfd/", DIALOG_BRIDGE_NFD_CLASSES);
                     patched |= result[i] != entry;
                 } else {
                     result[i] = entry;
                 }
             }
-            if (!hasNfdJar) {
-                File nfdJar = writeBridgePackageJar(bridgeDir, "filedialog_nfd.jar",
-                        bridgeClasses, "org/lwjgl/util/nfd/");
-                if (nfdJar != null) {
-                    result = java.util.Arrays.copyOf(result, result.length + 1);
-                    result[result.length - 1] = nfdJar;
-                    patched = true;
-                }
+            File nfdJar = writeBridgePackageJar(bridgeDir, "filedialog_nfd.jar",
+                    bridgeClasses, "org/lwjgl/util/nfd/");
+            if (nfdJar != null && !containsClassInClasspath(result, "org/lwjgl/util/nfd/NativeFileDialog.class")) {
+                result = java.util.Arrays.copyOf(result, result.length + 1);
+                result[result.length - 1] = nfdJar;
+                patched = true;
             }
             if (patched) {
                 Log.i("GameRunner", "File dialog bridge injected into the game classpath");
@@ -445,6 +440,27 @@ public class GameRunner {
             "org/lwjgl/util/nfd/NativeFileDialog",
             "org/lwjgl/util/nfd/NFDPathSet",
     };
+
+    private static final String[] DIALOG_BRIDGE_TINYFD_CLASSES = {
+            "org/lwjgl/util/tinyfd/TinyFileDialogs",
+    };
+
+    private static boolean containsClass(File archive, String className) {
+        if (!archive.isFile() || !archive.getName().toLowerCase().endsWith(".jar")) return false;
+        try (ZipFile zip = new ZipFile(archive)) {
+            return zip.getEntry(className) != null;
+        } catch (IOException e) {
+            Log.w("GameRunner", "Failed to inspect classpath archive " + archive.getName(), e);
+            return false;
+        }
+    }
+
+    private static boolean containsClassInClasspath(File[] classpath, String className) {
+        for (File entry : classpath) {
+            if (containsClass(entry, className)) return true;
+        }
+        return false;
+    }
 
     private static Map<String, byte[]> readBridgeClasses(File bridgeJar) throws IOException {
         Map<String, byte[]> classes = new HashMap<>();
@@ -478,7 +494,9 @@ public class GameRunner {
             }
         }
         if (replacements.isEmpty()) return source;
-        File output = new File(bridgeDir, source.getName());
+        String outputName = Integer.toHexString(source.getAbsolutePath().hashCode())
+                + "-" + source.getName();
+        File output = new File(bridgeDir, outputName);
         try (ZipFile zip = new ZipFile(source);
              ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(output))) {
             // Shadowing classes first: classloaders pick the first entry by name.
@@ -490,7 +508,7 @@ public class GameRunner {
             Enumeration<? extends ZipEntry> entries = zip.entries();
             while (entries.hasMoreElements()) {
                 ZipEntry entry = entries.nextElement();
-                if (replacements.containsKey(entry.getName())) continue;
+                if (replacements.containsKey(entry.getName()) || isJarSignature(entry.getName())) continue;
                 zout.putNextEntry(new ZipEntry(entry.getName()));
                 if (!entry.isDirectory()) {
                     zout.write(readZipEntry(zip, entry));
@@ -504,10 +522,19 @@ public class GameRunner {
         return output;
     }
 
+    private static boolean isJarSignature(String name) {
+        String upper = name.toUpperCase(java.util.Locale.ROOT);
+        if (!upper.startsWith("META-INF/")) return false;
+        String fileName = upper.substring("META-INF/".length());
+        if (fileName.indexOf('/') >= 0) return false;
+        return fileName.endsWith(".SF") || fileName.endsWith(".RSA")
+                || fileName.endsWith(".DSA") || fileName.endsWith(".EC")
+                || fileName.startsWith("SIG-");
+    }
+
     /**
-     * Writes a jar holding only one bridge package. Games that do not ship
-     * lwjgl-nfd still need the NFD API types referenced by NativeFileDialog,
-     * including mods that call NFD directly.
+     * Writes a jar holding only one bridge package, avoiding duplicate binding
+     * packages in Forge and other modular clients.
      */
     private static File writeBridgePackageJar(File bridgeDir, String jarName,
                                               Map<String, byte[]> bridgeClasses,

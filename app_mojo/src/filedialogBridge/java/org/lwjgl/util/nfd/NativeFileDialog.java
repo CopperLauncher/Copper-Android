@@ -16,11 +16,11 @@ import org.lwjgl.system.MemoryUtil;
  * through the Android file manager instead of the desktop helpers that do not
  * exist on Android.
  *
- * It is placed ahead of lwjgl-nfd.jar on the game classpath, so the game links
- * against this implementation and the bundled liblwjgl_nfd.so is never loaded.
- * Dialogs return real filesystem paths: picked documents are copied into the
- * app cache, save dialogs hand out a scratch file that is written back to the
- * picked location once closed.
+ * The bridge class replaces the binding inside the game's existing NFD jar.
+ * The bundled liblwjgl_nfd.so is not loaded.
+ * Dialogs return real filesystem paths from the launcher's built-in file
+ * manager. Access to shared storage is controlled by Android's storage
+ * permissions.
  */
 public class NativeFileDialog {
 

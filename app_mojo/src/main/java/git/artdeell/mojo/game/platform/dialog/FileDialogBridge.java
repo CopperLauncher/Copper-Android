@@ -36,6 +36,7 @@ public class FileDialogBridge {
     public static final int DIALOG_OPEN_FILE = 0;
     public static final int DIALOG_SAVE_FILE = 1;
     public static final int DIALOG_OPEN_FOLDER = 2;
+    public static final int DIALOG_BROWSE = 3;
 
     /** tinyfd messageBox results. */
     public static final int MESSAGE_OK_YES_RETRY = 1;
@@ -65,6 +66,22 @@ public class FileDialogBridge {
      */
     public static void cancelAll() {
         BuiltinFileDialog.cancelCurrent();
+    }
+
+    public static void browseDirectory(String path) {
+        Activity host = getHostActivity();
+        if (host == null) {
+            Log.w(TAG, "No host activity for file browser");
+            return;
+        }
+        Tools.runOnUiThread(() -> {
+            try {
+                if (host.isFinishing()) return;
+                BuiltinFileDialog.show(host, DIALOG_BROWSE, null, path, null, false, paths -> {});
+            } catch (RuntimeException e) {
+                Log.e(TAG, "Failed to show file browser", e);
+            }
+        });
     }
 
     // region Blocking entry points called from native code (tinyfd and NFD bridges)
