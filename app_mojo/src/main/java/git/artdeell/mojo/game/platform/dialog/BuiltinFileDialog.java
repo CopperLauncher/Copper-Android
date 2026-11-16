@@ -516,14 +516,14 @@ public final class BuiltinFileDialog {
 
         MaterialButton cancelButton = new MaterialButton(host);
         cancelButton.setText(R.string.global_cancel);
-        styleTextButton(host, cancelButton);
+        styleTextButton(host, state, cancelButton);
         cancelButton.setOnClickListener(v -> state.finish.onResult(null));
         bar.addView(cancelButton);
 
         if (state.type != FileDialogBridge.DIALOG_SAVE_FILE) {
             MaterialButton newFolderButton = new MaterialButton(host);
             newFolderButton.setText(R.string.file_manager_new_folder);
-            styleTextButton(host, newFolderButton);
+            styleTextButton(host, state, newFolderButton);
             newFolderButton.setOnClickListener(v -> promptNewFolder(host, state));
             bar.addView(newFolderButton);
         }
@@ -563,7 +563,7 @@ public final class BuiltinFileDialog {
         return bar;
     }
 
-    private static void styleTextButton(Activity host, MaterialButton button) {
+    private static void styleTextButton(Activity host, State state, MaterialButton button) {
         button.setTextSize(13f);
         button.setInsetTop(0);
         button.setInsetBottom(0);
