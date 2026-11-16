@@ -85,9 +85,12 @@
     <string name="mcl_setting_renderer_plugin_close">Close</string>
     <string name="file_manager_roots">Locations</string>
     <string name="file_manager_empty">This folder is empty</string>
+    <string name="file_manager_unreadable">Cannot read this folder</string>
     <string name="file_manager_file_name_hint">File name</string>
     <string name="file_manager_save">Save</string>
     <string name="file_manager_select">Select</string>
+    <string name="file_manager_select_count">Select (%1$d)</string>
+    <string name="file_manager_parent_folder">Go to parent folder</string>
     <string name="file_manager_empty_name">Enter a file name</string>
     <string name="file_manager_overwrite_title">Overwrite file?</string>
     <string name="file_manager_overwrite_message">%s already exists. Replace it?</string>

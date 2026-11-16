@@ -6,21 +6,26 @@ import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +35,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import git.artdeell.mojo.R;
@@ -51,7 +57,6 @@ import java.util.concurrent.CountDownLatch;
  * can be selected and save requests get a name field.
  */
 public final class BuiltinFileDialog {
-    private static final String UP_BUTTON_TEXT = "..";
     private static final String TAG = "BuiltinFileDialog";
 
     /** Request code for shared storage access, only triggered when the user picks a shared external root. */
@@ -296,7 +301,6 @@ public final class BuiltinFileDialog {
                                      String defaultPath, List<String> extensions,
                                      boolean allowMultiple, ResultCallback finish) {
         LinearLayout root = new LinearLayout(host);
-        root.setOrientation(LinearLayout.HORIZONTAL);
         int padding = host.getResources().getDimensionPixelSize(R.dimen.fragment_padding_medium);
         root.setPadding(padding, padding, padding, padding);
 
@@ -307,31 +311,54 @@ public final class BuiltinFileDialog {
         state.finish = finish;
         state.currentDir = initialDirectory(host, defaultPath, type);
 
-        root.addView(buildSidebar(host, state), new LinearLayout.LayoutParams(
-                dp(host, 112), ViewGroup.LayoutParams.MATCH_PARENT));
-
         LinearLayout content = new LinearLayout(host);
         content.setOrientation(LinearLayout.VERTICAL);
-        root.addView(content, new LinearLayout.LayoutParams(
-                0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+
+        state.compactLayout = host.getResources().getDisplayMetrics().widthPixels
+                / host.getResources().getDisplayMetrics().density < 600f;
+        if (state.compactLayout) {
+            root.setOrientation(LinearLayout.VERTICAL);
+            root.addView(buildSidebar(host, state), new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            root.addView(content, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        } else {
+            root.setOrientation(LinearLayout.HORIZONTAL);
+            root.addView(buildSidebar(host, state), new LinearLayout.LayoutParams(
+                    dp(host, 160), ViewGroup.LayoutParams.MATCH_PARENT));
+            root.addView(content, new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+        }
 
         TextView titleView = new TextView(host);
         titleView.setText(title != null && !title.isEmpty()
                 ? title : defaultDialogTitle(host, type));
-        titleView.setTextSize(17f);
+        titleView.setTextSize(18f);
+        titleView.setTextColor(MaterialColors.getColor(titleView, R.attr.colorOnSurface));
         titleView.setTypeface(null, android.graphics.Typeface.BOLD);
+        titleView.setPadding(dp(host, 4), dp(host, 2), dp(host, 4), dp(host, 8));
         content.addView(titleView);
 
+        FrameLayout listContainer = new FrameLayout(host);
         ListView listView = new ListView(host);
         listView.setDivider(null);
+        listView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        listContainer.addView(listView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         TextView emptyView = new TextView(host);
         emptyView.setText(R.string.file_manager_empty);
+        emptyView.setTextSize(14f);
+        emptyView.setTextColor(MaterialColors.getColor(emptyView, R.attr.colorOnSurfaceVariant));
         emptyView.setGravity(Gravity.CENTER);
-        emptyView.setPadding(0, dp(host, 32), 0, 0);
+        emptyView.setPadding(dp(host, 16), dp(host, 24), dp(host, 16), dp(host, 24));
+        emptyView.setVisibility(View.VISIBLE);
+        listContainer.addView(emptyView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         EntryAdapter adapter = new EntryAdapter(host, state);
         state.adapter = adapter;
+        state.emptyView = emptyView;
         listView.setAdapter(adapter);
         listView.setOnItemClickListener((parent, view, position, id) ->
                 adapter.onRowClick(position));
@@ -343,10 +370,8 @@ public final class BuiltinFileDialog {
 
         content.addView(buildPathRow(host, state));
 
-        content.addView(listView, new LinearLayout.LayoutParams(
+        content.addView(listContainer, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-        content.addView(emptyView);
-        listView.setEmptyView(emptyView);
 
         content.addView(buildBottomBar(host, state, defaultPath));
 
@@ -357,32 +382,68 @@ public final class BuiltinFileDialog {
     private static View buildSidebar(Activity host, State state) {
         LinearLayout sidebar = new LinearLayout(host);
         sidebar.setOrientation(LinearLayout.VERTICAL);
-        sidebar.setPadding(0, 0, dp(host, 8), 0);
+        sidebar.setPadding(0, 0, state.compactLayout ? 0 : dp(host, 12), dp(host, 8));
+        sidebar.setBackgroundColor(MaterialColors.getColor(sidebar, R.attr.colorSurfaceContainerLow));
 
         TextView heading = new TextView(host);
         heading.setText(R.string.file_manager_roots);
-        heading.setTextSize(14f);
+        heading.setTextSize(12f);
+        heading.setTextColor(MaterialColors.getColor(heading, R.attr.colorOnSurfaceVariant));
         heading.setTypeface(null, android.graphics.Typeface.BOLD);
-        heading.setPadding(dp(host, 8), dp(host, 8), dp(host, 4), dp(host, 12));
+        heading.setPadding(dp(host, 8), dp(host, 4), dp(host, 4), dp(host, 8));
         sidebar.addView(heading);
 
-        TextView action = new TextView(host);
-        action.setText(defaultDialogTitle(host, state.type));
-        action.setTextSize(12f);
-        action.setPadding(dp(host, 8), 0, dp(host, 4), dp(host, 8));
-        sidebar.addView(action);
-
+        LinearLayout locations = new LinearLayout(host);
+        locations.setOrientation(state.compactLayout
+                ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
+        state.locations.clear();
+        state.locationButtons.clear();
         for (File location : rootCandidates(host)) {
             MaterialButton button = new MaterialButton(host);
             button.setText(rootName(host, location));
-            button.setTextSize(11f);
+            button.setTextSize(13f);
             button.setAllCaps(false);
+            button.setMaxLines(1);
+            button.setEllipsize(android.text.TextUtils.TruncateAt.END);
             button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            button.setIconResource(R.drawable.ic_folder);
+            button.setIconSize(dp(host, 18));
+            button.setIconPadding(dp(host, 8));
+            button.setCornerRadius(dp(host, 14));
             button.setMinWidth(0);
-            button.setPadding(dp(host, 8), 0, dp(host, 4), 0);
+            button.setMinHeight(dp(host, 44));
+            button.setInsetTop(0);
+            button.setInsetBottom(0);
+            button.setPadding(dp(host, 12), 0, dp(host, 12), 0);
             button.setOnClickListener(v -> navigateTo(host, state, location));
-            sidebar.addView(button, new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
+                    state.compactLayout ? ViewGroup.LayoutParams.WRAP_CONTENT
+                            : ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (state.compactLayout) {
+                buttonParams.setMarginEnd(dp(host, 8));
+            } else {
+                buttonParams.bottomMargin = dp(host, 6);
+            }
+            locations.addView(button, buttonParams);
+            state.locations.add(location);
+            state.locationButtons.add(button);
+        }
+        if (state.compactLayout) {
+            HorizontalScrollView scroll = new HorizontalScrollView(host);
+            scroll.setHorizontalScrollBarEnabled(false);
+            scroll.setClipToPadding(false);
+            scroll.addView(locations, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            sidebar.addView(scroll, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        } else {
+            ScrollView scroll = new ScrollView(host);
+            scroll.setFillViewport(true);
+            scroll.addView(locations, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            sidebar.addView(scroll, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         }
         return sidebar;
     }
@@ -392,10 +453,19 @@ public final class BuiltinFileDialog {
         pathRow.setOrientation(LinearLayout.HORIZONTAL);
         pathRow.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView upButton = new TextView(host);
-        upButton.setText(UP_BUTTON_TEXT);
-        upButton.setTextSize(16f);
-        upButton.setPadding(dp(host, 10), 0, dp(host, 10), 0);
+        MaterialButton upButton = new MaterialButton(host);
+        upButton.setIconResource(R.drawable.ic_arrow_back);
+        upButton.setIconSize(dp(host, 20));
+        upButton.setIconTint(ColorStateList.valueOf(
+                MaterialColors.getColor(upButton, R.attr.colorOnSurfaceVariant)));
+        upButton.setContentDescription(host.getString(R.string.file_manager_parent_folder));
+        upButton.setMinWidth(dp(host, 44));
+        upButton.setMinHeight(dp(host, 44));
+        upButton.setInsetTop(0);
+        upButton.setInsetBottom(0);
+        upButton.setPadding(0, 0, 0, 0);
+        upButton.setBackgroundTintList(ColorStateList.valueOf(
+                MaterialColors.getColor(upButton, R.attr.colorSurfaceContainerLow)));
         upButton.setOnClickListener(v -> {
             File parent = state.currentDir.getParentFile();
             if (parent != null) {
@@ -406,10 +476,16 @@ public final class BuiltinFileDialog {
         state.upButton = upButton;
 
         TextView pathView = new TextView(host);
-        pathView.setTextSize(13f);
         pathView.setSingleLine(true);
         pathView.setEllipsize(android.text.TextUtils.TruncateAt.START);
-        pathView.setPadding(dp(host, 8), dp(host, 4), dp(host, 8), dp(host, 4));
+        pathView.setTextColor(MaterialColors.getColor(pathView, R.attr.colorOnSurfaceVariant));
+        pathView.setTextSize(12f);
+        pathView.setPadding(dp(host, 12), dp(host, 10), dp(host, 12), dp(host, 10));
+        android.graphics.drawable.GradientDrawable pathBackground =
+                new android.graphics.drawable.GradientDrawable();
+        pathBackground.setColor(MaterialColors.getColor(pathView, R.attr.colorSurfaceContainerLow));
+        pathBackground.setCornerRadius(dp(host, 12));
+        pathView.setBackground(pathBackground);
         pathRow.addView(pathView, new LinearLayout.LayoutParams(
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         state.pathView = pathView;
@@ -423,18 +499,16 @@ public final class BuiltinFileDialog {
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(0, dp(host, 8), 0, 0);
 
-        TextView cancelButton = new TextView(host);
+        MaterialButton cancelButton = new MaterialButton(host);
         cancelButton.setText(R.string.global_cancel);
-        cancelButton.setTextSize(14f);
-        cancelButton.setPadding(dp(host, 12), dp(host, 8), dp(host, 12), dp(host, 8));
+        styleTextButton(host, cancelButton);
         cancelButton.setOnClickListener(v -> state.finish.onResult(null));
         bar.addView(cancelButton);
 
         if (state.type != FileDialogBridge.DIALOG_SAVE_FILE) {
-            TextView newFolderButton = new TextView(host);
+            MaterialButton newFolderButton = new MaterialButton(host);
             newFolderButton.setText(R.string.file_manager_new_folder);
-            newFolderButton.setTextSize(14f);
-            newFolderButton.setPadding(dp(host, 12), dp(host, 8), dp(host, 12), dp(host, 8));
+            styleTextButton(host, newFolderButton);
             newFolderButton.setOnClickListener(v -> promptNewFolder(host, state));
             bar.addView(newFolderButton);
         }
@@ -460,15 +534,28 @@ public final class BuiltinFileDialog {
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         }
 
-        if (state.type != FileDialogBridge.DIALOG_BROWSE) {
+        if (state.type != FileDialogBridge.DIALOG_BROWSE
+                && !(state.type == FileDialogBridge.DIALOG_OPEN_FILE && !state.allowMultiple)) {
             MaterialButton okButton = new MaterialButton(host);
             okButton.setText(state.type == FileDialogBridge.DIALOG_SAVE_FILE
                     ? R.string.file_manager_save : R.string.file_manager_select);
             okButton.setOnClickListener(v -> confirm(host, state));
+            state.selectionButton = okButton;
             bar.addView(okButton, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            updateSelectionButton(host, state);
         }
         return bar;
+    }
+
+    private static void styleTextButton(Activity host, MaterialButton button) {
+        button.setTextSize(13f);
+        button.setInsetTop(0);
+        button.setInsetBottom(0);
+        button.setMinHeight(dp(host, 44));
+        button.setPadding(dp(host, 10), 0, dp(host, 10), 0);
+        button.setBackgroundTintList(ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
+        button.setTextColor(MaterialColors.getColor(button, R.attr.colorOnSurfaceVariant));
     }
 
     private static void confirm(Activity host, State state) {
@@ -629,39 +716,53 @@ public final class BuiltinFileDialog {
 
     private static void navigateTo(Activity host, State state, File directory) {
         if (directory == null || !directory.isDirectory()) return;
+        state.currentDir = directory;
+        state.selection.clear();
+        updateSelectionButton(host, state);
+        state.pathView.setText(directory.getAbsolutePath());
+        state.upButton.setEnabled(directory.getParentFile() != null);
+        updateLocationSelection(state, directory);
+        state.emptyView.setText(R.string.file_manager_empty);
         if (isSharedExternal(host, directory) && !sharedStoragePermissionGranted(host)) {
+            state.emptyView.setText(R.string.file_manager_storage_permission);
+            state.adapter.setEntries(Collections.emptyList());
             requestSharedStorage(host, state, directory);
             return;
         }
-        state.currentDir = directory;
-        state.selection.clear();
         List<File> entries = new ArrayList<>();
         File[] listed = directory.listFiles();
         if (listed == null && isSharedExternal(host, directory)) {
             if (Build.VERSION.SDK_INT >= 30 && !android.os.Environment.isExternalStorageManager()) {
+                state.emptyView.setText(R.string.file_manager_storage_permission);
+                state.adapter.setEntries(Collections.emptyList());
                 requestSharedStorage(host, state, directory);
             } else {
+                state.emptyView.setText(R.string.file_manager_unreadable);
+                state.adapter.setEntries(Collections.emptyList());
                 Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
             }
             return;
         }
-        if (listed != null) entries.addAll(Arrays.asList(listed));
+        if (listed == null) {
+            state.emptyView.setText(R.string.file_manager_unreadable);
+            state.adapter.setEntries(Collections.emptyList());
+            return;
+        }
+        entries.addAll(Arrays.asList(listed));
         Collections.sort(entries, (a, b) -> {
             if (a.isDirectory() != b.isDirectory()) return a.isDirectory() ? -1 : 1;
             return a.getName().compareToIgnoreCase(b.getName());
         });
-        state.pathView.setText(directory.getAbsolutePath());
-        state.upButton.setEnabled(directory.getParentFile() != null);
         state.adapter.setEntries(entries);
     }
 
     private static File[] rootCandidates(Activity host) {
         List<File> roots = new ArrayList<>();
-        for (File root : sharedStorageRoots(host)) addRoot(roots, root);
         File gameHome = new File(git.artdeell.mojo.Tools.DIR_GAME_HOME);
         addRoot(roots, gameHome);
         addRoot(roots, host.getExternalFilesDir(null));
         addRoot(roots, host.getFilesDir());
+        for (File root : sharedStorageRoots(host)) addRoot(roots, root);
         return roots.toArray(new File[0]);
     }
 
@@ -699,6 +800,46 @@ public final class BuiltinFileDialog {
         File primary = android.os.Environment.getExternalStorageDirectory();
         if (root.equals(primary)) return host.getString(R.string.file_manager_root_shared);
         return root.getName();
+    }
+
+    private static void updateLocationSelection(State state, File directory) {
+        File selected = null;
+        int selectedPathLength = -1;
+        String directoryPath = directory.getAbsolutePath();
+        for (File location : state.locations) {
+            String locationPath = location.getAbsolutePath();
+            boolean containsDirectory = directoryPath.equals(locationPath)
+                    || directoryPath.startsWith(locationPath.endsWith(File.separator)
+                    ? locationPath : locationPath + File.separator);
+            if (containsDirectory && locationPath.length() > selectedPathLength) {
+                selected = location;
+                selectedPathLength = locationPath.length();
+            }
+        }
+        for (int i = 0; i < state.locationButtons.size(); i++) {
+            MaterialButton button = state.locationButtons.get(i);
+            boolean active = state.locations.get(i).equals(selected);
+            int background = MaterialColors.getColor(button, active
+                    ? R.attr.colorSecondaryContainer : R.attr.colorSurfaceContainerLow);
+            int foreground = MaterialColors.getColor(button, active
+                    ? R.attr.colorOnSecondaryContainer : R.attr.colorOnSurfaceVariant);
+            button.setBackgroundTintList(ColorStateList.valueOf(background));
+            button.setTextColor(foreground);
+            button.setIconTint(ColorStateList.valueOf(foreground));
+        }
+    }
+
+    private static void updateSelectionButton(Activity host, State state) {
+        if (state.selectionButton == null) return;
+        if (state.type != FileDialogBridge.DIALOG_OPEN_FILE || !state.allowMultiple) {
+            state.selectionButton.setEnabled(true);
+            return;
+        }
+        int count = state.selection.size();
+        state.selectionButton.setText(count == 0
+                ? R.string.file_manager_select
+                : host.getString(R.string.file_manager_select_count, count));
+        state.selectionButton.setEnabled(count > 0);
     }
 
     private static File initialDirectory(Activity host, String defaultPath, int type) {
@@ -762,10 +903,15 @@ public final class BuiltinFileDialog {
     private static class State {
         int type;
         boolean allowMultiple;
+        boolean compactLayout;
         List<String> extensions;
         EntryAdapter adapter;
         TextView pathView;
-        TextView upButton;
+        MaterialButton upButton;
+        TextView emptyView;
+        MaterialButton selectionButton;
+        final List<File> locations = new ArrayList<>();
+        final List<MaterialButton> locationButtons = new ArrayList<>();
         ResultCallback finish;
         File currentDir = new File("/");
         final LinkedHashSet<File> selection = new LinkedHashSet<>();
@@ -797,6 +943,7 @@ public final class BuiltinFileDialog {
                 }
             }
             notifyDataSetChanged();
+            state.emptyView.setVisibility(entries.isEmpty() ? View.VISIBLE : View.GONE);
         }
 
         void onRowClick(int position) {
@@ -816,6 +963,7 @@ public final class BuiltinFileDialog {
             if (state.allowMultiple) {
                 if (!state.selection.remove(entry)) state.selection.add(entry);
                 notifyDataSetChanged();
+                updateSelectionButton(host, state);
             }
         }
 
@@ -853,16 +1001,25 @@ public final class BuiltinFileDialog {
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER_VERTICAL);
                 int padding = dp(host, 12);
-                row.setPadding(padding, padding, padding, padding);
+                row.setPadding(padding, dp(host, 8), padding, dp(host, 8));
+                row.setMinimumHeight(dp(host, 56));
+                TypedValue selectableBackground = new TypedValue();
+                if (host.getTheme().resolveAttribute(android.R.attr.selectableItemBackground,
+                        selectableBackground, true) && selectableBackground.resourceId != 0) {
+                    row.setBackgroundResource(selectableBackground.resourceId);
+                }
 
                 ImageView iconView = new ImageView(host);
                 iconView.setId(R.id.file_manager_icon);
-                iconView.setLayoutParams(new LinearLayout.LayoutParams(dp(host, 24), dp(host, 24)));
+                iconView.setLayoutParams(new LinearLayout.LayoutParams(dp(host, 28), dp(host, 28)));
                 row.addView(iconView);
 
                 nameView = new TextView(host);
                 nameView.setId(R.id.file_manager_name);
                 nameView.setTextSize(14f);
+                nameView.setTextColor(MaterialColors.getColor(nameView, R.attr.colorOnSurface));
+                nameView.setSingleLine(true);
+                nameView.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
                 nameView.setPadding(dp(host, 12), 0, dp(host, 8), 0);
                 row.addView(nameView, new LinearLayout.LayoutParams(
                         0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -879,14 +1036,27 @@ public final class BuiltinFileDialog {
             boolean selected = state.selection.contains(entry);
             if (entry.isDirectory()) {
                 iconView.setImageResource(R.drawable.ic_folder);
+                iconView.setColorFilter(MaterialColors.getColor(iconView, R.attr.colorPrimary));
                 selectionView.setVisibility(View.INVISIBLE);
             } else {
                 iconView.setImageResource(R.drawable.ic_px_file);
+                iconView.setColorFilter(MaterialColors.getColor(iconView, R.attr.colorOnSurfaceVariant));
                 if (selected) {
                     selectionView.setImageResource(R.drawable.ic_check_circle);
+                    selectionView.setColorFilter(MaterialColors.getColor(
+                            selectionView, R.attr.colorPrimary));
                     selectionView.setVisibility(View.VISIBLE);
                 } else {
                     selectionView.setVisibility(View.INVISIBLE);
+                }
+            }
+            if (selected) {
+                row.setBackgroundColor(MaterialColors.getColor(row, R.attr.colorSecondaryContainer));
+            } else {
+                TypedValue selectableBackground = new TypedValue();
+                if (host.getTheme().resolveAttribute(android.R.attr.selectableItemBackground,
+                        selectableBackground, true) && selectableBackground.resourceId != 0) {
+                    row.setBackgroundResource(selectableBackground.resourceId);
                 }
             }
             return row;
