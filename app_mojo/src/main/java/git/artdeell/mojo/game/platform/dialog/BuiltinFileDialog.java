@@ -6,6 +6,7 @@ import android.app.Dialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Build;
@@ -18,6 +19,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -161,12 +163,17 @@ public final class BuiltinFileDialog {
         Window window = dialog.getWindow();
         if (window != null) {
             window.setBackgroundDrawableResource(R.drawable.bg_dialog_rounded);
-            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT,
-                    Math.round(host.getResources().getDisplayMetrics().heightPixels * 0.8f));
         }
         sCurrentDialog = new WeakReference<>(dialog);
         sCurrentCallback = new WeakReference<>(callback);
         dialog.show();
+        if (window != null) {
+            boolean landscape = host.getResources().getConfiguration().orientation
+                    == Configuration.ORIENTATION_LANDSCAPE;
+            int height = landscape ? WindowManager.LayoutParams.MATCH_PARENT
+                    : Math.round(host.getResources().getDisplayMetrics().heightPixels * 0.84f);
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, height);
+        }
     }
 
     /**
@@ -301,10 +308,13 @@ public final class BuiltinFileDialog {
                                      String defaultPath, List<String> extensions,
                                      boolean allowMultiple, ResultCallback finish) {
         LinearLayout root = new LinearLayout(host);
-        int padding = host.getResources().getDimensionPixelSize(R.dimen.fragment_padding_medium);
+        State state = new State();
+        state.landscapeLayout = host.getResources().getConfiguration().orientation
+                == Configuration.ORIENTATION_LANDSCAPE;
+        int padding = state.landscapeLayout ? dp(host, 4)
+                : host.getResources().getDimensionPixelSize(R.dimen.fragment_padding_medium);
         root.setPadding(padding, padding, padding, padding);
 
-        State state = new State();
         state.type = type;
         state.extensions = extensions;
         state.allowMultiple = allowMultiple;
@@ -314,7 +324,8 @@ public final class BuiltinFileDialog {
         LinearLayout content = new LinearLayout(host);
         content.setOrientation(LinearLayout.VERTICAL);
 
-        state.compactLayout = host.getResources().getDisplayMetrics().widthPixels
+        state.compactLayout = !state.landscapeLayout
+                && host.getResources().getDisplayMetrics().widthPixels
                 / host.getResources().getDisplayMetrics().density < 600f;
         if (state.compactLayout) {
             root.setOrientation(LinearLayout.VERTICAL);
@@ -325,7 +336,8 @@ public final class BuiltinFileDialog {
         } else {
             root.setOrientation(LinearLayout.HORIZONTAL);
             root.addView(buildSidebar(host, state), new LinearLayout.LayoutParams(
-                    dp(host, 160), ViewGroup.LayoutParams.MATCH_PARENT));
+                    dp(host, state.landscapeLayout ? 112 : 160),
+                    ViewGroup.LayoutParams.MATCH_PARENT));
             root.addView(content, new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         }
@@ -333,10 +345,11 @@ public final class BuiltinFileDialog {
         TextView titleView = new TextView(host);
         titleView.setText(title != null && !title.isEmpty()
                 ? title : defaultDialogTitle(host, type));
-        titleView.setTextSize(18f);
+        titleView.setTextSize(state.landscapeLayout ? 16f : 18f);
         titleView.setTextColor(MaterialColors.getColor(titleView, R.attr.colorOnSurface));
         titleView.setTypeface(null, android.graphics.Typeface.BOLD);
-        titleView.setPadding(dp(host, 4), dp(host, 2), dp(host, 4), dp(host, 8));
+        titleView.setPadding(dp(host, 4), 0, dp(host, 4),
+                dp(host, state.landscapeLayout ? 2 : 8));
         content.addView(titleView);
 
         FrameLayout listContainer = new FrameLayout(host);
@@ -382,15 +395,15 @@ public final class BuiltinFileDialog {
     private static View buildSidebar(Activity host, State state) {
         LinearLayout sidebar = new LinearLayout(host);
         sidebar.setOrientation(LinearLayout.VERTICAL);
-        sidebar.setPadding(0, 0, state.compactLayout ? 0 : dp(host, 12), dp(host, 8));
+        sidebar.setPadding(0, 0, state.compactLayout ? 0 : dp(host, 8), dp(host, 4));
         sidebar.setBackgroundColor(MaterialColors.getColor(sidebar, R.attr.colorSurfaceContainerLow));
 
         TextView heading = new TextView(host);
         heading.setText(R.string.file_manager_roots);
-        heading.setTextSize(12f);
+        heading.setTextSize(state.landscapeLayout ? 11f : 12f);
         heading.setTextColor(MaterialColors.getColor(heading, R.attr.colorOnSurfaceVariant));
         heading.setTypeface(null, android.graphics.Typeface.BOLD);
-        heading.setPadding(dp(host, 8), dp(host, 4), dp(host, 4), dp(host, 8));
+        heading.setPadding(dp(host, 6), 0, dp(host, 4), dp(host, 4));
         sidebar.addView(heading);
 
         LinearLayout locations = new LinearLayout(host);
@@ -401,20 +414,21 @@ public final class BuiltinFileDialog {
         for (File location : rootCandidates(host)) {
             MaterialButton button = new MaterialButton(host);
             button.setText(rootName(host, location));
-            button.setTextSize(13f);
+            button.setTextSize(state.landscapeLayout ? 11f : 13f);
             button.setAllCaps(false);
             button.setMaxLines(1);
             button.setEllipsize(android.text.TextUtils.TruncateAt.END);
             button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
             button.setIconResource(R.drawable.ic_folder);
-            button.setIconSize(dp(host, 18));
-            button.setIconPadding(dp(host, 8));
-            button.setCornerRadius(dp(host, 14));
+            button.setIconSize(dp(host, state.landscapeLayout ? 16 : 18));
+            button.setIconPadding(dp(host, 6));
+            button.setCornerRadius(dp(host, 12));
             button.setMinWidth(0);
-            button.setMinHeight(dp(host, 44));
+            button.setMinHeight(dp(host, state.landscapeLayout ? 38 : 44));
             button.setInsetTop(0);
             button.setInsetBottom(0);
-            button.setPadding(dp(host, 12), 0, dp(host, 12), 0);
+            button.setPadding(dp(host, state.landscapeLayout ? 6 : 12), 0,
+                    dp(host, state.landscapeLayout ? 4 : 12), 0);
             button.setOnClickListener(v -> navigateTo(host, state, location));
             LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
                     state.compactLayout ? ViewGroup.LayoutParams.WRAP_CONTENT
@@ -423,7 +437,7 @@ public final class BuiltinFileDialog {
             if (state.compactLayout) {
                 buttonParams.setMarginEnd(dp(host, 8));
             } else {
-                buttonParams.bottomMargin = dp(host, 6);
+                buttonParams.bottomMargin = dp(host, state.landscapeLayout ? 2 : 6);
             }
             locations.addView(button, buttonParams);
             state.locations.add(location);
@@ -459,8 +473,8 @@ public final class BuiltinFileDialog {
         upButton.setIconTint(ColorStateList.valueOf(
                 MaterialColors.getColor(upButton, R.attr.colorOnSurfaceVariant)));
         upButton.setContentDescription(host.getString(R.string.file_manager_parent_folder));
-        upButton.setMinWidth(dp(host, 44));
-        upButton.setMinHeight(dp(host, 44));
+        upButton.setMinWidth(dp(host, state.landscapeLayout ? 36 : 44));
+        upButton.setMinHeight(dp(host, state.landscapeLayout ? 36 : 44));
         upButton.setInsetTop(0);
         upButton.setInsetBottom(0);
         upButton.setPadding(0, 0, 0, 0);
@@ -480,7 +494,8 @@ public final class BuiltinFileDialog {
         pathView.setEllipsize(android.text.TextUtils.TruncateAt.START);
         pathView.setTextColor(MaterialColors.getColor(pathView, R.attr.colorOnSurfaceVariant));
         pathView.setTextSize(12f);
-        pathView.setPadding(dp(host, 12), dp(host, 10), dp(host, 12), dp(host, 10));
+        pathView.setPadding(dp(host, 10), dp(host, state.landscapeLayout ? 6 : 10),
+                dp(host, 10), dp(host, state.landscapeLayout ? 6 : 10));
         android.graphics.drawable.GradientDrawable pathBackground =
                 new android.graphics.drawable.GradientDrawable();
         pathBackground.setColor(MaterialColors.getColor(pathView, R.attr.colorSurfaceContainerLow));
@@ -497,7 +512,7 @@ public final class BuiltinFileDialog {
         LinearLayout bar = new LinearLayout(host);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(0, dp(host, 8), 0, 0);
+        bar.setPadding(0, dp(host, state.landscapeLayout ? 3 : 8), 0, 0);
 
         MaterialButton cancelButton = new MaterialButton(host);
         cancelButton.setText(R.string.global_cancel);
@@ -552,7 +567,7 @@ public final class BuiltinFileDialog {
         button.setTextSize(13f);
         button.setInsetTop(0);
         button.setInsetBottom(0);
-        button.setMinHeight(dp(host, 44));
+        button.setMinHeight(dp(host, state.landscapeLayout ? 36 : 44));
         button.setPadding(dp(host, 10), 0, dp(host, 10), 0);
         button.setBackgroundTintList(ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
         button.setTextColor(MaterialColors.getColor(button, R.attr.colorOnSurfaceVariant));
@@ -907,6 +922,7 @@ public final class BuiltinFileDialog {
         int type;
         boolean allowMultiple;
         boolean compactLayout;
+        boolean landscapeLayout;
         List<String> extensions;
         EntryAdapter adapter;
         TextView pathView;
