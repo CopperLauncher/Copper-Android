@@ -836,9 +836,12 @@ public final class BuiltinFileDialog {
             return;
         }
         int count = state.selection.size();
-        state.selectionButton.setText(count == 0
-                ? R.string.file_manager_select
-                : host.getString(R.string.file_manager_select_count, count));
+        if (count == 0) {
+            state.selectionButton.setText(R.string.file_manager_select);
+        } else {
+            state.selectionButton.setText(host.getString(
+                    R.string.file_manager_select_count, count));
+        }
         state.selectionButton.setEnabled(count > 0);
     }
 
