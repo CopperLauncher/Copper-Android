@@ -11,12 +11,15 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Renderer plugin provided by an installed ZalithLauncher2 renderer plugin APK (V2 format).
  * The metadata follows the {@code fclPlugin_V2} format: an integer resource ID whose value
  * is a JSON-encoded RendererConfig. Paths prefixed with {@code **|} are resolved relative
  * to the plugin's native library directory at runtime, making the plugin relocatable.
+ * The optional {@code useGles} setting selects the SDL EGL API; when omitted, it is inferred
+ * from the renderer ID and GL library path.
  *
  * Environment variables are typed: NormalEnv (fixed), SelectableEnv (dropdown),
  * CustomizableEnv (free-form text), ToggleableEnv (on/off). The rendererId is
@@ -30,6 +33,8 @@ public class RendererV2Plugin {
     public final String rendererId;
     public final String glPath;
     public final String eglPath;
+    /** Whether SDL should force an OpenGL ES context for this renderer. */
+    public final boolean useGles;
     public final List<String> dlopenLibPaths;
     public final List<Env> env;
     public final String minMCVer;
@@ -37,6 +42,7 @@ public class RendererV2Plugin {
 
     private RendererV2Plugin(String packageName, String nativeLibraryDir, String displayName,
                              String rendererId, String glPath, String eglPath,
+                             boolean useGles,
                              List<String> dlopenLibPaths, List<Env> env,
                              String minMCVer, String maxMCVer) {
         this.packageName = packageName;
@@ -45,6 +51,7 @@ public class RendererV2Plugin {
         this.rendererId = rendererId;
         this.glPath = glPath;
         this.eglPath = eglPath;
+        this.useGles = useGles;
         this.dlopenLibPaths = dlopenLibPaths;
         this.env = env;
         this.minMCVer = minMCVer;
@@ -81,6 +88,7 @@ public class RendererV2Plugin {
         String rendererId = config.optString("rendererId", info.packageName);
         String glPath = config.optString("rendererGLPath", null);
         String eglPath = config.optString("rendererEGLPath", null);
+        boolean useGles = config.optBoolean("useGles", autoDetectUseGles(rendererId, glPath));
         String minMCVer = config.isNull("minMCVer") ? null : config.optString("minMCVer", null);
         String maxMCVer = config.isNull("maxMCVer") ? null : config.optString("maxMCVer", null);
 
@@ -104,7 +112,17 @@ public class RendererV2Plugin {
         }
 
         return new RendererV2Plugin(info.packageName, info.nativeLibraryDir, displayName,
-                rendererId, glPath, eglPath, dlopenLibPaths, env, minMCVer, maxMCVer);
+                rendererId, glPath, eglPath, useGles, dlopenLibPaths, env, minMCVer, maxMCVer);
+    }
+
+    private static boolean autoDetectUseGles(String rendererId, String glPath) {
+        String id = rendererId == null ? "" : rendererId.toLowerCase(Locale.ROOT);
+        String path = glPath == null ? "" : glPath.toLowerCase(Locale.ROOT);
+        return !(id.contains("zink") || id.contains("mesa") || id.contains("virgl")
+                || id.contains("freedreno") || id.contains("panfrost")
+                || id.contains("desktopgl") || id.contains("desktop")
+                || path.contains("libgl.so") || path.contains("libglxshim.so")
+                || path.contains("libegl_mesa.so"));
     }
 
     /**
