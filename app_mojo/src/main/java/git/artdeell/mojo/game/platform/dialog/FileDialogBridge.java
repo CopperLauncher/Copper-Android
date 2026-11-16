@@ -13,14 +13,13 @@ import androidx.annotation.Nullable;
 
 import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
-import git.mojo.sdl.SDLActivity;
 
 import java.util.concurrent.CountDownLatch;
 import java.lang.ref.WeakReference;
 
 /**
- * Bridges desktop file/message dialogs (LWJGL tinyfd, LWJGL NFD, SDL3 file
- * dialogs) with the launcher UI.
+ * Bridges desktop file/message dialogs (LWJGL tinyfd and LWJGL NFD) with the
+ * launcher UI.
  *
  * File requests are served by the built-in file manager
  * ({@link BuiltinFileDialog}), the Android counterpart of the tinyfd dialogs
@@ -32,7 +31,7 @@ import java.lang.ref.WeakReference;
 public class FileDialogBridge {
     private static final String TAG = "FileDialogBridge";
 
-    /** Must match the dialog types used by git.mojo.sdl.SDLActivity and SDL C code. */
+    /** File-dialog types used by the native tinyfd and NFD bridges. */
     public static final int DIALOG_OPEN_FILE = 0;
     public static final int DIALOG_SAVE_FILE = 1;
     public static final int DIALOG_OPEN_FOLDER = 2;
@@ -187,53 +186,6 @@ public class FileDialogBridge {
     }
 
     // endregion
-
-    // region Async entry point used by SDL file dialogs
-
-    /**
-     * Show a built-in file dialog for an SDL dialog request. The result is
-     * reported through SDLActivity.onNativeFileDialog once ready.
-     *
-     * @param nativeRequestCode request code assigned by SDL native code
-     * @return true when the dialog was shown
-     */
-    public static boolean launchSdlDialog(String[] filterPatterns, boolean allowMultiple,
-                                          int type, String initialPath, int nativeRequestCode) {
-        Activity host = getHostActivity();
-        if (host == null) {
-            Log.w(TAG, "No host activity for SDL file dialog");
-            return false;
-        }
-        Tools.runOnUiThread(() -> {
-            try {
-                BuiltinFileDialog.show(host, type, null, initialPath, filterPatterns,
-                        allowMultiple, paths -> {
-                            String[] result = paths != null ? paths : new String[0];
-                            try {
-                                SDLActivity.onNativeFileDialog(nativeRequestCode, result, -1);
-                            } catch (Throwable t) {
-                                Log.e(TAG, "Failed to report SDL dialog result", t);
-                            }
-                        });
-            } catch (Throwable t) {
-                Log.e(TAG, "Failed to show SDL file dialog", t);
-                reportSdlFailure(nativeRequestCode);
-            }
-        });
-        return true;
-    }
-
-    // endregion
-
-    // Tell SDL that a dialog never produced a result, so a new one can be
-    // requested later. An empty list reads as a cancellation.
-    private static void reportSdlFailure(int nativeRequestCode) {
-        try {
-            SDLActivity.onNativeFileDialog(nativeRequestCode, new String[0], -1);
-        } catch (Throwable t) {
-            Log.e(TAG, "Failed to report SDL dialog failure", t);
-        }
-    }
 
     // Run a file dialog on the UI thread and wait for the result. A null
     // result means the dialog was cancelled.

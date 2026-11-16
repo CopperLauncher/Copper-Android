@@ -7,7 +7,6 @@ import android.view.Surface;
 
 import git.artdeell.mojo.game.GameView;
 import git.artdeell.mojo.game.platform.Platform;
-import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 
 import git.mojo.sdl.SDL;
 import git.mojo.sdl.SDLActivity;
@@ -43,7 +42,6 @@ public class SDLBackend implements PlatformBackend {
         // we need to setup enough SDL for the game to not crash to initialize it later
         SDL.initialize();
         SDL.setContext(activity);
-        SDLActivity.setFileDialogCallback(FileDialogBridge::launchSdlDialog);
         SDL.setupJNI();
         SDLControllerManager.initializeDeviceListener();
     }
