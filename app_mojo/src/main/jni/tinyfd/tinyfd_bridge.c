@@ -493,3 +493,241 @@ Java_org_lwjgl_util_tinyfd_TinyFileDialogs_ntinyfd_1colorChooser(
             (unsigned char const *) (intptr_t) default_rgb,
             (unsigned char *) (intptr_t) result_rgb);
 }
+
+static char *copy_game_string(JNIEnv *env, jstring value) {
+    if (value == NULL) return NULL;
+    const char *utf = (*env)->GetStringUTFChars(env, value, NULL);
+    if (utf == NULL) return NULL;
+    char *copy = strdup(utf);
+    (*env)->ReleaseStringUTFChars(env, value, utf);
+    return copy;
+}
+
+static char **copy_game_patterns(JNIEnv *env, jobjectArray patterns, int *count) {
+    *count = patterns != NULL ? (*env)->GetArrayLength(env, patterns) : 0;
+    if (*count == 0) return NULL;
+    char **copy = calloc((size_t) *count, sizeof(char *));
+    if (copy == NULL) {
+        *count = 0;
+        return NULL;
+    }
+    for (int i = 0; i < *count; i++) {
+        jstring pattern = (jstring) (*env)->GetObjectArrayElement(env, patterns, i);
+        if (pattern != NULL) {
+            copy[i] = copy_game_string(env, pattern);
+            (*env)->DeleteLocalRef(env, pattern);
+            if (copy[i] == NULL && (*env)->ExceptionCheck(env)) {
+                for (int j = 0; j < i; j++) free(copy[j]);
+                free(copy);
+                *count = 0;
+                return NULL;
+            }
+        }
+    }
+    return copy;
+}
+
+static void free_game_patterns(char **patterns, int count) {
+    if (patterns == NULL) return;
+    for (int i = 0; i < count; i++) free(patterns[i]);
+    free(patterns);
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeOpenFileDialog(
+        JNIEnv *env, jclass clazz, jstring title, jstring default_path,
+        jobjectArray patterns, jstring filter_description, jboolean allow_multiple) {
+    (void) clazz;
+    char *title_utf = copy_game_string(env, title);
+    char *default_utf = copy_game_string(env, default_path);
+    char *description_utf = copy_game_string(env, filter_description);
+    int pattern_count = 0;
+    char **pattern_utf = copy_game_patterns(env, patterns, &pattern_count);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        free(title_utf);
+        free(default_utf);
+        free(description_utf);
+        free_game_patterns(pattern_utf, pattern_count);
+        return NULL;
+    }
+    char *result = mojo_tinyfd_openFileDialog(title_utf, default_utf,
+            pattern_count, (char const * const *) pattern_utf, description_utf,
+            allow_multiple ? 1 : 0);
+    jstring game_result = result != NULL ? (*env)->NewStringUTF(env, result) : NULL;
+    free(title_utf);
+    free(default_utf);
+    free(description_utf);
+    free_game_patterns(pattern_utf, pattern_count);
+    return game_result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeSaveFileDialog(
+        JNIEnv *env, jclass clazz, jstring title, jstring default_path,
+        jobjectArray patterns, jstring filter_description) {
+    (void) clazz;
+    char *title_utf = copy_game_string(env, title);
+    char *default_utf = copy_game_string(env, default_path);
+    char *description_utf = copy_game_string(env, filter_description);
+    int pattern_count = 0;
+    char **pattern_utf = copy_game_patterns(env, patterns, &pattern_count);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        free(title_utf);
+        free(default_utf);
+        free(description_utf);
+        free_game_patterns(pattern_utf, pattern_count);
+        return NULL;
+    }
+    char *result = mojo_tinyfd_saveFileDialog(title_utf, default_utf,
+            pattern_count, (char const * const *) pattern_utf, description_utf);
+    jstring game_result = result != NULL ? (*env)->NewStringUTF(env, result) : NULL;
+    free(title_utf);
+    free(default_utf);
+    free(description_utf);
+    free_game_patterns(pattern_utf, pattern_count);
+    return game_result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeSelectFolderDialog(
+        JNIEnv *env, jclass clazz, jstring title, jstring default_path) {
+    (void) clazz;
+    char *title_utf = copy_game_string(env, title);
+    char *default_utf = copy_game_string(env, default_path);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        free(title_utf);
+        free(default_utf);
+        return NULL;
+    }
+    char *result = mojo_tinyfd_selectFolderDialog(title_utf, default_utf);
+    jstring game_result = result != NULL ? (*env)->NewStringUTF(env, result) : NULL;
+    free(title_utf);
+    free(default_utf);
+    return game_result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeColorChooser(
+        JNIEnv *env, jclass clazz, jstring title, jstring default_hex) {
+    (void) clazz;
+    char *title_utf = copy_game_string(env, title);
+    char *default_utf = copy_game_string(env, default_hex);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        free(title_utf);
+        free(default_utf);
+        return NULL;
+    }
+    unsigned char default_rgb[3] = {0, 0, 0};
+    if (default_utf != NULL && default_utf[0] == '#' && strlen(default_utf) == 7) {
+        char *end = NULL;
+        long value = strtol(default_utf + 1, &end, 16);
+        if (end != NULL && *end == '\0') {
+            default_rgb[0] = (unsigned char) ((value >> 16) & 0xFF);
+            default_rgb[1] = (unsigned char) ((value >> 8) & 0xFF);
+            default_rgb[2] = (unsigned char) (value & 0xFF);
+        }
+    }
+    char *result = mojo_tinyfd_colorChooser(title_utf, default_utf, default_rgb, NULL);
+    jstring game_result = result != NULL ? (*env)->NewStringUTF(env, result) : NULL;
+    free(title_utf);
+    free(default_utf);
+    return game_result;
+}
+
+JNIEXPORT jint JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeMessageBox(
+        JNIEnv *env, jclass clazz, jstring title, jstring message, jstring dialog_type,
+        jstring icon_type, jint default_button) {
+    (void) clazz;
+    char *title_utf = copy_game_string(env, title);
+    char *message_utf = copy_game_string(env, message);
+    char *type_utf = copy_game_string(env, dialog_type);
+    char *icon_utf = copy_game_string(env, icon_type);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        free(title_utf);
+        free(message_utf);
+        free(type_utf);
+        free(icon_utf);
+        return 0;
+    }
+    int result = mojo_tinyfd_messageBox(title_utf, message_utf, type_utf, icon_utf, default_button);
+    free(title_utf);
+    free(message_utf);
+    free(type_utf);
+    free(icon_utf);
+    return result;
+}
+
+JNIEXPORT jstring JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeInputBox(
+        JNIEnv *env, jclass clazz, jstring title, jstring message,
+        jstring default_input, jboolean password) {
+    (void) clazz;
+    char *title_utf = copy_game_string(env, title);
+    char *message_utf = copy_game_string(env, message);
+    char *default_utf = copy_game_string(env, default_input);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+        free(title_utf);
+        free(message_utf);
+        free(default_utf);
+        return NULL;
+    }
+    JNIEnv *android_env = dialog_env();
+    jstring result = NULL;
+    if (android_env != NULL) pthread_mutex_lock(&g_bridge_lock);
+    if (android_env != NULL && (*android_env)->PushLocalFrame(android_env, 16) == 0) {
+        result = (*android_env)->CallStaticObjectMethod(android_env, g_dialog_class, m_input_box,
+                export_string(android_env, title_utf),
+                export_string(android_env, message_utf),
+                export_string(android_env, default_utf),
+                password);
+        if ((*android_env)->ExceptionCheck(android_env)) {
+            (*android_env)->ExceptionClear(android_env);
+            result = NULL;
+        } else if (result != NULL) {
+            const char *utf = (*android_env)->GetStringUTFChars(android_env, result, NULL);
+            if (utf != NULL) {
+                jstring copy = (*env)->NewStringUTF(env, utf);
+                (*android_env)->ReleaseStringUTFChars(android_env, result, utf);
+                result = copy;
+            } else {
+                result = NULL;
+            }
+        }
+        (*android_env)->PopLocalFrame(android_env, NULL);
+    }
+    if (android_env != NULL) pthread_mutex_unlock(&g_bridge_lock);
+    free(title_utf);
+    free(message_utf);
+    free(default_utf);
+    return result;
+}
+
+JNIEXPORT void JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeNotifyPopup(
+        JNIEnv *env, jclass clazz, jstring title, jstring message, jstring icon_type) {
+    (void) clazz;
+    char *title_utf = copy_game_string(env, title);
+    char *message_utf = copy_game_string(env, message);
+    char *icon_utf = copy_game_string(env, icon_type);
+    if ((*env)->ExceptionCheck(env)) {
+        (*env)->ExceptionClear(env);
+    } else {
+        mojo_tinyfd_notifyPopup(title_utf, message_utf, icon_utf);
+    }
+    free(title_utf);
+    free(message_utf);
+    free(icon_utf);
+}
+
+JNIEXPORT void JNICALL
+Java_org_lwjgl_util_tinyfd_TinyFileDialogs_bridgeBeep(JNIEnv *env, jclass clazz) {
+    (void) env; (void) clazz;
+    mojo_tinyfd_beep();
+}

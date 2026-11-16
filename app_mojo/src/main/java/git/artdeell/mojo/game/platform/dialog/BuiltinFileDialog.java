@@ -3,6 +3,7 @@ package git.artdeell.mojo.game.platform.dialog;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -10,6 +11,7 @@ import android.os.Build;
 import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -50,6 +52,7 @@ import java.util.concurrent.CountDownLatch;
  */
 public final class BuiltinFileDialog {
     private static final String UP_BUTTON_TEXT = "..";
+    private static final String TAG = "BuiltinFileDialog";
 
     /** Request code for shared storage access, only triggered when the user picks a shared external root. */
     private static final int REQ_SHARED_STORAGE = 0xC0DE;
@@ -69,15 +72,28 @@ public final class BuiltinFileDialog {
         void onResult(@Nullable String[] paths);
     }
 
-    private static boolean isSharedExternal(File directory) {
-        File external = android.os.Environment.getExternalStorageDirectory();
-        if (external == null) return false;
+    private static boolean isSharedExternal(Activity host, File directory) {
         String abs = directory.getAbsolutePath();
-        return abs.equals(external.getAbsolutePath())
-            || abs.startsWith(external.getAbsolutePath() + File.separator);
+        File[] appDirectories = host.getExternalFilesDirs(null);
+        if (appDirectories != null) {
+            for (File appDirectory : appDirectories) {
+                if (appDirectory != null) {
+                    String appPath = appDirectory.getAbsolutePath();
+                    if (abs.equals(appPath) || abs.startsWith(appPath + File.separator)) return false;
+                }
+            }
+        }
+        for (File root : sharedStorageRoots(host)) {
+            String rootPath = root.getAbsolutePath();
+            if (abs.equals(rootPath) || abs.startsWith(rootPath + File.separator)) return true;
+        }
+        return false;
     }
 
     private static boolean sharedStoragePermissionGranted(Activity host) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return android.os.Environment.isExternalStorageManager();
+        }
         return ContextCompat.checkSelfPermission(host, Manifest.permission.READ_EXTERNAL_STORAGE)
                 == PackageManager.PERMISSION_GRANTED
             && ContextCompat.checkSelfPermission(host, Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -88,6 +104,23 @@ public final class BuiltinFileDialog {
         pendingSharedHost = host;
         pendingSharedState = state;
         pendingSharedDir = directory;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent appSettings = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    Uri.parse("package:" + host.getPackageName()));
+            try {
+                host.startActivity(appSettings);
+            } catch (ActivityNotFoundException e) {
+                try {
+                    host.startActivity(new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
+                } catch (ActivityNotFoundException fallbackError) {
+                    fallbackError.addSuppressed(e);
+                    clearPendingSharedStorage();
+                    Log.e(TAG, "Unable to open all-files access settings", fallbackError);
+                    Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
+                }
+            }
+            return;
+        }
         ActivityCompat.requestPermissions(host,
             new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE},
             REQ_SHARED_STORAGE);
@@ -192,6 +225,7 @@ public final class BuiltinFileDialog {
     public static void cancelCurrent() {
         Dialog dialog;
         ResultCallback callback;
+        clearPendingSharedStorage();
         synchronized (BuiltinFileDialog.class) {
             dialog = sCurrentDialog != null ? sCurrentDialog.get() : null;
             callback = sCurrentCallback != null ? sCurrentCallback.get() : null;
@@ -223,12 +257,30 @@ public final class BuiltinFileDialog {
         Activity host = pendingSharedHost;
         State state = pendingSharedState;
         File directory = pendingSharedDir;
+        clearPendingSharedStorage();
+        if (granted && host != null && state != null && directory != null) {
+            navigateTo(host, state, directory);
+        } else if (host != null) {
+            Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public static void onHostResumed(@NonNull Activity host) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || pendingSharedHost != host) return;
+        State state = pendingSharedState;
+        File directory = pendingSharedDir;
+        clearPendingSharedStorage();
+        if (sharedStoragePermissionGranted(host) && state != null && directory != null) {
+            navigateTo(host, state, directory);
+        } else {
+            Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private static void clearPendingSharedStorage() {
         pendingSharedHost = null;
         pendingSharedState = null;
         pendingSharedDir = null;
-        if (granted && host != null && state != null && directory != null) {
-            navigateTo(host, state, directory);
-        }
     }
 
     private static void clearCurrent(Dialog dialog) {
@@ -244,16 +296,31 @@ public final class BuiltinFileDialog {
                                      String defaultPath, List<String> extensions,
                                      boolean allowMultiple, ResultCallback finish) {
         LinearLayout root = new LinearLayout(host);
-        root.setOrientation(LinearLayout.VERTICAL);
+        root.setOrientation(LinearLayout.HORIZONTAL);
         int padding = host.getResources().getDimensionPixelSize(R.dimen.fragment_padding_medium);
         root.setPadding(padding, padding, padding, padding);
+
+        State state = new State();
+        state.type = type;
+        state.extensions = extensions;
+        state.allowMultiple = allowMultiple;
+        state.finish = finish;
+        state.currentDir = initialDirectory(host, defaultPath, type);
+
+        root.addView(buildSidebar(host, state), new LinearLayout.LayoutParams(
+                dp(host, 112), ViewGroup.LayoutParams.MATCH_PARENT));
+
+        LinearLayout content = new LinearLayout(host);
+        content.setOrientation(LinearLayout.VERTICAL);
+        root.addView(content, new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
 
         TextView titleView = new TextView(host);
         titleView.setText(title != null && !title.isEmpty()
                 ? title : defaultDialogTitle(host, type));
         titleView.setTextSize(17f);
         titleView.setTypeface(null, android.graphics.Typeface.BOLD);
-        root.addView(titleView);
+        content.addView(titleView);
 
         ListView listView = new ListView(host);
         listView.setDivider(null);
@@ -262,13 +329,6 @@ public final class BuiltinFileDialog {
         emptyView.setText(R.string.file_manager_empty);
         emptyView.setGravity(Gravity.CENTER);
         emptyView.setPadding(0, dp(host, 32), 0, 0);
-
-        State state = new State();
-        state.type = type;
-        state.extensions = extensions;
-        state.allowMultiple = allowMultiple;
-        state.finish = finish;
-        state.currentDir = initialDirectory(host, defaultPath, type);
 
         EntryAdapter adapter = new EntryAdapter(host, state);
         state.adapter = adapter;
@@ -281,17 +341,50 @@ public final class BuiltinFileDialog {
             return true;
         });
 
-        root.addView(buildPathRow(host, state), 1);
+        content.addView(buildPathRow(host, state));
 
-        root.addView(listView, new LinearLayout.LayoutParams(
+        content.addView(listView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-        root.addView(emptyView);
+        content.addView(emptyView);
         listView.setEmptyView(emptyView);
 
-        root.addView(buildBottomBar(host, state, defaultPath));
+        content.addView(buildBottomBar(host, state, defaultPath));
 
-        navigateTo(host, state, state.currentDir);
+        root.post(() -> navigateTo(host, state, state.currentDir));
         return root;
+    }
+
+    private static View buildSidebar(Activity host, State state) {
+        LinearLayout sidebar = new LinearLayout(host);
+        sidebar.setOrientation(LinearLayout.VERTICAL);
+        sidebar.setPadding(0, 0, dp(host, 8), 0);
+
+        TextView heading = new TextView(host);
+        heading.setText(R.string.file_manager_roots);
+        heading.setTextSize(14f);
+        heading.setTypeface(null, android.graphics.Typeface.BOLD);
+        heading.setPadding(dp(host, 8), dp(host, 8), dp(host, 4), dp(host, 12));
+        sidebar.addView(heading);
+
+        TextView action = new TextView(host);
+        action.setText(defaultDialogTitle(host, state.type));
+        action.setTextSize(12f);
+        action.setPadding(dp(host, 8), 0, dp(host, 4), dp(host, 8));
+        sidebar.addView(action);
+
+        for (File location : rootCandidates(host)) {
+            MaterialButton button = new MaterialButton(host);
+            button.setText(rootName(host, location));
+            button.setTextSize(11f);
+            button.setAllCaps(false);
+            button.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+            button.setMinWidth(0);
+            button.setPadding(dp(host, 8), 0, dp(host, 4), 0);
+            button.setOnClickListener(v -> navigateTo(host, state, location));
+            sidebar.addView(button, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
+        return sidebar;
     }
 
     private static LinearLayout buildPathRow(Activity host, State state) {
@@ -307,8 +400,6 @@ public final class BuiltinFileDialog {
             File parent = state.currentDir.getParentFile();
             if (parent != null) {
                 navigateTo(host, state, parent);
-            } else {
-                openRootsDialog(host, state);
             }
         });
         pathRow.addView(upButton);
@@ -323,12 +414,6 @@ public final class BuiltinFileDialog {
                 0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         state.pathView = pathView;
 
-        TextView rootsButton = new TextView(host);
-        rootsButton.setText(R.string.file_manager_roots);
-        rootsButton.setTextSize(13f);
-        rootsButton.setPadding(dp(host, 10), 0, dp(host, 10), 0);
-        rootsButton.setOnClickListener(v -> openRootsDialog(host, state));
-        pathRow.addView(rootsButton);
         return pathRow;
     }
 
@@ -375,16 +460,19 @@ public final class BuiltinFileDialog {
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         }
 
-        MaterialButton okButton = new MaterialButton(host);
-        okButton.setText(state.type == FileDialogBridge.DIALOG_SAVE_FILE
-                ? R.string.file_manager_save : R.string.file_manager_select);
-        okButton.setOnClickListener(v -> confirm(host, state));
-        bar.addView(okButton, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        if (state.type != FileDialogBridge.DIALOG_BROWSE) {
+            MaterialButton okButton = new MaterialButton(host);
+            okButton.setText(state.type == FileDialogBridge.DIALOG_SAVE_FILE
+                    ? R.string.file_manager_save : R.string.file_manager_select);
+            okButton.setOnClickListener(v -> confirm(host, state));
+            bar.addView(okButton, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
         return bar;
     }
 
     private static void confirm(Activity host, State state) {
+        if (state.type == FileDialogBridge.DIALOG_BROWSE) return;
         if (state.type == FileDialogBridge.DIALOG_OPEN_FOLDER) {
             state.finish.onResult(new String[]{state.currentDir.getAbsolutePath()});
             return;
@@ -541,7 +629,7 @@ public final class BuiltinFileDialog {
 
     private static void navigateTo(Activity host, State state, File directory) {
         if (directory == null || !directory.isDirectory()) return;
-        if (isSharedExternal(directory) && !sharedStoragePermissionGranted(host)) {
+        if (isSharedExternal(host, directory) && !sharedStoragePermissionGranted(host)) {
             requestSharedStorage(host, state, directory);
             return;
         }
@@ -549,13 +637,11 @@ public final class BuiltinFileDialog {
         state.selection.clear();
         List<File> entries = new ArrayList<>();
         File[] listed = directory.listFiles();
-        if (listed == null && isSharedExternal(directory)) {
+        if (listed == null && isSharedExternal(host, directory)) {
             if (Build.VERSION.SDK_INT >= 30 && !android.os.Environment.isExternalStorageManager()) {
-                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                        Uri.parse("package:" + host.getPackageName()));
-                Tools.runOnUiThread(() -> host.startActivity(intent));
+                requestSharedStorage(host, state, directory);
             } else {
-                Toast.makeText(host, "Shared storage access is required", Toast.LENGTH_SHORT).show();
+                Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
             }
             return;
         }
@@ -569,30 +655,38 @@ public final class BuiltinFileDialog {
         state.adapter.setEntries(entries);
     }
 
-    private static void openRootsDialog(Activity host, State state) {
-        List<File> roots = new ArrayList<>(Arrays.asList(rootCandidates(host)));
-        String[] names = new String[roots.size()];
-        for (int i = 0; i < roots.size(); i++) names[i] = rootName(host, roots.get(i));
-        new MaterialAlertDialogBuilder(host)
-                .setTitle(R.string.file_manager_roots)
-                .setItems(names, (d, which) -> {
-                    d.dismiss();
-                    navigateTo(host, state, roots.get(which));
-                })
-                .setNegativeButton(R.string.global_cancel, null)
-                .show();
-    }
-
     private static File[] rootCandidates(Activity host) {
         List<File> roots = new ArrayList<>();
-        File storage = android.os.Environment.getExternalStorageDirectory();
-        if (storage != null && storage.isDirectory()) roots.add(storage);
+        for (File root : sharedStorageRoots(host)) addRoot(roots, root);
         File gameHome = new File(git.artdeell.mojo.Tools.DIR_GAME_HOME);
-        if (gameHome.isDirectory()) roots.add(gameHome);
-        File appExternal = host.getExternalFilesDir(null);
-        if (appExternal != null && appExternal.isDirectory()) roots.add(appExternal);
-        roots.add(host.getFilesDir());
+        addRoot(roots, gameHome);
+        addRoot(roots, host.getExternalFilesDir(null));
+        addRoot(roots, host.getFilesDir());
         return roots.toArray(new File[0]);
+    }
+
+    private static List<File> sharedStorageRoots(Activity host) {
+        LinkedHashSet<File> roots = new LinkedHashSet<>();
+        File primary = android.os.Environment.getExternalStorageDirectory();
+        if (primary != null && primary.isDirectory()) roots.add(primary);
+        File[] appDirectories = host.getExternalFilesDirs(null);
+        if (appDirectories != null) {
+            for (File appDirectory : appDirectories) {
+                File androidDirectory = appDirectory;
+                while (androidDirectory != null && !"Android".equals(androidDirectory.getName())) {
+                    androidDirectory = androidDirectory.getParentFile();
+                }
+                File root = androidDirectory != null ? androidDirectory.getParentFile() : null;
+                if (root != null && root.isDirectory()) roots.add(root);
+            }
+        }
+        return new ArrayList<>(roots);
+    }
+
+    private static void addRoot(List<File> roots, File candidate) {
+        if (candidate != null && candidate.isDirectory() && !roots.contains(candidate)) {
+            roots.add(candidate);
+        }
     }
 
     private static String rootName(Activity host, File root) {
@@ -602,13 +696,15 @@ public final class BuiltinFileDialog {
         if (root.equals(host.getExternalFilesDir(null))) {
             return host.getString(R.string.file_manager_root_app);
         }
+        File primary = android.os.Environment.getExternalStorageDirectory();
+        if (root.equals(primary)) return host.getString(R.string.file_manager_root_shared);
         return root.getName();
     }
 
     private static File initialDirectory(Activity host, String defaultPath, int type) {
         if (defaultPath != null && !defaultPath.isEmpty()) {
             File candidate = new File(defaultPath);
-            if (type == FileDialogBridge.DIALOG_SAVE_FILE && !candidate.isDirectory()) {
+            if (!candidate.isDirectory()) {
                 File parent = candidate.getParentFile();
                 if (parent != null && parent.isDirectory()) return parent;
             }
@@ -652,6 +748,8 @@ public final class BuiltinFileDialog {
                 return host.getString(R.string.file_manager_title_save);
             case FileDialogBridge.DIALOG_OPEN_FOLDER:
                 return host.getString(R.string.file_manager_title_folder);
+            case FileDialogBridge.DIALOG_BROWSE:
+                return host.getString(R.string.file_manager_title_browse);
             default:
                 return host.getString(R.string.file_manager_title_open);
         }
@@ -705,6 +803,10 @@ public final class BuiltinFileDialog {
             File entry = entries.get(position);
             if (entry.isDirectory()) {
                 navigateTo(host, state, entry);
+                return;
+            }
+            if (state.type == FileDialogBridge.DIALOG_BROWSE) {
+                Tools.openPath(host, entry, false);
                 return;
             }
             if (state.type == FileDialogBridge.DIALOG_OPEN_FILE && !state.allowMultiple) {
