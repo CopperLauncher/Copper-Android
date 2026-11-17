@@ -18,6 +18,7 @@ import git.artdeell.mojo.Tools;
 
 import java.util.concurrent.CountDownLatch;
 import java.lang.ref.WeakReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Bridges desktop file/message dialogs (LWJGL tinyfd and LWJGL NFD) with the
@@ -46,6 +47,7 @@ public class FileDialogBridge {
 
     private static WeakReference<Activity> sHostActivity;
     private static boolean sNativeInitialized;
+    private static final AtomicBoolean sDialogRequestActive = new AtomicBoolean();
 
     private FileDialogBridge() {
     }
@@ -232,24 +234,32 @@ public class FileDialogBridge {
             Log.w(TAG, "No host activity for file dialog");
             return null;
         }
+        if (!sDialogRequestActive.compareAndSet(false, true)) {
+            Log.w(TAG, "Ignoring overlapping file-dialog request");
+            return null;
+        }
         Log.i(TAG, "Opening built-in file dialog, type=" + type);
-        String[][] resultBox = new String[1][];
-        CountDownLatch latch = new CountDownLatch(1);
-        Tools.runOnUiThread(() -> {
-            try {
-                if (host.isFinishing()) throw new IllegalStateException("Host activity is finishing");
-                BuiltinFileDialog.show(host, type, title, defaultPath, filterPatterns,
-                        filterDescription, allowMultiple, paths -> {
-                            resultBox[0] = paths;
-                            latch.countDown();
-                        });
-            } catch (Throwable t) {
-                Log.e(TAG, "Failed to show file dialog", t);
-                latch.countDown();
-            }
-        });
-        awaitLatch(latch);
-        return resultBox[0];
+        try {
+            String[][] resultBox = new String[1][];
+            CountDownLatch latch = new CountDownLatch(1);
+            Tools.runOnUiThread(() -> {
+                try {
+                    if (host.isFinishing()) throw new IllegalStateException("Host activity is finishing");
+                    BuiltinFileDialog.show(host, type, title, defaultPath, filterPatterns,
+                            filterDescription, allowMultiple, paths -> {
+                                resultBox[0] = paths;
+                                latch.countDown();
+                            });
+                } catch (Throwable t) {
+                    Log.e(TAG, "Failed to show file dialog", t);
+                    latch.countDown();
+                }
+            });
+            awaitLatch(latch);
+            return resultBox[0];
+        } finally {
+            sDialogRequestActive.set(false);
+        }
     }
 
     private static void awaitLatch(CountDownLatch latch) {

@@ -406,6 +406,7 @@ public class GameRunner {
             File[] result = new File[classpath.length];
             boolean patched = false;
             boolean tinyfdBridgeInjected = false;
+            boolean nfdBridgeInjected = false;
             for (int i = 0; i < classpath.length; i++) {
                 File entry = classpath[i];
                 String name = entry.getName().toLowerCase();
@@ -423,6 +424,7 @@ public class GameRunner {
                 } else if (name.contains("-nfd") || containsClass(entry,
                         "org/lwjgl/util/nfd/NativeFileDialog.class")) {
                     result[i] = patchDialogJar(bridgeDir, entry, bridgeClasses, "org/lwjgl/util/nfd/", DIALOG_BRIDGE_NFD_CLASSES);
+                    nfdBridgeInjected |= result[i] != entry;
                     patched |= result[i] != entry;
                 } else {
                     result[i] = entry;
@@ -431,23 +433,25 @@ public class GameRunner {
             if (!tinyfdBridgeInjected) {
                 File tinyfdJar = writeBridgePackageJar(bridgeDir, "filedialog_tinyfd.jar",
                         bridgeClasses, "org/lwjgl/util/tinyfd/");
-                if (tinyfdJar != null) {
-                    File[] prioritized = new File[result.length + 1];
-                    prioritized[0] = tinyfdJar;
-                    System.arraycopy(result, 0, prioritized, 1, result.length);
-                    result = prioritized;
-                    patched = true;
+                if (tinyfdJar == null) {
+                    throw new IOException("Unable to create the TinyFD bridge jar");
                 }
+                File[] prioritized = new File[result.length + 1];
+                prioritized[0] = tinyfdJar;
+                System.arraycopy(result, 0, prioritized, 1, result.length);
+                result = prioritized;
+                patched = true;
             }
-            if (!containsClassInClasspath(result,
-                    "org/lwjgl/util/tinyfd/TinyFileDialogs.class")) {
-                Log.e("GameRunner", "TinyFD bridge class is not available on the game classpath");
-            }
-            File nfdJar = writeBridgePackageJar(bridgeDir, "filedialog_nfd.jar",
-                    bridgeClasses, "org/lwjgl/util/nfd/");
-            if (nfdJar != null && !containsClassInClasspath(result, "org/lwjgl/util/nfd/NativeFileDialog.class")) {
-                result = java.util.Arrays.copyOf(result, result.length + 1);
-                result[result.length - 1] = nfdJar;
+            if (!nfdBridgeInjected) {
+                File nfdJar = writeBridgePackageJar(bridgeDir, "filedialog_nfd.jar",
+                        bridgeClasses, "org/lwjgl/util/nfd/");
+                if (nfdJar == null) {
+                    throw new IOException("Unable to create the NFD bridge jar");
+                }
+                File[] prioritized = new File[result.length + 1];
+                prioritized[0] = nfdJar;
+                System.arraycopy(result, 0, prioritized, 1, result.length);
+                result = prioritized;
                 patched = true;
             }
             if (patched) {
@@ -462,12 +466,12 @@ public class GameRunner {
 
     /** Bridge classes replacing the NFD binding: the dialog class and its path set. */
     private static final String[] DIALOG_BRIDGE_NFD_CLASSES = {
-            "org/lwjgl/util/nfd/NativeFileDialog",
-            "org/lwjgl/util/nfd/NFDPathSet",
+            "NativeFileDialog",
+            "NFDPathSet",
     };
 
     private static final String[] DIALOG_BRIDGE_TINYFD_CLASSES = {
-            "org/lwjgl/util/tinyfd/TinyFileDialogs",
+            "TinyFileDialogs",
     };
 
     private static boolean containsClass(File archive, String className) {

@@ -83,7 +83,7 @@
     <string name="mcl_setting_renderer_plugin_selected">Selected: %s</string>
     <string name="mcl_setting_renderer_plugin_reset">Reset</string>
     <string name="mcl_setting_renderer_plugin_close">Close</string>
-    <string name="file_manager_roots">Locations</string>
+    <string name="file_manager_roots">Starting folder</string>
     <string name="file_manager_empty">This folder is empty</string>
     <string name="file_manager_loading">Loading…</string>
     <string name="file_manager_unreadable">Cannot read this folder</string>
@@ -96,7 +96,7 @@
     <string name="file_manager_search_hint">Search this folder</string>
     <string name="file_manager_path_title">Go to location</string>
     <string name="file_manager_path_hint">Absolute folder path</string>
-    <string name="file_manager_path_invalid">That folder is unavailable or outside the accessible locations.</string>
+    <string name="file_manager_path_invalid">That folder is unavailable or outside this dialog's starting folder.</string>
     <string name="file_manager_sort_name">Name</string>
     <string name="file_manager_sort_date">Date</string>
     <string name="file_manager_sort_size">Size</string>

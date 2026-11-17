@@ -78,7 +78,7 @@ public final class BuiltinFileDialog {
     private static final String TAG = "BuiltinFileDialog";
     private static final int DIALOG_IMPORT_FILES = 4;
     private static final ExecutorService FILE_OPERATIONS = Executors.newSingleThreadExecutor();
-    private static final ExecutorService DIRECTORY_LISTING = Executors.newSingleThreadExecutor();
+    private static final ExecutorService DIRECTORY_LISTING = Executors.newFixedThreadPool(2);
 
     /** Request code for shared storage access, only triggered when the user picks a shared external root. */
     private static final int REQ_SHARED_STORAGE = 0xC0DE;
@@ -377,6 +377,7 @@ public final class BuiltinFileDialog {
         state.finish = finish;
         state.dialog = dialog;
         state.currentDir = initialDirectory(host, defaultPath, type);
+        state.browseRoot = state.currentDir;
 
         LinearLayout content = (LinearLayout) LayoutInflater.from(host).inflate(
                 R.layout.dialog_builtin_file_manager_content, root, false);
@@ -539,7 +540,7 @@ public final class BuiltinFileDialog {
                 ? LinearLayout.HORIZONTAL : LinearLayout.VERTICAL);
         state.locations.clear();
         state.locationButtons.clear();
-        for (File location : rootCandidates(host)) {
+        for (File location : Collections.singletonList(state.browseRoot)) {
             MaterialButton button = new MaterialButton(host);
             button.setText(rootName(host, location));
             button.setTextSize(state.landscapeLayout ? 11f : 13f);
@@ -990,7 +991,7 @@ public final class BuiltinFileDialog {
         File destination = parent.currentDir;
         show(host, DIALOG_IMPORT_FILES,
                 host.getString(R.string.file_manager_import_title),
-                destination.getAbsolutePath(), null, true, paths -> {
+                parent.browseRoot.getAbsolutePath(), null, true, paths -> {
                     restoreParentDialog(parent);
                     if (paths == null || paths.length == 0) return;
                     List<File> sources = new ArrayList<>();
@@ -1006,7 +1007,7 @@ public final class BuiltinFileDialog {
         List<File> sources = new ArrayList<>(parent.selection);
         show(host, FileDialogBridge.DIALOG_OPEN_FOLDER,
                 host.getString(R.string.file_manager_select_destination),
-                parent.currentDir.getAbsolutePath(), null, false, paths -> {
+                parent.browseRoot.getAbsolutePath(), null, false, paths -> {
                     restoreParentDialog(parent);
                     if (paths == null || paths.length == 0) return;
                     confirmConflicts(host, parent, sources, new File(paths[0]), true);
@@ -1186,8 +1187,8 @@ public final class BuiltinFileDialog {
 
     private static void navigateTo(Activity host, State state, File directory) {
         if (directory == null || !directory.isDirectory()) return;
-        if (!isAccessibleDirectory(host, directory)) {
-            Log.w(TAG, "Blocked navigation outside the file manager locations: "
+        if (!isWithinBrowseRoot(state, directory) || !isAccessibleDirectory(host, directory)) {
+            Log.w(TAG, "Blocked navigation outside the dialog's starting directory: "
                     + directory.getAbsolutePath());
             return;
         }
@@ -1208,7 +1209,8 @@ public final class BuiltinFileDialog {
                 + ". " + host.getString(R.string.file_manager_path_title));
         state.sortButton.setText(sortLabel(state.sortMode));
         File parent = directory.getParentFile();
-        state.upButton.setEnabled(parent != null && isAccessibleDirectory(host, parent));
+        state.upButton.setEnabled(parent != null && isWithinBrowseRoot(state, parent)
+                && isAccessibleDirectory(host, parent));
         updateLocationSelection(state, directory);
         state.emptyView.setText(R.string.file_manager_no_results);
         refreshBottomBar(host, state);
@@ -1229,23 +1231,23 @@ public final class BuiltinFileDialog {
         Log.i(TAG, "Starting directory scan: " + path);
         DIRECTORY_LISTING.execute(() -> {
             File[] listed = null;
-            SecurityException failure = null;
+            RuntimeException failure = null;
             try {
                 listed = directory.listFiles();
-            } catch (SecurityException e) {
+            } catch (RuntimeException e) {
                 failure = e;
             }
             Log.i(TAG, "Directory scan finished: " + path
                     + ", entries=" + (listed != null ? listed.length : "unavailable"));
             File[] result = listed;
-            SecurityException listingFailure = failure;
+            RuntimeException listingFailure = failure;
             host.runOnUiThread(() -> {
                 if (requestId != state.listingRequestId || !directory.equals(state.currentDir)
                     || host.isFinishing() || host.isDestroyed()) {
                     return;
                 }
                 if (listingFailure != null) {
-                    Log.w(TAG, "Permission denied while listing " + path, listingFailure);
+                    Log.w(TAG, "Directory scan failed for " + path, listingFailure);
                     state.emptyView.setText(R.string.file_manager_unreadable);
                     return;
                 }
@@ -1309,6 +1311,18 @@ public final class BuiltinFileDialog {
             }
         }
         return false;
+    }
+
+    private static boolean isWithinBrowseRoot(State state, File directory) {
+        try {
+            String rootPath = state.browseRoot.getCanonicalPath();
+            String directoryPath = directory.getCanonicalPath();
+            return directoryPath.equals(rootPath)
+                    || directoryPath.startsWith(rootPath + File.separator);
+        } catch (IOException e) {
+            Log.w(TAG, "Unable to check dialog navigation boundary", e);
+            return false;
+        }
     }
 
     private static List<File> sharedStorageRoots(Activity host) {
@@ -1453,6 +1467,7 @@ public final class BuiltinFileDialog {
             dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 File target = new File(input.getText().toString().trim());
                 if (!target.isAbsolute() || !target.isDirectory()
+                        || !isWithinBrowseRoot(state, target)
                         || !isAccessibleDirectory(host, target)) {
                     Toast.makeText(host, R.string.file_manager_path_invalid,
                             Toast.LENGTH_SHORT).show();
@@ -1480,7 +1495,7 @@ public final class BuiltinFileDialog {
         for (File root : rootCandidates(host)) {
             if (root.isDirectory()) return root;
         }
-        return new File("/");
+        return host.getFilesDir();
     }
 
     private static String defaultSaveName(Activity host, String defaultPath) {
@@ -1581,6 +1596,7 @@ public final class BuiltinFileDialog {
         ResultCallback finish;
         Dialog dialog;
         File currentDir = new File("/");
+        File browseRoot = new File("/");
         final LinkedHashSet<File> selection = new LinkedHashSet<>();
         boolean manageMode;
         boolean pendingUseFolder;
