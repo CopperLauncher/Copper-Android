@@ -18,6 +18,7 @@
         android:contentDescription="@null" />
 
     <LinearLayout
+        android:id="@+id/file_manager_entry_text"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
@@ -41,6 +42,26 @@
             android:maxLines="1"
             android:textSize="11sp" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/file_manager_size"
+        android:layout_width="76dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:gravity="end|center_vertical"
+        android:maxLines="1"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/file_manager_modified"
+        android:layout_width="128dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:gravity="end|center_vertical"
+        android:maxLines="1"
+        android:textSize="12sp"
+        android:visibility="gone" />
 
     <ImageView
         android:id="@id/file_manager_check"

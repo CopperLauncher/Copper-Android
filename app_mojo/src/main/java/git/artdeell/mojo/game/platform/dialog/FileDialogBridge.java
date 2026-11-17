@@ -100,19 +100,30 @@ public class FileDialogBridge {
     public static String openFileDialog(String title, String defaultPath,
                                         String[] filterPatterns, String singleFilterDescription,
                                         boolean allowMultiple) {
-        String[] paths = awaitDialog(DIALOG_OPEN_FILE, title, defaultPath,
-                filterPatterns, allowMultiple);
-        Log.i(TAG, "File dialog completed, selected="
-                + (paths != null ? paths.length : 0));
+        String[] paths = openFileDialogPaths(title, defaultPath, filterPatterns,
+                singleFilterDescription, allowMultiple);
         if (paths == null || paths.length == 0) return null;
         return joinPaths(paths);
+    }
+
+    /** Returns selected paths individually for NFD, which has no path delimiter. */
+    @Nullable
+    public static String[] openFileDialogPaths(String title, String defaultPath,
+                                               String[] filterPatterns,
+                                               String singleFilterDescription,
+                                               boolean allowMultiple) {
+        String[] paths = awaitDialog(DIALOG_OPEN_FILE, title, defaultPath,
+                filterPatterns, singleFilterDescription, allowMultiple);
+        Log.i(TAG, "File dialog completed, selected="
+                + (paths != null ? paths.length : 0));
+        return paths;
     }
 
     // Returns the path the game should write to, or null when cancelled.
     public static String saveFileDialog(String title, String defaultPath,
                                         String[] filterPatterns, String singleFilterDescription) {
         String[] paths = awaitDialog(DIALOG_SAVE_FILE, title, defaultPath,
-                filterPatterns, false);
+                filterPatterns, singleFilterDescription, false);
         Log.i(TAG, "Save dialog completed, selected="
                 + (paths != null ? paths.length : 0));
         if (paths == null || paths.length == 0) return null;
@@ -209,6 +220,13 @@ public class FileDialogBridge {
     @Nullable
     private static String[] awaitDialog(int type, String title, String defaultPath,
                                         String[] filterPatterns, boolean allowMultiple) {
+        return awaitDialog(type, title, defaultPath, filterPatterns, null, allowMultiple);
+    }
+
+    @Nullable
+    private static String[] awaitDialog(int type, String title, String defaultPath,
+                                        String[] filterPatterns, String filterDescription,
+                                        boolean allowMultiple) {
         Activity host = getHostActivity();
         if (host == null) {
             Log.w(TAG, "No host activity for file dialog");
@@ -221,7 +239,7 @@ public class FileDialogBridge {
             try {
                 if (host.isFinishing()) throw new IllegalStateException("Host activity is finishing");
                 BuiltinFileDialog.show(host, type, title, defaultPath, filterPatterns,
-                        allowMultiple, paths -> {
+                        filterDescription, allowMultiple, paths -> {
                             resultBox[0] = paths;
                             latch.countDown();
                         });

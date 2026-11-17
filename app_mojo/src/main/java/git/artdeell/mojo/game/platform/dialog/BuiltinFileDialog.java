@@ -17,9 +17,11 @@ import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -28,9 +30,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.PopupMenu;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.os.SystemClock;
+import android.view.inputmethod.EditorInfo;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -50,9 +55,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -71,6 +78,7 @@ public final class BuiltinFileDialog {
     private static final String TAG = "BuiltinFileDialog";
     private static final int DIALOG_IMPORT_FILES = 4;
     private static final ExecutorService FILE_OPERATIONS = Executors.newSingleThreadExecutor();
+    private static final ExecutorService DIRECTORY_LISTING = Executors.newSingleThreadExecutor();
 
     /** Request code for shared storage access, only triggered when the user picks a shared external root. */
     private static final int REQ_SHARED_STORAGE = 0xC0DE;
@@ -157,6 +165,13 @@ public final class BuiltinFileDialog {
     public static void show(@NonNull Activity host, int type, @Nullable String title,
                             @Nullable String defaultPath, @Nullable String[] filterPatterns,
                             boolean allowMultiple, @NonNull ResultCallback callback) {
+        show(host, type, title, defaultPath, filterPatterns, null, allowMultiple, callback);
+    }
+
+    public static void show(@NonNull Activity host, int type, @Nullable String title,
+                            @Nullable String defaultPath, @Nullable String[] filterPatterns,
+                            @Nullable String filterDescription, boolean allowMultiple,
+                            @NonNull ResultCallback callback) {
         if (type == FileDialogBridge.DIALOG_SAVE_FILE) allowMultiple = false;
         List<String> patterns = parseFilterPatterns(filterPatterns);
         Dialog dialog = new Dialog(host);
@@ -170,7 +185,7 @@ public final class BuiltinFileDialog {
             }
         });
         View content = buildContent(dialog, host, type, title, defaultPath, patterns,
-                allowMultiple, paths -> {
+                filterDescription, allowMultiple, paths -> {
                     delivered[0] = true;
                     clearCurrent(dialog);
                     dialog.dismiss();
@@ -187,12 +202,13 @@ public final class BuiltinFileDialog {
         if (window != null) {
             boolean landscape = host.getResources().getConfiguration().orientation
                     == Configuration.ORIENTATION_LANDSCAPE;
-            int width = Math.min(dp(host, 960),
+            int width = Math.min(dp(host, landscape ? 1200 : 960),
                     host.getResources().getDisplayMetrics().widthPixels - dp(host, 16));
             int screenHeight = host.getResources().getDisplayMetrics().heightPixels;
             int height = landscape ? screenHeight - dp(host, 16)
                     : Math.min(dp(host, 900), Math.round(screenHeight * 0.9f));
             window.setLayout(width, height);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
     }
 
@@ -344,8 +360,10 @@ public final class BuiltinFileDialog {
 
     private static View buildContent(Dialog dialog, Activity host, int type, String title,
                                      String defaultPath, List<String> patterns,
+                                     String filterDescription,
                                      boolean allowMultiple, ResultCallback finish) {
         LinearLayout root = new LinearLayout(host);
+        root.setFocusableInTouchMode(true);
         State state = new State();
         state.landscapeLayout = host.getResources().getConfiguration().orientation
                 == Configuration.ORIENTATION_LANDSCAPE;
@@ -413,8 +431,22 @@ public final class BuiltinFileDialog {
                     hintView, R.attr.colorOnSurfaceVariant));
             hintView.setVisibility(View.VISIBLE);
         }
+        if (filterDescription != null && !filterDescription.trim().isEmpty()) {
+            if (hintView.getVisibility() == View.VISIBLE) {
+                hintView.append(" · " + filterDescription.trim());
+            } else {
+                hintView.setText(filterDescription.trim());
+                hintView.setTextColor(MaterialColors.getColor(
+                        hintView, R.attr.colorOnSurfaceVariant));
+                hintView.setVisibility(View.VISIBLE);
+            }
+        }
 
         ListView listView = content.findViewById(R.id.file_manager_list);
+        View columnsHeader = content.findViewById(R.id.file_manager_columns_header);
+        columnsHeader.setVisibility(state.landscapeLayout ? View.VISIBLE : View.GONE);
+        columnsHeader.setBackgroundColor(MaterialColors.getColor(
+                columnsHeader, R.attr.colorSurfaceContainerLow));
         listView.setDivider(new android.graphics.drawable.ColorDrawable(
                 MaterialColors.getColor(listView, R.attr.colorOutlineVariant)));
         listView.setDividerHeight(dp(host, 1));
@@ -448,6 +480,36 @@ public final class BuiltinFileDialog {
         upButton.setIconSize(dp(host, 20));
         state.upButton = upButton;
         state.pathView = content.findViewById(R.id.file_manager_path);
+        state.sortButton = content.findViewById(R.id.file_manager_sort);
+        state.searchInput = content.findViewById(R.id.file_manager_search);
+        state.pathView.setOnClickListener(v -> promptPath(host, state));
+        state.searchInput.setOnEditorActionListener((view, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                android.view.inputmethod.InputMethodManager inputMethodManager =
+                        (android.view.inputmethod.InputMethodManager)
+                                host.getSystemService(Activity.INPUT_METHOD_SERVICE);
+                if (inputMethodManager != null) {
+                    inputMethodManager.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                }
+                return true;
+            }
+            return false;
+        });
+        state.searchInput.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                state.searchQuery = s.toString().trim();
+                state.focusedEntry = null;
+                state.lastClickedFile = null;
+                state.selection.clear();
+                adapter.setSearchQuery(state.searchQuery);
+                updateSelectionButton(host, state);
+                updateEmptyMessage(state);
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+        state.sortButton.setText(sortLabel(state.sortMode));
+        state.sortButton.setOnClickListener(v -> showSortMenu(host, state));
         upButton.setOnClickListener(v -> {
             File parent = state.currentDir.getParentFile();
             if (parent != null) navigateTo(host, state, parent);
@@ -455,6 +517,8 @@ public final class BuiltinFileDialog {
 
         content.addView(buildBottomBar(host, state, defaultPath));
 
+        state.searchInput.clearFocus();
+        root.requestFocus();
         root.post(() -> navigateTo(host, state, state.currentDir));
         return root;
     }
@@ -705,18 +769,20 @@ public final class BuiltinFileDialog {
     private static void confirm(Activity host, State state) {
         if (state.type == FileDialogBridge.DIALOG_BROWSE) return;
         if (state.type == FileDialogBridge.DIALOG_OPEN_FOLDER) {
-            if (isSharedExternal(host, state.currentDir)
+            File selectedDirectory = state.focusedEntry != null
+                    && state.focusedEntry.isDirectory() ? state.focusedEntry : state.currentDir;
+            if (isSharedExternal(host, selectedDirectory)
                     && !sharedStoragePermissionGranted(host)) {
                 state.pendingUseFolder = true;
-                requestSharedStorage(host, state, state.currentDir);
+                requestSharedStorage(host, state, selectedDirectory);
                 return;
             }
-            if (!state.currentDir.canRead() || !state.currentDir.canWrite()) {
+            if (!selectedDirectory.canRead() || !selectedDirectory.canWrite()) {
                 Toast.makeText(host, R.string.file_manager_folder_access_failed,
                         Toast.LENGTH_LONG).show();
                 return;
             }
-            state.finish.onResult(new String[]{state.currentDir.getAbsolutePath()});
+            state.finish.onResult(new String[]{selectedDirectory.getAbsolutePath()});
             return;
         }
         if (state.type == FileDialogBridge.DIALOG_SAVE_FILE) {
@@ -1105,12 +1171,21 @@ public final class BuiltinFileDialog {
             return;
         }
         state.currentDir = directory;
+        state.directoryEntryCount = -1;
+        state.lastClickedFile = null;
+        state.focusedEntry = null;
+        if (!state.searchQuery.isEmpty()) {
+            state.searchInput.setText("");
+        }
         state.selection.clear();
         if (state.type == FileDialogBridge.DIALOG_BROWSE && state.manageMode) {
             state.manageMode = false;
         }
         updateSelectionButton(host, state);
         state.pathView.setText(directory.getAbsolutePath());
+        state.pathView.setContentDescription(directory.getAbsolutePath()
+                + ". " + host.getString(R.string.file_manager_path_title));
+        state.sortButton.setText(sortLabel(state.sortMode));
         File parent = directory.getParentFile();
         state.upButton.setEnabled(parent != null && isAccessibleDirectory(host, parent));
         updateLocationSelection(state, directory);
@@ -1120,64 +1195,66 @@ public final class BuiltinFileDialog {
     }
 
     private static void refreshCurrentDirectory(Activity host, State state) {
-        state.emptyView.setText(R.string.file_manager_no_results);
-        String path = state.currentDir.getAbsolutePath();
-        if (isSharedExternal(host, state.currentDir) && !sharedStoragePermissionGranted(host)) {
+        File directory = state.currentDir;
+        String path = directory.getAbsolutePath();
+        long requestId = ++state.listingRequestId;
+        state.emptyView.setText(R.string.file_manager_loading);
+        state.adapter.setEntries(Collections.emptyList());
+        if (isSharedExternal(host, directory) && !sharedStoragePermissionGranted(host)) {
             state.emptyView.setText(R.string.file_manager_storage_permission);
-            state.adapter.setEntries(Collections.emptyList());
-            requestSharedStorage(host, state, state.currentDir);
+            requestSharedStorage(host, state, directory);
             return;
         }
-        File[] listed;
-        try {
-            listed = state.currentDir.listFiles();
-        } catch (SecurityException e) {
-            Log.w(TAG, "Permission denied while listing " + path, e);
-            state.emptyView.setText(R.string.file_manager_unreadable);
-            state.adapter.setEntries(Collections.emptyList());
-            return;
-        }
-        if (listed == null && isSharedExternal(host, state.currentDir)) {
-            if (Build.VERSION.SDK_INT >= 30 && !android.os.Environment.isExternalStorageManager()) {
-                state.emptyView.setText(R.string.file_manager_storage_permission);
-                state.adapter.setEntries(Collections.emptyList());
-                requestSharedStorage(host, state, state.currentDir);
-            } else {
-                state.emptyView.setText(R.string.file_manager_unreadable);
-                state.adapter.setEntries(Collections.emptyList());
-                Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
+        DIRECTORY_LISTING.execute(() -> {
+            File[] listed = null;
+            SecurityException failure = null;
+            try {
+                listed = directory.listFiles();
+            } catch (SecurityException e) {
+                failure = e;
             }
-            return;
-        }
-        if (listed == null) {
-            Log.w(TAG, "listFiles returned null for " + path);
-            state.emptyView.setText(R.string.file_manager_unreadable);
-            state.adapter.setEntries(Collections.emptyList());
-            return;
-        }
-        try {
-            List<File> entries = new ArrayList<>(Arrays.asList(listed));
-            Collections.sort(entries, (a, b) -> {
-                if (a.isDirectory() != b.isDirectory()) return a.isDirectory() ? -1 : 1;
-                return a.getName().compareToIgnoreCase(b.getName());
+            File[] result = listed;
+            SecurityException listingFailure = failure;
+            host.runOnUiThread(() -> {
+                if (requestId != state.listingRequestId || !directory.equals(state.currentDir)
+                        || host.isFinishing() || host.isDestroyed()
+                        || state.dialog == null || !state.dialog.isShowing()) {
+                    return;
+                }
+                if (listingFailure != null) {
+                    Log.w(TAG, "Permission denied while listing " + path, listingFailure);
+                    state.emptyView.setText(R.string.file_manager_unreadable);
+                    return;
+                }
+                if (result == null && isSharedExternal(host, directory)) {
+                    if (Build.VERSION.SDK_INT >= 30
+                            && !android.os.Environment.isExternalStorageManager()) {
+                        state.emptyView.setText(R.string.file_manager_storage_permission);
+                        requestSharedStorage(host, state, directory);
+                    } else {
+                        state.emptyView.setText(R.string.file_manager_unreadable);
+                        Toast.makeText(host, R.string.file_manager_storage_permission,
+                                Toast.LENGTH_LONG).show();
+                    }
+                    return;
+                }
+                if (result == null) {
+                    Log.w(TAG, "listFiles returned null for " + path);
+                    state.emptyView.setText(R.string.file_manager_unreadable);
+                    return;
+                }
+                try {
+                    state.adapter.setEntries(Arrays.asList(result));
+                    updateEmptyMessage(state);
+                    Log.i(TAG, "Listed " + result.length + " entries at " + path
+                            + "; visible entries=" + state.adapter.getCount());
+                } catch (SecurityException e) {
+                    Log.w(TAG, "Permission denied while reading entries in " + path, e);
+                    state.emptyView.setText(R.string.file_manager_unreadable);
+                    state.adapter.setEntries(Collections.emptyList());
+                }
             });
-            state.adapter.setEntries(entries);
-            if (state.adapter.getCount() > 0) {
-                state.emptyView.setText(R.string.file_manager_no_results);
-            } else if (listed.length == 0) {
-                state.emptyView.setText(R.string.file_manager_empty);
-            } else if (state.type == FileDialogBridge.DIALOG_OPEN_FOLDER) {
-                state.emptyView.setText(R.string.file_manager_no_folders);
-            } else {
-                state.emptyView.setText(R.string.file_manager_no_results);
-            }
-            Log.i(TAG, "Listed " + listed.length + " entries at " + path
-                    + "; visible entries=" + state.adapter.getCount());
-        } catch (SecurityException e) {
-            Log.w(TAG, "Permission denied while reading entries in " + path, e);
-            state.emptyView.setText(R.string.file_manager_unreadable);
-            state.adapter.setEntries(Collections.emptyList());
-        }
+        });
     }
 
     private static File[] rootCandidates(Activity host) {
@@ -1283,6 +1360,79 @@ public final class BuiltinFileDialog {
             state.selectionButton.setText(host.getString(R.string.file_manager_open_count, count));
         }
         state.selectionButton.setEnabled(count > 0);
+    }
+
+    private static void updateEmptyMessage(State state) {
+        if (state.adapter.getCount() > 0) {
+            state.emptyView.setText(R.string.file_manager_no_results);
+        } else if (state.searchQuery.length() > 0
+                || (state.type != FileDialogBridge.DIALOG_OPEN_FOLDER
+                && !state.filterPatterns.isEmpty())) {
+            state.emptyView.setText(R.string.file_manager_no_results);
+        } else if (state.directoryEntryCount == 0) {
+            state.emptyView.setText(R.string.file_manager_empty);
+        } else if (state.type == FileDialogBridge.DIALOG_OPEN_FOLDER) {
+            state.emptyView.setText(R.string.file_manager_no_folders);
+        } else {
+            state.emptyView.setText(R.string.file_manager_no_results);
+        }
+    }
+
+    private static void showSortMenu(Activity host, State state) {
+        PopupMenu menu = new PopupMenu(host, state.sortButton);
+        int[] labels = {R.string.file_manager_sort_name, R.string.file_manager_sort_date,
+                R.string.file_manager_sort_size};
+        for (int i = 0; i < labels.length; i++) {
+            MenuItem item = menu.getMenu().add(0, i, i, labels[i]);
+            item.setCheckable(true);
+            item.setChecked(state.sortMode == i);
+        }
+        menu.setOnMenuItemClickListener(item -> {
+            state.sortMode = item.getItemId();
+            state.sortButton.setText(sortLabel(state.sortMode));
+            state.adapter.setSortMode(state.sortMode);
+            return true;
+        });
+        menu.show();
+    }
+
+    private static int sortLabel(int mode) {
+        switch (mode) {
+            case 1:
+                return R.string.file_manager_sort_date;
+            case 2:
+                return R.string.file_manager_sort_size;
+            default:
+                return R.string.file_manager_sort_name;
+        }
+    }
+
+    private static void promptPath(Activity host, State state) {
+        EditText input = new EditText(host);
+        input.setSingleLine(true);
+        input.setHint(R.string.file_manager_path_hint);
+        input.setText(state.currentDir.getAbsolutePath());
+        input.setSelection(input.length());
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(host)
+                .setTitle(R.string.file_manager_path_title)
+                .setView(input)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNegativeButton(R.string.global_cancel, null);
+        androidx.appcompat.app.AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(ignored -> {
+            dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                File target = new File(input.getText().toString().trim());
+                if (!target.isAbsolute() || !target.isDirectory()
+                        || !isAccessibleDirectory(host, target)) {
+                    Toast.makeText(host, R.string.file_manager_path_invalid,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                dialog.dismiss();
+                navigateTo(host, state, target);
+            });
+        });
+        dialog.show();
     }
 
     private static File initialDirectory(Activity host, String defaultPath, int type) {
@@ -1404,9 +1554,18 @@ public final class BuiltinFileDialog {
         final LinkedHashSet<File> selection = new LinkedHashSet<>();
         boolean manageMode;
         boolean pendingUseFolder;
+        long listingRequestId;
+        int sortMode;
+        int directoryEntryCount = -1;
         String defaultPath;
+        String searchQuery = "";
         EditText fileNameInput;
+        EditText searchInput;
+        MaterialButton sortButton;
         String fileName;
+        File lastClickedFile;
+        long lastClickTime;
+        File focusedEntry;
     }
 
     private static class EntryAdapter extends BaseAdapter {
@@ -1416,6 +1575,7 @@ public final class BuiltinFileDialog {
 
         private final Activity host;
         private final State state;
+        private List<File> allEntries = new ArrayList<>();
         private List<File> entries = new ArrayList<>();
 
         EntryAdapter(Activity host, State state) {
@@ -1424,14 +1584,50 @@ public final class BuiltinFileDialog {
         }
 
         void setEntries(List<File> listed) {
-            entries = new ArrayList<>(listed.size());
-            for (File entry : listed) {
+            allEntries = new ArrayList<>(listed);
+            state.directoryEntryCount = listed.size();
+            updateEntries();
+        }
+
+        void setSearchQuery(String query) {
+            state.searchQuery = query;
+            updateEntries();
+        }
+
+        void setSortMode(int sortMode) {
+            state.sortMode = sortMode;
+            updateEntries();
+        }
+
+        private void updateEntries() {
+            entries = new ArrayList<>(allEntries.size());
+            String query = state.searchQuery.toLowerCase(Locale.ROOT);
+            for (File entry : allEntries) {
                 if (entry.isDirectory()
                         || (state.type != FileDialogBridge.DIALOG_OPEN_FOLDER
                         && matchesFileFilter(entry.getName(), state.filterPatterns))) {
-                    entries.add(entry);
+                    if (query.isEmpty()
+                            || entry.getName().toLowerCase(Locale.ROOT)
+                                    .contains(query)) {
+                        entries.add(entry);
+                    }
                 }
             }
+            Collections.sort(entries, (a, b) -> {
+                if (a.isDirectory() != b.isDirectory()) return a.isDirectory() ? -1 : 1;
+                int comparison;
+                if (state.sortMode == 1) {
+                    comparison = Long.compare(b.lastModified(), a.lastModified());
+                } else if (state.sortMode == 2 && !a.isDirectory()) {
+                    comparison = Long.compare(b.length(), a.length());
+                } else {
+                    comparison = 0;
+                }
+                if (comparison == 0) {
+                    comparison = a.getName().compareToIgnoreCase(b.getName());
+                }
+                return comparison;
+            });
             notifyDataSetChanged();
         }
 
@@ -1442,7 +1638,12 @@ public final class BuiltinFileDialog {
                     toggleSelection(entry);
                     return;
                 }
-                navigateTo(host, state, entry);
+                if (isDoubleClick(entry)) {
+                    navigateTo(host, state, entry);
+                } else {
+                    state.focusedEntry = entry;
+                    notifyDataSetChanged();
+                }
                 return;
             }
             if (state.type == FileDialogBridge.DIALOG_SAVE_FILE) {
@@ -1458,24 +1659,44 @@ public final class BuiltinFileDialog {
                     toggleSelection(entry);
                     return;
                 }
-                Tools.openPath(host, entry, false);
+                if (isDoubleClick(entry)) {
+                    Tools.openPath(host, entry, false);
+                } else {
+                    state.focusedEntry = entry;
+                    notifyDataSetChanged();
+                }
                 return;
             }
             if (state.type == FileDialogBridge.DIALOG_OPEN_FILE
                     || state.type == DIALOG_IMPORT_FILES) {
+                if (isDoubleClick(entry)) {
+                    state.selection.clear();
+                    state.selection.add(entry);
+                    confirm(host, state);
+                    return;
+                }
                 toggleSelection(entry);
             }
+        }
+
+        private boolean isDoubleClick(File entry) {
+            long now = SystemClock.elapsedRealtime();
+            boolean doubleClick = entry.equals(state.lastClickedFile)
+                    && now - state.lastClickTime < 450;
+            state.lastClickedFile = doubleClick ? null : entry;
+            state.lastClickTime = doubleClick ? 0 : now;
+            return doubleClick;
         }
 
         void toggleSelection(File entry) {
             if (!state.allowMultiple && (state.type == FileDialogBridge.DIALOG_OPEN_FILE
                     || state.type == DIALOG_IMPORT_FILES)) {
-                boolean wasSelected = state.selection.contains(entry);
                 state.selection.clear();
-                if (!wasSelected) state.selection.add(entry);
+                state.selection.add(entry);
             } else if (!state.selection.remove(entry)) {
                 state.selection.add(entry);
             }
+            state.focusedEntry = null;
             notifyDataSetChanged();
             updateSelectionButton(host, state);
         }
@@ -1512,17 +1733,31 @@ public final class BuiltinFileDialog {
 
             TextView nameView = row.findViewById(R.id.file_manager_name);
             TextView detailView = row.findViewById(R.id.file_manager_detail);
+            TextView sizeView = row.findViewById(R.id.file_manager_size);
+            TextView modifiedView = row.findViewById(R.id.file_manager_modified);
             ImageView iconView = row.findViewById(R.id.file_manager_icon);
             ImageView selectionView = row.findViewById(R.id.file_manager_check);
             File entry = getItem(position);
             nameView.setText(entry.getName());
-            boolean selected = state.selection.contains(entry);
+            boolean selected = state.selection.contains(entry) || entry.equals(state.focusedEntry);
+            DateFormat dateFormat = DateFormat.getDateTimeInstance(
+                    DateFormat.SHORT, DateFormat.SHORT);
+            sizeView.setVisibility(state.landscapeLayout ? View.VISIBLE : View.GONE);
+            modifiedView.setVisibility(state.landscapeLayout ? View.VISIBLE : View.GONE);
+            detailView.setVisibility(state.landscapeLayout ? View.GONE : View.VISIBLE);
             if (entry.isDirectory()) {
                 detailView.setText(R.string.file_manager_folder_detail);
+                sizeView.setText("");
             } else {
                 detailView.setText(host.getString(
                         R.string.file_manager_file_detail, readableSize(entry.length())));
+                sizeView.setText(readableSize(entry.length()));
             }
+            modifiedView.setText(dateFormat.format(new Date(entry.lastModified())));
+            sizeView.setTextColor(MaterialColors.getColor(sizeView, selected
+                    ? R.attr.colorOnPrimaryContainer : R.attr.colorOnSurfaceVariant));
+            modifiedView.setTextColor(MaterialColors.getColor(modifiedView, selected
+                    ? R.attr.colorOnPrimaryContainer : R.attr.colorOnSurfaceVariant));
             nameView.setTextColor(MaterialColors.getColor(nameView, selected
                     ? R.attr.colorOnPrimaryContainer : R.attr.colorOnSurface));
             detailView.setTextColor(MaterialColors.getColor(detailView, selected

@@ -35,6 +35,8 @@ public class TinyFileDialogs {
         globalInts.put(tinyfd_silent, 1);
         globalInts.put(tinyfd_allowCursesDialogs, 0);
         globalInts.put(tinyfd_forceConsole, 0);
+        globalInts.put(tinyfd_assumeGraphicDisplay, 1);
+        globalInts.put(tinyfd_winUtf8, 1);
         try {
             System.loadLibrary("mojort");
         } catch (Throwable t) {
@@ -231,7 +233,7 @@ public class TinyFileDialogs {
             g = defaultRGB.get(position + 1) & 0xFF;
             b = defaultRGB.get(position + 2) & 0xFF;
         }
-        String initialHex = parsed || (defaultHex != null && !defaultHex.isEmpty())
+        String initialHex = parsed
                 ? defaultHex : String.format("#%02X%02X%02X", r, g, b);
         String result = bridgeColorChooser(title, initialHex);
         if (result == null) return null;
