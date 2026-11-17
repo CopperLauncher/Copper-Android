@@ -19,7 +19,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -27,6 +26,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,6 +44,10 @@ import git.artdeell.mojo.R;
 import git.artdeell.mojo.Tools;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,6 +55,8 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Built-in file manager dialog, the Android counterpart of the tinyfd dialogs
@@ -60,6 +66,7 @@ import java.util.concurrent.CountDownLatch;
  */
 public final class BuiltinFileDialog {
     private static final String TAG = "BuiltinFileDialog";
+    private static final ExecutorService FILE_OPERATIONS = Executors.newSingleThreadExecutor();
 
     /** Request code for shared storage access, only triggered when the user picks a shared external root. */
     private static final int REQ_SHARED_STORAGE = 0xC0DE;
@@ -170,9 +177,12 @@ public final class BuiltinFileDialog {
         if (window != null) {
             boolean landscape = host.getResources().getConfiguration().orientation
                     == Configuration.ORIENTATION_LANDSCAPE;
-            int height = landscape ? WindowManager.LayoutParams.MATCH_PARENT
-                    : Math.round(host.getResources().getDisplayMetrics().heightPixels * 0.84f);
-            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, height);
+            int width = Math.min(dp(host, 960),
+                    host.getResources().getDisplayMetrics().widthPixels - dp(host, 16));
+            int screenHeight = host.getResources().getDisplayMetrics().heightPixels;
+            int height = landscape ? screenHeight - dp(host, 16)
+                    : Math.min(dp(host, 900), Math.round(screenHeight * 0.9f));
+            window.setLayout(width, height);
         }
     }
 
@@ -235,20 +245,25 @@ public final class BuiltinFileDialog {
      * result. Used to release game threads waiting on a dead activity.
      */
     public static void cancelCurrent() {
-        Dialog dialog;
-        ResultCallback callback;
         clearPendingSharedStorage();
-        synchronized (BuiltinFileDialog.class) {
-            dialog = sCurrentDialog != null ? sCurrentDialog.get() : null;
-            callback = sCurrentCallback != null ? sCurrentCallback.get() : null;
-            sCurrentDialog = null;
-            sCurrentCallback = null;
+        while (true) {
+            Dialog dialog;
+            ResultCallback callback;
+            synchronized (BuiltinFileDialog.class) {
+                dialog = sCurrentDialog != null ? sCurrentDialog.get() : null;
+                callback = sCurrentCallback != null ? sCurrentCallback.get() : null;
+                sCurrentDialog = null;
+                sCurrentCallback = null;
+            }
+            if (dialog != null) {
+                dialog.setOnDismissListener(null);
+                dialog.dismiss();
+            }
+            if (callback != null) callback.onResult(null);
+            synchronized (BuiltinFileDialog.class) {
+                if (sCurrentDialog == null) return;
+            }
         }
-        if (dialog != null) {
-            dialog.setOnDismissListener(null);
-            dialog.dismiss();
-        }
-        if (callback != null) callback.onResult(null);
     }
 
     /**
@@ -269,9 +284,12 @@ public final class BuiltinFileDialog {
         Activity host = pendingSharedHost;
         State state = pendingSharedState;
         File directory = pendingSharedDir;
+        boolean pendingUseFolder = state != null && state.pendingUseFolder;
+        if (state != null) state.pendingUseFolder = false;
         clearPendingSharedStorage();
         if (granted && host != null && state != null && directory != null) {
             navigateTo(host, state, directory);
+            if (pendingUseFolder) confirm(host, state);
         } else if (host != null) {
             Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
         }
@@ -281,9 +299,12 @@ public final class BuiltinFileDialog {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R || pendingSharedHost != host) return;
         State state = pendingSharedState;
         File directory = pendingSharedDir;
+        boolean pendingUseFolder = state != null && state.pendingUseFolder;
+        if (state != null) state.pendingUseFolder = false;
         clearPendingSharedStorage();
         if (sharedStoragePermissionGranted(host) && state != null && directory != null) {
             navigateTo(host, state, directory);
+            if (pendingUseFolder) confirm(host, state);
         } else {
             Toast.makeText(host, R.string.file_manager_storage_permission, Toast.LENGTH_LONG).show();
         }
@@ -311,7 +332,7 @@ public final class BuiltinFileDialog {
         State state = new State();
         state.landscapeLayout = host.getResources().getConfiguration().orientation
                 == Configuration.ORIENTATION_LANDSCAPE;
-        int padding = state.landscapeLayout ? dp(host, 4)
+        int padding = state.landscapeLayout ? dp(host, 8)
                 : host.getResources().getDimensionPixelSize(R.dimen.fragment_padding_medium);
         root.setPadding(padding, padding, padding, padding);
 
@@ -319,14 +340,21 @@ public final class BuiltinFileDialog {
         state.extensions = extensions;
         state.allowMultiple = allowMultiple;
         state.finish = finish;
+        state.dialog = dialog;
         state.currentDir = initialDirectory(host, defaultPath, type);
 
         LinearLayout content = new LinearLayout(host);
         content.setOrientation(LinearLayout.VERTICAL);
 
-        state.compactLayout = !state.landscapeLayout
-                && host.getResources().getDisplayMetrics().widthPixels
-                / host.getResources().getDisplayMetrics().density < 600f;
+        state.compactLayout = host.getResources().getConfiguration().screenWidthDp < 600;
+        int contentHorizontalPadding = state.compactLayout ? 8
+                : state.landscapeLayout ? 12 : 16;
+        int contentVerticalPadding = state.compactLayout ? 6
+                : state.landscapeLayout ? 8 : 12;
+        content.setPadding(dp(host, contentHorizontalPadding),
+                dp(host, contentVerticalPadding),
+                dp(host, contentHorizontalPadding),
+                dp(host, contentVerticalPadding));
         if (state.compactLayout) {
             root.setOrientation(LinearLayout.VERTICAL);
             root.addView(buildSidebar(host, state), new LinearLayout.LayoutParams(
@@ -336,7 +364,7 @@ public final class BuiltinFileDialog {
         } else {
             root.setOrientation(LinearLayout.HORIZONTAL);
             root.addView(buildSidebar(host, state), new LinearLayout.LayoutParams(
-                    dp(host, state.landscapeLayout ? 112 : 160),
+                    dp(host, state.landscapeLayout ? 128 : 160),
                     ViewGroup.LayoutParams.MATCH_PARENT));
             root.addView(content, new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
@@ -349,12 +377,14 @@ public final class BuiltinFileDialog {
         titleView.setTextColor(MaterialColors.getColor(titleView, R.attr.colorOnSurface));
         titleView.setTypeface(null, android.graphics.Typeface.BOLD);
         titleView.setPadding(dp(host, 4), 0, dp(host, 4),
-                dp(host, state.landscapeLayout ? 2 : 8));
+                dp(host, state.landscapeLayout ? 8 : 12));
         content.addView(titleView);
 
         FrameLayout listContainer = new FrameLayout(host);
         ListView listView = new ListView(host);
-        listView.setDivider(null);
+        listView.setDivider(new android.graphics.drawable.ColorDrawable(
+                MaterialColors.getColor(listView, R.attr.colorOutlineVariant)));
+        listView.setDividerHeight(dp(host, 1));
         listView.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         listContainer.addView(listView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -365,7 +395,7 @@ public final class BuiltinFileDialog {
         emptyView.setTextColor(MaterialColors.getColor(emptyView, R.attr.colorOnSurfaceVariant));
         emptyView.setGravity(Gravity.CENTER);
         emptyView.setPadding(dp(host, 16), dp(host, 24), dp(host, 16), dp(host, 24));
-        emptyView.setVisibility(View.VISIBLE);
+        emptyView.setVisibility(View.GONE);
         listContainer.addView(emptyView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -373,11 +403,19 @@ public final class BuiltinFileDialog {
         state.adapter = adapter;
         state.emptyView = emptyView;
         listView.setAdapter(adapter);
+        listView.setEmptyView(emptyView);
         listView.setOnItemClickListener((parent, view, position, id) ->
                 adapter.onRowClick(position));
         listView.setOnItemLongClickListener((parent, view, position, id) -> {
             File entry = adapter.getItem(position);
-            showEntryActions(host, state, entry);
+            if (state.type == FileDialogBridge.DIALOG_BROWSE) {
+                state.manageMode = true;
+                state.selection.add(entry);
+                refreshBottomBar(host, state);
+                adapter.notifyDataSetChanged();
+            } else if (state.type == FileDialogBridge.DIALOG_OPEN_FILE && !entry.isDirectory()) {
+                adapter.toggleSelection(entry);
+            }
             return true;
         });
 
@@ -395,7 +433,8 @@ public final class BuiltinFileDialog {
     private static View buildSidebar(Activity host, State state) {
         LinearLayout sidebar = new LinearLayout(host);
         sidebar.setOrientation(LinearLayout.VERTICAL);
-        sidebar.setPadding(0, 0, state.compactLayout ? 0 : dp(host, 8), dp(host, 4));
+        sidebar.setPadding(dp(host, 8), dp(host, 8),
+                dp(host, state.compactLayout ? 8 : 12), dp(host, 8));
         sidebar.setBackgroundColor(MaterialColors.getColor(sidebar, R.attr.colorSurfaceContainerLow));
 
         TextView heading = new TextView(host);
@@ -403,7 +442,7 @@ public final class BuiltinFileDialog {
         heading.setTextSize(state.landscapeLayout ? 11f : 12f);
         heading.setTextColor(MaterialColors.getColor(heading, R.attr.colorOnSurfaceVariant));
         heading.setTypeface(null, android.graphics.Typeface.BOLD);
-        heading.setPadding(dp(host, 6), 0, dp(host, 4), dp(host, 4));
+        heading.setPadding(dp(host, 8), 0, dp(host, 4), dp(host, 8));
         sidebar.addView(heading);
 
         LinearLayout locations = new LinearLayout(host);
@@ -510,30 +549,44 @@ public final class BuiltinFileDialog {
 
     private static View buildBottomBar(Activity host, State state, String defaultPath) {
         LinearLayout bar = new LinearLayout(host);
+        state.bottomBar = bar;
+        state.defaultPath = defaultPath;
+        refreshBottomBar(host, state);
+        if (state.compactLayout && state.type != FileDialogBridge.DIALOG_SAVE_FILE) {
+            HorizontalScrollView scroll = new HorizontalScrollView(host);
+            scroll.setHorizontalScrollBarEnabled(false);
+            scroll.setFillViewport(true);
+            scroll.setClipToPadding(false);
+            scroll.addView(bar, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            return scroll;
+        }
+        return bar;
+    }
+
+    private static void refreshBottomBar(Activity host, State state) {
+        LinearLayout bar = state.bottomBar;
+        bar.removeAllViews();
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(0, dp(host, state.landscapeLayout ? 3 : 8), 0, 0);
+        bar.setPadding(0, dp(host, state.landscapeLayout ? 8 : 12), 0, 0);
 
         MaterialButton cancelButton = new MaterialButton(host);
         cancelButton.setText(R.string.global_cancel);
+        cancelButton.setAllCaps(false);
         styleTextButton(host, state, cancelButton);
+        cancelButton.setTextColor(MaterialColors.getColor(
+                cancelButton, R.attr.colorOnSurfaceVariant));
         cancelButton.setOnClickListener(v -> state.finish.onResult(null));
         bar.addView(cancelButton);
-
-        if (state.type != FileDialogBridge.DIALOG_SAVE_FILE) {
-            MaterialButton newFolderButton = new MaterialButton(host);
-            newFolderButton.setText(R.string.file_manager_new_folder);
-            styleTextButton(host, state, newFolderButton);
-            newFolderButton.setOnClickListener(v -> promptNewFolder(host, state));
-            bar.addView(newFolderButton);
-        }
+        state.selectionButton = null;
 
         if (state.type == FileDialogBridge.DIALOG_SAVE_FILE) {
             EditText nameField = new EditText(host);
             nameField.setSingleLine(true);
             nameField.setTextSize(14f);
             nameField.setHint(R.string.file_manager_file_name_hint);
-            nameField.setText(defaultSaveName(host, defaultPath));
+            nameField.setText(defaultSaveName(host, state.defaultPath));
             nameField.addTextChangedListener(new TextWatcher() {
                 @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
                 @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
@@ -544,45 +597,129 @@ public final class BuiltinFileDialog {
             state.fileName = String.valueOf(nameField.getText());
             bar.addView(nameField, new LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        } else {
-            bar.addView(new View(host), new LinearLayout.LayoutParams(
-                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            addActionButton(host, state, bar, R.string.file_manager_save,
+                    v -> confirm(host, state), true);
+            return;
         }
 
-        if (state.type != FileDialogBridge.DIALOG_BROWSE
-                && !(state.type == FileDialogBridge.DIALOG_OPEN_FILE && !state.allowMultiple)) {
-            MaterialButton okButton = new MaterialButton(host);
-            okButton.setText(state.type == FileDialogBridge.DIALOG_SAVE_FILE
-                    ? R.string.file_manager_save : R.string.file_manager_select);
-            okButton.setOnClickListener(v -> confirm(host, state));
-            state.selectionButton = okButton;
-            bar.addView(okButton, new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            updateSelectionButton(host, state);
+        if (state.type == FileDialogBridge.DIALOG_BROWSE && state.manageMode) {
+            TextView selectedCount = new TextView(host);
+            selectedCount.setText(host.getString(R.string.file_manager_items_count,
+                    state.selection.size()));
+            selectedCount.setTextColor(MaterialColors.getColor(
+                    selectedCount, R.attr.colorOnSurfaceVariant));
+            selectedCount.setPadding(dp(host, 8), 0, dp(host, 8), 0);
+            bar.addView(selectedCount, new LinearLayout.LayoutParams(
+                    state.compactLayout ? ViewGroup.LayoutParams.WRAP_CONTENT : 0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, state.compactLayout ? 0f : 1f));
+            if (!state.selection.isEmpty()) {
+                addActionButton(host, state, bar, R.string.file_manager_move,
+                        v -> chooseMoveDestination(host, state), false);
+                addActionButton(host, state, bar, R.string.global_delete,
+                        v -> confirmDeleteSelected(host, state), false);
+            }
+            addActionButton(host, state, bar, R.string.file_manager_done,
+                    v -> {
+                        state.manageMode = false;
+                        state.selection.clear();
+                        refreshCurrentDirectory(host, state);
+                        refreshBottomBar(host, state);
+                    }, true);
+            return;
         }
-        return bar;
+
+        if (state.type == FileDialogBridge.DIALOG_OPEN_FILE) {
+            bar.addView(new View(host), new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            addActionButton(host, state, bar, R.string.file_manager_open,
+                    v -> confirm(host, state), true);
+            state.selectionButton = (MaterialButton) bar.getChildAt(bar.getChildCount() - 1);
+            updateSelectionButton(host, state);
+            return;
+        }
+
+        if (state.type == FileDialogBridge.DIALOG_OPEN_FOLDER) {
+            addActionButton(host, state, bar, R.string.file_manager_new_folder,
+                    v -> promptNewFolder(host, state), false);
+            addActionButton(host, state, bar, R.string.file_manager_import_here,
+                    v -> importFiles(host, state), false);
+            bar.addView(new View(host), new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            addActionButton(host, state, bar, R.string.file_manager_use_folder,
+                    v -> confirm(host, state), true);
+            return;
+        }
+
+        if (state.type == FileDialogBridge.DIALOG_BROWSE) {
+            addActionButton(host, state, bar, R.string.file_manager_new_folder,
+                    v -> promptNewFolder(host, state), false);
+            addActionButton(host, state, bar, R.string.file_manager_manage,
+                    v -> {
+                        state.manageMode = true;
+                        state.selection.clear();
+                        refreshCurrentDirectory(host, state);
+                        refreshBottomBar(host, state);
+                    }, false);
+            bar.addView(new View(host), new LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            addActionButton(host, state, bar, R.string.file_manager_import_here,
+                    v -> importFiles(host, state), true);
+        }
+    }
+
+    private static void addActionButton(Activity host, State state, LinearLayout bar, int label,
+                                        View.OnClickListener listener, boolean primary) {
+        MaterialButton button = new MaterialButton(host);
+        button.setText(label);
+        button.setAllCaps(false);
+        button.setTextSize(13f);
+        button.setInsetTop(0);
+        button.setInsetBottom(0);
+        button.setMinWidth(0);
+        button.setMinHeight(dp(host, state.landscapeLayout ? 38 : 44));
+        button.setPadding(dp(host, 12), 0, dp(host, 12), 0);
+        if (!primary) styleTextButton(host, state, button);
+        button.setOnClickListener(listener);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.setMarginStart(dp(host, 3));
+        params.setMarginEnd(dp(host, 3));
+        bar.addView(button, params);
     }
 
     private static void styleTextButton(Activity host, State state, MaterialButton button) {
+        button.setAllCaps(false);
         button.setTextSize(13f);
+        button.setMinWidth(0);
         button.setInsetTop(0);
         button.setInsetBottom(0);
         button.setMinHeight(dp(host, state.landscapeLayout ? 36 : 44));
         button.setPadding(dp(host, 10), 0, dp(host, 10), 0);
         button.setBackgroundTintList(ColorStateList.valueOf(android.graphics.Color.TRANSPARENT));
-        button.setTextColor(MaterialColors.getColor(button, R.attr.colorOnSurfaceVariant));
+        button.setTextColor(MaterialColors.getColor(button, R.attr.colorPrimary));
     }
 
     private static void confirm(Activity host, State state) {
         if (state.type == FileDialogBridge.DIALOG_BROWSE) return;
         if (state.type == FileDialogBridge.DIALOG_OPEN_FOLDER) {
+            if (isSharedExternal(host, state.currentDir)
+                    && !sharedStoragePermissionGranted(host)) {
+                state.pendingUseFolder = true;
+                requestSharedStorage(host, state, state.currentDir);
+                return;
+            }
+            if (!state.currentDir.canRead() || !state.currentDir.canWrite()) {
+                Toast.makeText(host, R.string.file_manager_folder_access_failed,
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
             state.finish.onResult(new String[]{state.currentDir.getAbsolutePath()});
             return;
         }
         if (state.type == FileDialogBridge.DIALOG_SAVE_FILE) {
             String name = state.fileName != null ? state.fileName.trim() : "";
-            if (name.isEmpty()) {
-                Toast.makeText(host, R.string.file_manager_empty_name, Toast.LENGTH_SHORT).show();
+            if (!isValidEntryName(name)) {
+                Toast.makeText(host, R.string.file_manager_name_invalid, Toast.LENGTH_SHORT).show();
                 return;
             }
             if (!name.contains(".") && !state.extensions.isEmpty()) {
@@ -602,10 +739,8 @@ public final class BuiltinFileDialog {
             state.finish.onResult(new String[]{target.getAbsolutePath()});
             return;
         }
-        // Open file: multi select needs explicit confirmation, single select
-        // is resolved directly on the row click.
         List<File> selected = new ArrayList<>(state.selection);
-        if (selected.isEmpty()) {
+        if (selected.size() != 1 && !state.allowMultiple) {
             Toast.makeText(host, R.string.file_manager_nothing_selected, Toast.LENGTH_SHORT).show();
             return;
         }
@@ -636,13 +771,17 @@ public final class BuiltinFileDialog {
     }
 
     private static void createFolder(Activity host, State state, String name) {
+        if (!isValidEntryName(name)) {
+            Toast.makeText(host, R.string.file_manager_name_invalid, Toast.LENGTH_SHORT).show();
+            return;
+        }
         File target = new File(state.currentDir, name);
         if (target.exists()) {
-            Toast.makeText(host, R.string.file_manager_overwrite_title, Toast.LENGTH_SHORT).show();
+            Toast.makeText(host, R.string.file_manager_operation_failed, Toast.LENGTH_SHORT).show();
             return;
         }
         if (!target.mkdirs()) {
-            Toast.makeText(host, R.string.file_manager_overwrite_title, Toast.LENGTH_SHORT).show();
+            Toast.makeText(host, R.string.file_manager_operation_failed, Toast.LENGTH_SHORT).show();
             return;
         }
         navigateTo(host, state, state.currentDir);
@@ -687,16 +826,25 @@ public final class BuiltinFileDialog {
     }
 
     private static void renameEntry(Activity host, State state, File entry, String name) {
+        if (!isValidEntryName(name)) {
+            Toast.makeText(host, R.string.file_manager_name_invalid, Toast.LENGTH_SHORT).show();
+            return;
+        }
         File target = new File(state.currentDir, name);
         if (target.exists()) {
-            Toast.makeText(host, R.string.file_manager_overwrite_title, Toast.LENGTH_SHORT).show();
+            Toast.makeText(host, R.string.file_manager_operation_failed, Toast.LENGTH_SHORT).show();
             return;
         }
         if (!entry.renameTo(target)) {
-            Toast.makeText(host, R.string.file_manager_overwrite_title, Toast.LENGTH_SHORT).show();
+            Toast.makeText(host, R.string.file_manager_operation_failed, Toast.LENGTH_SHORT).show();
             return;
         }
         navigateTo(host, state, state.currentDir);
+    }
+
+    private static boolean isValidEntryName(String name) {
+        return name != null && !name.isEmpty() && !name.equals(".") && !name.equals("..")
+                && name.indexOf('/') < 0 && name.indexOf('\\') < 0;
     }
 
     /** Confirms deletion then removes the entry (recursively for folders). */
@@ -729,28 +877,234 @@ public final class BuiltinFileDialog {
         return file.delete();
     }
 
+    private static void importFiles(Activity host, State parent) {
+        show(host, FileDialogBridge.DIALOG_OPEN_FILE,
+                host.getString(R.string.file_manager_import_title),
+                parent.currentDir.getAbsolutePath(), null, true, paths -> {
+                    restoreParentDialog(parent);
+                    if (paths == null || paths.length == 0) return;
+                    List<File> sources = new ArrayList<>();
+                    for (String path : paths) {
+                        if (path != null) sources.add(new File(path));
+                    }
+                    if (sources.isEmpty()) return;
+                    confirmConflicts(host, parent, sources, parent.currentDir, false);
+                });
+    }
+
+    private static void chooseMoveDestination(Activity host, State parent) {
+        List<File> sources = new ArrayList<>(parent.selection);
+        show(host, FileDialogBridge.DIALOG_OPEN_FOLDER,
+                host.getString(R.string.file_manager_select_destination),
+                parent.currentDir.getAbsolutePath(), null, false, paths -> {
+                    restoreParentDialog(parent);
+                    if (paths == null || paths.length == 0) return;
+                    confirmConflicts(host, parent, sources, new File(paths[0]), true);
+                });
+    }
+
+    private static void restoreParentDialog(State parent) {
+        if (parent.dialog == null || !parent.dialog.isShowing()) return;
+        synchronized (BuiltinFileDialog.class) {
+            sCurrentDialog = new WeakReference<>(parent.dialog);
+            sCurrentCallback = new WeakReference<>(parent.finish);
+        }
+    }
+
+    private static void confirmConflicts(Activity host, State state, List<File> sources,
+                                         File destination, boolean move) {
+        File conflict = null;
+        for (File source : sources) {
+            File target = new File(destination, source.getName());
+            if (target.exists()) {
+                conflict = target;
+                break;
+            }
+        }
+        if (conflict == null) {
+            transferFiles(host, state, sources, destination, move, false);
+            return;
+        }
+        File firstConflict = conflict;
+        new MaterialAlertDialogBuilder(host)
+                .setTitle(move ? R.string.file_manager_move_title
+                        : R.string.file_manager_import_title)
+                .setMessage(host.getString(R.string.file_manager_conflict_message,
+                        firstConflict.getName()))
+                .setPositiveButton(R.string.global_yes, (dialog, which) ->
+                        transferFiles(host, state, sources, destination, move, true))
+                .setNegativeButton(R.string.global_no, null)
+                .show();
+    }
+
+    private static void transferFiles(Activity host, State state, List<File> sources,
+                                      File destination, boolean move, boolean replace) {
+        ProgressBar progressBar = new ProgressBar(host);
+        Dialog progress = new MaterialAlertDialogBuilder(host)
+                .setTitle(move ? R.string.file_manager_move_title
+                        : R.string.file_manager_import_title)
+                .setView(progressBar)
+                .setCancelable(false)
+                .create();
+        progress.show();
+        FILE_OPERATIONS.execute(() -> {
+            List<File> failed = new ArrayList<>();
+            for (File source : sources) {
+                File target = new File(destination, source.getName());
+                if (source.equals(target) || isInside(source, destination)) {
+                    failed.add(source);
+                    continue;
+                }
+                boolean cleanupTarget = !target.exists();
+                try {
+                    if (target.exists()) {
+                        if (!replace || !deleteRecursively(target)) {
+                            throw new IOException("Unable to replace destination");
+                        }
+                        cleanupTarget = true;
+                    }
+                    if (move && source.renameTo(target)) continue;
+                    if (move) {
+                        copyRecursively(source, target);
+                        if (!deleteRecursively(source)) {
+                            deleteRecursively(target);
+                            throw new IOException("Unable to remove source after copy");
+                        }
+                    } else {
+                        copyRecursively(source, target);
+                    }
+                } catch (IOException | SecurityException e) {
+                    if (cleanupTarget) deleteRecursively(target);
+                    Log.e(TAG, "File transfer failed: " + source, e);
+                    failed.add(source);
+                }
+            }
+            host.runOnUiThread(() -> {
+                progress.dismiss();
+                if (!failed.isEmpty()) {
+                    Toast.makeText(host, host.getString(
+                            R.string.file_manager_operation_failures,
+                            failed.size(), failed.get(0).getName()),
+                            Toast.LENGTH_LONG).show();
+                }
+                if (!host.isFinishing() && !host.isDestroyed()
+                        && state.dialog != null && state.dialog.isShowing()) {
+                    state.selection.clear();
+                    refreshCurrentDirectory(host, state);
+                    refreshBottomBar(host, state);
+                }
+            });
+        });
+    }
+
+    private static boolean isInside(File source, File destination) {
+        try {
+            String sourcePath = source.getCanonicalPath();
+            String destinationPath = destination.getCanonicalPath();
+            return destinationPath.startsWith(sourcePath + File.separator);
+        } catch (IOException | SecurityException e) {
+            Log.e(TAG, "Unable to resolve transfer paths", e);
+            return true;
+        }
+    }
+
+    private static void copyRecursively(File source, File destination) throws IOException {
+        if (source.isDirectory()) {
+            if (!destination.mkdirs() && !destination.isDirectory()) {
+                throw new IOException("Unable to create destination directory");
+            }
+            File[] children = source.listFiles();
+            if (children == null) throw new IOException("Unable to list source directory");
+            for (File child : children) {
+                copyRecursively(child, new File(destination, child.getName()));
+            }
+            return;
+        }
+        File parent = destination.getParentFile();
+        if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
+            throw new IOException("Unable to create destination parent");
+        }
+        try (InputStream input = new FileInputStream(source);
+             FileOutputStream output = new FileOutputStream(destination)) {
+            byte[] buffer = new byte[32 * 1024];
+            int count;
+            while ((count = input.read(buffer)) != -1) {
+                output.write(buffer, 0, count);
+            }
+        }
+    }
+
+    private static void confirmDeleteSelected(Activity host, State state) {
+        List<File> selected = new ArrayList<>(state.selection);
+        new MaterialAlertDialogBuilder(host)
+                .setTitle(R.string.global_delete)
+                .setMessage(host.getString(R.string.file_manager_delete_selected_confirm,
+                        selected.size()))
+                .setPositiveButton(R.string.global_yes, (dialog, which) -> {
+                    ProgressBar progressBar = new ProgressBar(host);
+                    Dialog progress = new MaterialAlertDialogBuilder(host)
+                            .setTitle(R.string.global_delete)
+                            .setView(progressBar)
+                            .setCancelable(false)
+                            .create();
+                    progress.show();
+                    FILE_OPERATIONS.execute(() -> {
+                        List<File> failed = new ArrayList<>();
+                        for (File entry : selected) {
+                            if (!deleteRecursively(entry)) failed.add(entry);
+                        }
+                        host.runOnUiThread(() -> {
+                            progress.dismiss();
+                            if (!failed.isEmpty()) {
+                                Toast.makeText(host, host.getString(
+                                        R.string.file_manager_operation_failures,
+                                        failed.size(), failed.get(0).getName()),
+                                        Toast.LENGTH_LONG).show();
+                            }
+                            if (!host.isFinishing() && !host.isDestroyed() && state.dialog != null
+                                    && state.dialog.isShowing()) {
+                                state.selection.clear();
+                                refreshCurrentDirectory(host, state);
+                                refreshBottomBar(host, state);
+                            }
+                        });
+                    });
+                })
+                .setNegativeButton(R.string.global_no, null)
+                .show();
+    }
+
     private static void navigateTo(Activity host, State state, File directory) {
         if (directory == null || !directory.isDirectory()) return;
         state.currentDir = directory;
         state.selection.clear();
+        if (state.type == FileDialogBridge.DIALOG_BROWSE && state.manageMode) {
+            state.manageMode = false;
+        }
         updateSelectionButton(host, state);
         state.pathView.setText(directory.getAbsolutePath());
         state.upButton.setEnabled(directory.getParentFile() != null);
         updateLocationSelection(state, directory);
-        state.emptyView.setText(R.string.file_manager_empty);
-        if (isSharedExternal(host, directory) && !sharedStoragePermissionGranted(host)) {
+        state.emptyView.setText(R.string.file_manager_no_results);
+        refreshBottomBar(host, state);
+        refreshCurrentDirectory(host, state);
+    }
+
+    private static void refreshCurrentDirectory(Activity host, State state) {
+        state.emptyView.setText(R.string.file_manager_no_results);
+        if (isSharedExternal(host, state.currentDir) && !sharedStoragePermissionGranted(host)) {
             state.emptyView.setText(R.string.file_manager_storage_permission);
             state.adapter.setEntries(Collections.emptyList());
-            requestSharedStorage(host, state, directory);
+            requestSharedStorage(host, state, state.currentDir);
             return;
         }
         List<File> entries = new ArrayList<>();
-        File[] listed = directory.listFiles();
-        if (listed == null && isSharedExternal(host, directory)) {
+        File[] listed = state.currentDir.listFiles();
+        if (listed == null && isSharedExternal(host, state.currentDir)) {
             if (Build.VERSION.SDK_INT >= 30 && !android.os.Environment.isExternalStorageManager()) {
                 state.emptyView.setText(R.string.file_manager_storage_permission);
                 state.adapter.setEntries(Collections.emptyList());
-                requestSharedStorage(host, state, directory);
+                requestSharedStorage(host, state, state.currentDir);
             } else {
                 state.emptyView.setText(R.string.file_manager_unreadable);
                 state.adapter.setEntries(Collections.emptyList());
@@ -846,16 +1200,12 @@ public final class BuiltinFileDialog {
 
     private static void updateSelectionButton(Activity host, State state) {
         if (state.selectionButton == null) return;
-        if (state.type != FileDialogBridge.DIALOG_OPEN_FILE || !state.allowMultiple) {
-            state.selectionButton.setEnabled(true);
-            return;
-        }
         int count = state.selection.size();
         if (count == 0) {
-            state.selectionButton.setText(R.string.file_manager_select);
+            state.selectionButton.setText(state.type == FileDialogBridge.DIALOG_OPEN_FILE
+                    ? R.string.file_manager_open : R.string.file_manager_select);
         } else {
-            state.selectionButton.setText(host.getString(
-                    R.string.file_manager_select_count, count));
+            state.selectionButton.setText(host.getString(R.string.file_manager_open_count, count));
         }
         state.selectionButton.setEnabled(count > 0);
     }
@@ -929,11 +1279,16 @@ public final class BuiltinFileDialog {
         MaterialButton upButton;
         TextView emptyView;
         MaterialButton selectionButton;
+        LinearLayout bottomBar;
         final List<File> locations = new ArrayList<>();
         final List<MaterialButton> locationButtons = new ArrayList<>();
         ResultCallback finish;
+        Dialog dialog;
         File currentDir = new File("/");
         final LinkedHashSet<File> selection = new LinkedHashSet<>();
+        boolean manageMode;
+        boolean pendingUseFolder;
+        String defaultPath;
         String fileName = "";
     }
 
@@ -962,28 +1317,41 @@ public final class BuiltinFileDialog {
                 }
             }
             notifyDataSetChanged();
-            state.emptyView.setVisibility(entries.isEmpty() ? View.VISIBLE : View.GONE);
         }
 
         void onRowClick(int position) {
             File entry = entries.get(position);
             if (entry.isDirectory()) {
+                if (state.type == FileDialogBridge.DIALOG_BROWSE && state.manageMode) {
+                    toggleSelection(entry);
+                    return;
+                }
                 navigateTo(host, state, entry);
                 return;
             }
             if (state.type == FileDialogBridge.DIALOG_BROWSE) {
+                if (state.manageMode) {
+                    toggleSelection(entry);
+                    return;
+                }
                 Tools.openPath(host, entry, false);
                 return;
             }
-            if (state.type == FileDialogBridge.DIALOG_OPEN_FILE && !state.allowMultiple) {
-                state.finish.onResult(new String[]{entry.getAbsolutePath()});
-                return;
+            if (state.type == FileDialogBridge.DIALOG_OPEN_FILE) {
+                toggleSelection(entry);
             }
-            if (state.allowMultiple) {
-                if (!state.selection.remove(entry)) state.selection.add(entry);
-                notifyDataSetChanged();
-                updateSelectionButton(host, state);
+        }
+
+        void toggleSelection(File entry) {
+            if (!state.allowMultiple && state.type == FileDialogBridge.DIALOG_OPEN_FILE) {
+                boolean wasSelected = state.selection.contains(entry);
+                state.selection.clear();
+                if (!wasSelected) state.selection.add(entry);
+            } else if (!state.selection.remove(entry)) {
+                state.selection.add(entry);
             }
+            notifyDataSetChanged();
+            updateSelectionButton(host, state);
         }
 
         @Override public int getCount() {
@@ -1010,10 +1378,12 @@ public final class BuiltinFileDialog {
         public View getView(int position, View convertView, ViewGroup parent) {
             LinearLayout row;
             TextView nameView;
+            TextView detailView;
             ImageView selectionView;
             if (convertView instanceof LinearLayout) {
                 row = (LinearLayout) convertView;
                 nameView = row.findViewById(R.id.file_manager_name);
+                detailView = row.findViewById(R.id.file_manager_detail);
                 selectionView = row.findViewById(R.id.file_manager_check);
             } else {
                 row = new LinearLayout(host);
@@ -1033,15 +1403,28 @@ public final class BuiltinFileDialog {
                 iconView.setLayoutParams(new LinearLayout.LayoutParams(dp(host, 28), dp(host, 28)));
                 row.addView(iconView);
 
+                LinearLayout textColumn = new LinearLayout(host);
+                textColumn.setOrientation(LinearLayout.VERTICAL);
+                textColumn.setPadding(dp(host, 12), 0, dp(host, 8), 0);
+                row.addView(textColumn, new LinearLayout.LayoutParams(
+                        0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
                 nameView = new TextView(host);
                 nameView.setId(R.id.file_manager_name);
                 nameView.setTextSize(14f);
                 nameView.setTextColor(MaterialColors.getColor(nameView, R.attr.colorOnSurface));
                 nameView.setSingleLine(true);
                 nameView.setEllipsize(android.text.TextUtils.TruncateAt.MIDDLE);
-                nameView.setPadding(dp(host, 12), 0, dp(host, 8), 0);
-                row.addView(nameView, new LinearLayout.LayoutParams(
-                        0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                textColumn.addView(nameView);
+
+                detailView = new TextView(host);
+                detailView.setId(R.id.file_manager_detail);
+                detailView.setTextSize(11f);
+                detailView.setTextColor(MaterialColors.getColor(
+                        detailView, R.attr.colorOnSurfaceVariant));
+                detailView.setSingleLine(true);
+                detailView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                textColumn.addView(detailView);
 
                 selectionView = new ImageView(host);
                 selectionView.setId(R.id.file_manager_check);
@@ -1051,15 +1434,34 @@ public final class BuiltinFileDialog {
 
             File entry = getItem(position);
             nameView.setText(entry.getName());
-            ImageView iconView = row.findViewById(R.id.file_manager_icon);
             boolean selected = state.selection.contains(entry);
             if (entry.isDirectory()) {
+                detailView.setText(R.string.file_manager_folder_detail);
+            } else {
+                detailView.setText(host.getString(
+                        R.string.file_manager_file_detail, readableSize(entry.length())));
+            }
+            nameView.setTextColor(MaterialColors.getColor(nameView, selected
+                    ? R.attr.colorOnPrimaryContainer : R.attr.colorOnSurface));
+            detailView.setTextColor(MaterialColors.getColor(detailView, selected
+                    ? R.attr.colorOnPrimaryContainer : R.attr.colorOnSurfaceVariant));
+            ImageView iconView = row.findViewById(R.id.file_manager_icon);
+            if (entry.isDirectory()) {
                 iconView.setImageResource(R.drawable.ic_folder);
-                iconView.setColorFilter(MaterialColors.getColor(iconView, R.attr.colorPrimary));
-                selectionView.setVisibility(View.INVISIBLE);
+                iconView.setColorFilter(MaterialColors.getColor(iconView, selected
+                        ? R.attr.colorOnPrimaryContainer : R.attr.colorPrimary));
+                if (selected) {
+                    selectionView.setImageResource(R.drawable.ic_check_circle);
+                    selectionView.setColorFilter(MaterialColors.getColor(
+                            selectionView, R.attr.colorPrimary));
+                    selectionView.setVisibility(View.VISIBLE);
+                } else {
+                    selectionView.setVisibility(View.INVISIBLE);
+                }
             } else {
                 iconView.setImageResource(R.drawable.ic_px_file);
-                iconView.setColorFilter(MaterialColors.getColor(iconView, R.attr.colorOnSurfaceVariant));
+                iconView.setColorFilter(MaterialColors.getColor(iconView, selected
+                        ? R.attr.colorOnPrimaryContainer : R.attr.colorOnSurfaceVariant));
                 if (selected) {
                     selectionView.setImageResource(R.drawable.ic_check_circle);
                     selectionView.setColorFilter(MaterialColors.getColor(
@@ -1070,7 +1472,7 @@ public final class BuiltinFileDialog {
                 }
             }
             if (selected) {
-                row.setBackgroundColor(MaterialColors.getColor(row, R.attr.colorSecondaryContainer));
+                row.setBackgroundColor(MaterialColors.getColor(row, R.attr.colorPrimaryContainer));
             } else {
                 TypedValue selectableBackground = new TypedValue();
                 if (host.getTheme().resolveAttribute(android.R.attr.selectableItemBackground,
@@ -1080,6 +1482,16 @@ public final class BuiltinFileDialog {
             }
             return row;
         }
+    }
+
+    private static String readableSize(long size) {
+        if (size < 1024) return size + " B";
+        if (size < 1024 * 1024) return String.format(java.util.Locale.ROOT,
+                "%.1f KB", size / 1024.0);
+        if (size < 1024L * 1024 * 1024) return String.format(java.util.Locale.ROOT,
+                "%.1f MB", size / (1024.0 * 1024));
+        return String.format(java.util.Locale.ROOT,
+                "%.1f GB", size / (1024.0 * 1024 * 1024));
     }
 
     private static String extensionOf(String fileName) {
