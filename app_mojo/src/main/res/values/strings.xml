@@ -96,7 +96,7 @@
     <string name="file_manager_search_hint">Search this folder</string>
     <string name="file_manager_path_title">Go to location</string>
     <string name="file_manager_path_hint">Absolute folder path</string>
-    <string name="file_manager_path_invalid">That folder is unavailable or outside this dialog's starting folder.</string>
+    <string name="file_manager_path_invalid">That folder is unavailable or outside the dialog start folder.</string>
     <string name="file_manager_sort_name">Name</string>
     <string name="file_manager_sort_date">Date</string>
     <string name="file_manager_sort_size">Size</string>
