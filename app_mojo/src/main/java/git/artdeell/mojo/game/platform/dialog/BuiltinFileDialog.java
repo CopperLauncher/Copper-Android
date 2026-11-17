@@ -92,6 +92,7 @@ public final class BuiltinFileDialog {
 
     private static boolean isSharedExternal(Activity host, File directory) {
         String abs = directory.getAbsolutePath();
+        // Allow app's own external files directory without shared storage permission check
         File[] appDirectories = host.getExternalFilesDirs(null);
         if (appDirectories != null) {
             for (File appDirectory : appDirectories) {
@@ -101,8 +102,13 @@ public final class BuiltinFileDialog {
                 }
             }
         }
+        // Only consider truly shared storage roots (like /storage/emulated/0/), not app private dirs
         for (File root : sharedStorageRoots(host)) {
             String rootPath = root.getAbsolutePath();
+            // Skip app-private directories that happen to be under shared storage
+            if (abs.startsWith(rootPath + File.separator) && abs.contains("/Android/data/")) {
+                continue;
+            }
             if (abs.equals(rootPath) || abs.startsWith(rootPath + File.separator)) return true;
         }
         return false;
