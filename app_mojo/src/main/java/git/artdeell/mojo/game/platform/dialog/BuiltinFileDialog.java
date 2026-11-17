@@ -464,11 +464,7 @@ public final class BuiltinFileDialog {
         listView.setOnItemLongClickListener((parent, view, position, id) -> {
             File entry = adapter.getItem(position);
             if (state.type == FileDialogBridge.DIALOG_BROWSE) {
-                if (state.manageMode) {
-                    adapter.toggleSelection(entry);
-                } else {
-                    showEntryActions(host, state, entry);
-                }
+                showEntryActions(host, state, entry);
             } else if ((state.type == FileDialogBridge.DIALOG_OPEN_FILE
                     || state.type == DIALOG_IMPORT_FILES) && !entry.isDirectory()) {
                 adapter.toggleSelection(entry);
@@ -519,7 +515,7 @@ public final class BuiltinFileDialog {
 
         state.searchInput.clearFocus();
         root.requestFocus();
-        root.post(() -> navigateTo(host, state, state.currentDir));
+        dialog.setOnShowListener(d -> navigateTo(host, state, state.currentDir));
         return root;
     }
 
@@ -629,6 +625,8 @@ public final class BuiltinFileDialog {
                     selectedCount, R.attr.colorOnSurfaceVariant));
             selectedCount.setPadding(dp(host, 8), 0, dp(host, 8), 0);
             bar.addView(selectedCount);
+            addActionButton(host, state, bar, R.string.file_manager_import_here,
+                    v -> importFiles(host, state), true);
             if (!state.selection.isEmpty()) {
                 addActionButton(host, state, bar, R.string.global_delete,
                         v -> confirmDeleteSelected(host, state), true);
@@ -875,19 +873,42 @@ public final class BuiltinFileDialog {
         navigateTo(host, state, state.currentDir);
     }
 
-    /** Shows rename/delete actions for a file or folder entry. */
+    /** Shows file operations for a file or folder entry. */
     private static void showEntryActions(Activity host, State state, File entry) {
-        String[] actions;
-        List<String> list = new ArrayList<>();
-        list.add(host.getString(R.string.file_manager_rename));
-        list.add(host.getString(R.string.global_delete));
-        actions = list.toArray(new String[0]);
+        boolean selected = state.selection.contains(entry);
+        String[] actions = {
+                host.getString(selected ? R.string.file_manager_deselect
+                        : R.string.file_manager_select),
+                host.getString(R.string.file_manager_move),
+                host.getString(R.string.file_manager_rename),
+                host.getString(R.string.global_delete)
+        };
         new MaterialAlertDialogBuilder(host)
                 .setTitle(entry.getName())
                 .setItems(actions, (d, which) -> {
                     if (which == 0) {
-                        promptRename(host, state, entry);
+                        state.manageMode = true;
+                        if (state.selection.contains(entry)) {
+                            state.selection.remove(entry);
+                            state.adapter.notifyDataSetChanged();
+                            updateSelectionButton(host, state);
+                            refreshBottomBar(host, state);
+                        } else {
+                            state.adapter.toggleSelection(entry);
+                            refreshBottomBar(host, state);
+                        }
                     } else if (which == 1) {
+                        state.manageMode = true;
+                        if (!state.selection.contains(entry)) {
+                            state.selection.clear();
+                            state.selection.add(entry);
+                            state.adapter.notifyDataSetChanged();
+                        }
+                        refreshBottomBar(host, state);
+                        chooseMoveDestination(host, state);
+                    } else if (which == 2) {
+                        promptRename(host, state, entry);
+                    } else {
                         confirmDelete(host, state, entry);
                     }
                 })
@@ -1205,6 +1226,7 @@ public final class BuiltinFileDialog {
             requestSharedStorage(host, state, directory);
             return;
         }
+        Log.i(TAG, "Starting directory scan: " + path);
         DIRECTORY_LISTING.execute(() -> {
             File[] listed = null;
             SecurityException failure = null;
@@ -1213,12 +1235,13 @@ public final class BuiltinFileDialog {
             } catch (SecurityException e) {
                 failure = e;
             }
+            Log.i(TAG, "Directory scan finished: " + path
+                    + ", entries=" + (listed != null ? listed.length : "unavailable"));
             File[] result = listed;
             SecurityException listingFailure = failure;
             host.runOnUiThread(() -> {
                 if (requestId != state.listingRequestId || !directory.equals(state.currentDir)
-                        || host.isFinishing() || host.isDestroyed()
-                        || state.dialog == null || !state.dialog.isShowing()) {
+                    || host.isFinishing() || host.isDestroyed()) {
                     return;
                 }
                 if (listingFailure != null) {
@@ -1232,14 +1255,21 @@ public final class BuiltinFileDialog {
                         state.emptyView.setText(R.string.file_manager_storage_permission);
                         requestSharedStorage(host, state, directory);
                     } else {
+                        Log.w(TAG, "Shared storage listing failed for " + path
+                                + " (exists=" + directory.exists()
+                                + ", readable=" + directory.canRead()
+                                + ", allFilesAccess="
+                                + (Build.VERSION.SDK_INT >= 30
+                                && android.os.Environment.isExternalStorageManager()) + ")");
                         state.emptyView.setText(R.string.file_manager_unreadable);
-                        Toast.makeText(host, R.string.file_manager_storage_permission,
-                                Toast.LENGTH_LONG).show();
                     }
                     return;
                 }
                 if (result == null) {
-                    Log.w(TAG, "listFiles returned null for " + path);
+                    Log.w(TAG, "listFiles returned null for " + path
+                            + " (exists=" + directory.exists()
+                            + ", readable=" + directory.canRead()
+                            + ", writable=" + directory.canWrite() + ")");
                     state.emptyView.setText(R.string.file_manager_unreadable);
                     return;
                 }
@@ -1669,12 +1699,6 @@ public final class BuiltinFileDialog {
             }
             if (state.type == FileDialogBridge.DIALOG_OPEN_FILE
                     || state.type == DIALOG_IMPORT_FILES) {
-                if (isDoubleClick(entry)) {
-                    state.selection.clear();
-                    state.selection.add(entry);
-                    confirm(host, state);
-                    return;
-                }
                 toggleSelection(entry);
             }
         }
@@ -1795,6 +1819,13 @@ public final class BuiltinFileDialog {
                         selectableBackground, true) && selectableBackground.resourceId != 0) {
                     row.setBackgroundResource(selectableBackground.resourceId);
                 }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                row.setOnContextClickListener(v -> {
+                    if (state.type != FileDialogBridge.DIALOG_BROWSE) return false;
+                    showEntryActions(host, state, entry);
+                    return true;
+                });
             }
             return row;
         }

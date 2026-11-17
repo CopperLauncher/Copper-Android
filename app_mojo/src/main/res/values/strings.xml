@@ -91,6 +91,7 @@
     <string name="file_manager_save">Save</string>
     <string name="file_manager_select">Select</string>
     <string name="file_manager_select_count">Select (%1$d)</string>
+    <string name="file_manager_deselect">Deselect</string>
     <string name="file_manager_parent_folder">Go to parent folder</string>
     <string name="file_manager_search_hint">Search this folder</string>
     <string name="file_manager_path_title">Go to location</string>
@@ -141,10 +142,10 @@
     <string name="file_manager_title_open">Select a file</string>
     <string name="file_manager_title_open_multiple">Select files</string>
     <string name="file_manager_title_browse">Manage folder</string>
-    <string name="file_manager_open_hint">Select files. Double-tap a file to open it or a folder to browse.</string>
-    <string name="file_manager_folder_hint">Select a folder or double-tap it to browse inside.</string>
-    <string name="file_manager_manage_hint">Double-tap folders to browse. Use Manage to move or delete items.</string>
-    <string name="file_manager_import_hint">Select files; double-tap folders to browse.</string>
+    <string name="file_manager_open_hint">Select files and press Open. Double-tap folders to browse.</string>
+    <string name="file_manager_folder_hint">Select a folder and press Use this folder. Double-tap folders to browse.</string>
+    <string name="file_manager_manage_hint">Long-press or right-click an item for actions. Use Manage for multi-select.</string>
+    <string name="file_manager_import_hint">Select files and press Import. Double-tap folders to browse.</string>
     <string name="file_manager_new_folder">New folder</string>
     <string name="file_manager_folder_name_hint">Folder name</string>
     <string name="file_manager_rename">Rename</string>
