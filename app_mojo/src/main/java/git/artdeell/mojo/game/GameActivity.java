@@ -68,6 +68,8 @@ import git.artdeell.mojo.instances.Instances;
 import git.artdeell.mojo.utils.lifecycle.ContextExecutor;
 import git.artdeell.mojo.game.platform.Platform;
 import git.artdeell.mojo.game.platform.backend.DummyBackend;
+import git.artdeell.mojo.game.platform.dialog.BuiltinFileDialog;
+import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 import git.artdeell.mojo.game.platform.dialog.FileDialogBridge;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.prefs.QuickSettingSideDialog;
@@ -127,7 +129,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
             finish();
             return;
         }
-        mGameRenderer = new GameRenderer(instance.getLaunchRenderer());
+        mGameRenderer = new GameRenderer(this, instance.getLaunchRenderer());
 
         if(!PREF_ZINK_PREFER_SYSTEM_DRIVER) {
             mGameRenderer.overrideVulkanDriver();
@@ -332,6 +334,7 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     public void onResume() {
         super.onResume();
         ContextExecutor.setActivity(this);
+        BuiltinFileDialog.onHostResumed(this);
         if(PREF_ENABLE_GYRO) mGyroControl.enable();
         PLATFORM.setHovered(true);
     }
@@ -398,8 +401,6 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-
-        if(FileDialogBridge.handleActivityResult(requestCode, resultCode, data)) return;
 
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             // Reload PREF_DEFAULTCTRL_PATH
@@ -604,5 +605,12 @@ public class GameActivity extends BaseActivity implements ControlButtonMenuListe
         if(Tools.isAndroid8OrHigher() && checkCaptureDispatchConditions(ev))
             return launcherGLView.dispatchCapturedPointerEvent(ev);
         else return super.dispatchTrackballEvent(ev);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        BuiltinFileDialog.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 }

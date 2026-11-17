@@ -1,6 +1,7 @@
 package git.artdeell.mojo.prefs.screens;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -16,12 +17,15 @@ import git.artdeell.mojo.BuildConfig;
 import git.artdeell.mojo.R;
 
 import git.artdeell.mojo.contracts.OpenDocumentWithExtension;
+import git.artdeell.mojo.fragments.V2PluginConfigDialog;
 import git.artdeell.mojo.game.renderer.RendererCache;
 import git.artdeell.mojo.game.renderer.def.Renderers;
 import git.artdeell.mojo.game.renderer.extra.GLESProvider;
 import git.artdeell.mojo.prefs.CustomSeekBarPreference;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.utils.GpuUtils;
+import git.artdeell.mojo.utils.plugins.PluginManager;
+import git.artdeell.mojo.utils.plugins.RendererV2Plugin;
 import git.artdeell.mojo.vulkan.DriverInstaller;
 import git.artdeell.mojo.vulkan.DriverManager;
 import git.artdeell.mojo.vulkan.driver.BuiltinDriver;
@@ -93,6 +97,13 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
         rendererListPreference.setEntries(list.rendererDisplayNames);
         rendererListPreference.setEntryValues(list.rendererIds.toArray(new String[0]));
 
+        Preference configurePlugin = requirePreference("configureRendererPlugin");
+        configurePlugin.setOnPreferenceClickListener(pref -> {
+            RendererV2Plugin plugin = findSelectedV2Plugin();
+            if(plugin != null) V2PluginConfigDialog.show(requireContext(), plugin);
+            return true;
+        });
+
 
         Preference drivers = requirePreference("manageDrivers");
         drivers.setOnPreferenceClickListener(pref -> {
@@ -131,6 +142,42 @@ public class LauncherPreferenceVideoFragment extends LauncherPreferenceFragment 
 
         boolean isMobileGluesRenderer = Renderers.MOBILEGLUES_RENDERER.equals(LauncherPreferences.PREF_RENDERER);
         requirePreference("renderer_settings").setVisible(isMobileGluesRenderer);
+
+        updateRendererPluginConfigurePref();
+    }
+
+    /**
+     * The plugin selected in the renderer list, or null when a built-in renderer is
+     * selected. Returns null on refresh races, the caller shows nothing then.
+     */
+    @androidx.annotation.Nullable
+    private RendererV2Plugin findSelectedV2Plugin() {
+        String renderer = LauncherPreferences.PREF_RENDERER;
+        if(renderer == null || !renderer.startsWith(PluginManager.RENDERER_TAG_PREFIX)) return null;
+        Context context = getContext();
+        if(context == null) return null;
+        return PluginManager.findRendererV2Plugin(context,
+                renderer.substring(PluginManager.RENDERER_TAG_PREFIX.length()));
+    }
+
+    private void updateRendererPluginConfigurePref(){
+        Preference preference = requirePreference("configureRendererPlugin");
+        RendererV2Plugin plugin = findSelectedV2Plugin();
+        boolean hasConfigurableEnv = false;
+        if(plugin != null) {
+            for(RendererV2Plugin.Env env : plugin.env) {
+                if(!(env instanceof RendererV2Plugin.NormalEnv)) {
+                    hasConfigurableEnv = true;
+                    break;
+                }
+            }
+        }
+        if(plugin == null || !hasConfigurableEnv) {
+            preference.setVisible(false);
+            return;
+        }
+        preference.setSummary(plugin.displayName);
+        preference.setVisible(true);
     }
 
     private void openDriverDialog(){

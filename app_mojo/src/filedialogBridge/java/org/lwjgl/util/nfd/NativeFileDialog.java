@@ -16,11 +16,11 @@ import org.lwjgl.system.MemoryUtil;
  * through the Android file manager instead of the desktop helpers that do not
  * exist on Android.
  *
- * It is placed ahead of lwjgl-nfd.jar on the game classpath, so the game links
- * against this implementation and the bundled liblwjgl_nfd.so is never loaded.
- * Dialogs return real filesystem paths: picked documents are copied into the
- * app cache, save dialogs hand out a scratch file that is written back to the
- * picked location once closed.
+ * The bridge class replaces the binding inside the game's existing NFD jar.
+ * The bundled liblwjgl_nfd.so is not loaded.
+ * Dialogs return real filesystem paths from the launcher's built-in file
+ * manager. Access to shared storage is controlled by Android's storage
+ * permissions.
  */
 public class NativeFileDialog {
 
@@ -37,7 +37,7 @@ public class NativeFileDialog {
 
     static {
         try {
-            System.loadLibrary("pojavexec");
+            System.loadLibrary("mojort");
         } catch (Throwable t) {
             // The bridge calls below will throw UnsatisfiedLinkError individually.
             System.err.println("[NativeFileDialog] Failed to load the launcher bridge library: " + t);
@@ -112,13 +112,13 @@ public class NativeFileDialog {
     }
 
     private static int openSingle(String[] specs, String defaultPath, PointerBuffer outPath) {
-        if (outPath == null) {
+        if (outPath == null || !outPath.hasRemaining()) {
             return fail("No output path buffer");
         }
         long[] outAddress = new long[1];
         int result = bridgeNFDOpen(specs, defaultPath, outAddress);
         if (result == NFD_OKAY) {
-            outPath.put(0, outAddress[0]);
+            outPath.put(outPath.position(), outAddress[0]);
         } else if (result == NFD_ERROR) {
             fail("File picker unavailable");
         }
@@ -157,21 +157,21 @@ public class NativeFileDialog {
 
     /** Parent windows do not exist on Android, the rest behaves like NFD_OpenDialogMultiple. */
     public static int NFD_OpenDialogMultiple_With(PointerBuffer outPath, NFDOpenDialogArgs args) {
-        if (args == null || outPath == null) {
+        if (args == null || outPath == null || !outPath.hasRemaining()) {
             return fail("Invalid dialog arguments");
         }
         return openMultiple(filterSpecs(args.filterList(), args.filterCount()), args.defaultPathString(), outPath);
     }
 
     private static int openMultiple(String[] specs, String defaultPath, PointerBuffer outPath) {
-        if (outPath == null) {
+        if (outPath == null || !outPath.hasRemaining()) {
             return fail("No output path buffer");
         }
         long handle = bridgeNFDOpenMultiple(specs, defaultPath);
         if (handle == 0) {
             return NFD_CANCEL;
         }
-        outPath.put(0, handle);
+        outPath.put(outPath.position(), handle);
         return NFD_OKAY;
     }
 
@@ -204,7 +204,7 @@ public class NativeFileDialog {
 
     /** Parent windows do not exist on Android, the rest behaves like NFD_SaveDialog. */
     public static int NFD_SaveDialog_With(PointerBuffer outPath, NFDSaveDialogArgs args) {
-        if (args == null || outPath == null) {
+        if (args == null || outPath == null || !outPath.hasRemaining()) {
             return fail("Invalid dialog arguments");
         }
         return saveSingle(filterSpecs(args.filterList(), args.filterCount()),
@@ -212,13 +212,13 @@ public class NativeFileDialog {
     }
 
     private static int saveSingle(String[] specs, String defaultPath, String defaultName, PointerBuffer outPath) {
-        if (outPath == null) {
+        if (outPath == null || !outPath.hasRemaining()) {
             return fail("No output path buffer");
         }
         long[] outAddress = new long[1];
         int result = bridgeNFDSave(specs, defaultPath, defaultName, outAddress);
         if (result == NFD_OKAY) {
-            outPath.put(0, outAddress[0]);
+            outPath.put(outPath.position(), outAddress[0]);
         } else if (result == NFD_ERROR) {
             fail("File picker unavailable");
         }
@@ -249,20 +249,20 @@ public class NativeFileDialog {
 
     /** Parent windows do not exist on Android, the rest behaves like NFD_PickFolder. */
     public static int NFD_PickFolder_With(PointerBuffer outPath, NFDPickFolderArgs args) {
-        if (args == null || outPath == null) {
+        if (args == null || outPath == null || !outPath.hasRemaining()) {
             return fail("Invalid dialog arguments");
         }
         return pickFolder(args.defaultPathString(), outPath);
     }
 
     private static int pickFolder(String defaultPath, PointerBuffer outPath) {
-        if (outPath == null) {
+        if (outPath == null || !outPath.hasRemaining()) {
             return fail("No output path buffer");
         }
         long[] outAddress = new long[1];
         int result = bridgeNFDPickFolder(defaultPath, outAddress);
         if (result == NFD_OKAY) {
-            outPath.put(0, outAddress[0]);
+            outPath.put(outPath.position(), outAddress[0]);
         } else if (result == NFD_ERROR) {
             fail("File picker unavailable");
         }
@@ -281,21 +281,21 @@ public class NativeFileDialog {
 
     /** Parent windows do not exist on Android, the rest behaves like NFD_PickFolderMultiple. */
     public static int NFD_PickFolderMultiple_With(PointerBuffer outPath, NFDPickFolderArgs args) {
-        if (args == null || outPath == null) {
+        if (args == null || outPath == null || !outPath.hasRemaining()) {
             return fail("Invalid dialog arguments");
         }
         return pickFolderMultiple(args.defaultPathString(), outPath);
     }
 
     private static int pickFolderMultiple(String defaultPath, PointerBuffer outPath) {
-        if (outPath == null) {
+        if (outPath == null || !outPath.hasRemaining()) {
             return fail("No output path buffer");
         }
         long handle = bridgeNFDPickFolderMultiple(defaultPath);
         if (handle == 0) {
             return NFD_CANCEL;
         }
-        outPath.put(0, handle);
+        outPath.put(outPath.position(), handle);
         return NFD_OKAY;
     }
 
@@ -365,14 +365,14 @@ public class NativeFileDialog {
     }
 
     public static int NFD_PathSet_GetPath(long pathSet, int index, PointerBuffer outPath) {
-        if (outPath == null) {
+        if (outPath == null || !outPath.hasRemaining()) {
             return fail("No output path buffer");
         }
         long address = bridgeNFDPathSetGetPath(pathSet, index);
         if (address == 0) {
             return fail("Invalid path set index");
         }
-        outPath.put(0, address);
+        outPath.put(outPath.position(), address);
         return NFD_OKAY;
     }
 
@@ -403,7 +403,7 @@ public class NativeFileDialog {
     }
 
     public static int NFD_PathSet_EnumNext(NFDPathSetEnum enumerator, PointerBuffer outPath) {
-        if (enumerator == null || outPath == null) {
+        if (enumerator == null || outPath == null || !outPath.hasRemaining()) {
             return fail("Invalid enumerator");
         }
         long address = bridgeNFDPathSetEnumNext(enumerator.address());
@@ -412,7 +412,7 @@ public class NativeFileDialog {
             // null-checking ones.
             return NFD_CANCEL;
         }
-        outPath.put(0, address);
+        outPath.put(outPath.position(), address);
         return NFD_OKAY;
     }
 
@@ -478,7 +478,7 @@ public class NativeFileDialog {
 
     public static native int nNFD_PathSet_EnumNext(long enumerator, long outPath);
 
-    // --- Bridge into the launcher (implemented in libpojavexec.so) ---
+    // --- Bridge into the launcher (implemented in libmojort.so) ---
 
     private static native int bridgeNFDOpen(String[] filterSpecs, String defaultPath, long[] outAddress);
 

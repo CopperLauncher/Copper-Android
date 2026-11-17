@@ -43,30 +43,59 @@ static void library_preload_hook(JNIEnv *env, const char* name) {
     }
 }
 
+// The desktop lwjgl-tinyfd native library has no Android file picker, and the
+// launcher bridge library already implements the same JNI entry points. Point
+// its load (and the bridge's own System.loadLibrary call) at libmojort.so so
+// JNI resolution happens without depending on java.library.path.
+static jstring maybe_redirect_dialog_library(JNIEnv *env, jstring name) {
+    const char *utf = (*env)->GetStringUTFChars(env, name, NULL);
+    if (utf == NULL) return NULL;
+    const char *base = strrchr(utf, '/');
+    base = base != NULL ? base + 1 : utf;
+    bool redirect = strcmp(base, "liblwjgl_tinyfd.so") == 0
+            || strcmp(base, "liblwjgl_tinyfd") == 0
+            || strcmp(base, "lwjgl_tinyfd") == 0
+            || strcmp(base, "libmojort.so") == 0
+            || strcmp(base, "mojort") == 0;
+    jstring result = NULL;
+    if (redirect) {
+        Dl_info info;
+        if (dladdr((void *) maybe_redirect_dialog_library, &info) != 0
+                && info.dli_fname != NULL) {
+            result = (*env)->NewStringUTF(env, info.dli_fname);
+        }
+    }
+    (*env)->ReleaseStringUTFChars(env, name, utf);
+    return result;
+}
+
 #define NATIVES_HOOK(CALLTHROUGH, RESULT, RESULT_RETURN) \
 do { \
-    const char *name_n = (*env)->GetStringUTFChars(env, name, NULL); \
+    jstring redirect = maybe_redirect_dialog_library(env, name); \
+    jstring load_name = redirect != NULL ? redirect : name; \
+    const char *name_n = (*env)->GetStringUTFChars(env, load_name, NULL); \
     library_preload_hook(env, name_n); \
     const bool hintsRequired = apiRequiresHints(); \
     hinter_t hinter; \
     if (hintsRequired) hinter_process(&hinter, name_n); \
-    (*env)->ReleaseStringUTFChars(env, name, name_n); \
+    (*env)->ReleaseStringUTFChars(env, load_name, name_n); \
     RESULT CALLTHROUGH; \
     if (hintsRequired) hinter_free(&hinter); \
+    if (redirect != NULL) (*env)->DeleteLocalRef(env, redirect); \
     RESULT_RETURN \
 } while(0);
 
 
 static jboolean hook_NativeLibraries_load(JNIEnv *env, jclass cls, jobject lib, jstring name, jboolean isBuiltin, jboolean throwExceptionIfFail) {
-    NATIVES_HOOK(original_func.j21(env, cls, lib, name, isBuiltin, throwExceptionIfFail), jboolean result =, return result;)
+    NATIVES_HOOK(original_func.j21(env, cls, lib, load_name, isBuiltin, throwExceptionIfFail), jboolean result =, return result;)
 }
 
 static jboolean hook_j17_NativeLibraries_load(JNIEnv *env, jclass cls, jobject lib, jstring name, jboolean isBuiltin, jboolean isJNI, jboolean throwExceptionIfFail) {
-    NATIVES_HOOK(original_func.j17(env, cls, lib, name, isBuiltin, isJNI, throwExceptionIfFail), jboolean result =, return result;)
+    NATIVES_HOOK(original_func.j17(env, cls, lib, load_name, isBuiltin, isJNI, throwExceptionIfFail), jboolean result =, return result;)
 }
 
 static void hook_ClassLoader_00024NativeLibrary_load(JNIEnv *env, jobject this, jstring name, jboolean isBuiltin) {
-    NATIVES_HOOK(original_func.j8(env, this, name, isBuiltin),,)
+    NATIVES_HOOK(original_func.j8(env, this, load_name, isBuiltin),,)
 }
 
 static bool testMethod(JNIEnv *vm_env, jclass hookClass, const char* sign, JNINativeMethod* hookMethod) {

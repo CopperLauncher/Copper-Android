@@ -102,12 +102,21 @@ public class CallbackBridge {
     public static void openLink(String link) {
         ContextExecutor.executeActivity(ctx->{
             try {
+                File path = null;
                 if(link.startsWith("file:")) {
-                    int truncLength = 5;
-                    if(link.startsWith("file://")) truncLength = 7;
-                    String path = link.substring(truncLength);
-                    Tools.openPath(ctx, new File(path), false);
-                }else {
+                    String filePath = Uri.parse(link).getPath();
+                    if (filePath != null) path = new File(filePath);
+                } else {
+                    File candidate = new File(link);
+                    if (candidate.isAbsolute()) path = candidate;
+                }
+                if (path != null) {
+                    if (path.isDirectory()) {
+                        FileDialogBridge.browseDirectory(path.getAbsolutePath());
+                    } else {
+                        Tools.openPath(ctx, path, false);
+                    }
+                } else {
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setDataAndType(Uri.parse(link), "*/*");
                     ctx.startActivity(intent);
@@ -122,7 +131,12 @@ public class CallbackBridge {
     public static void openPath(String path) {
         ContextExecutor.executeActivity(ctx->{
             try {
-                Tools.openPath(ctx, new File(path), false);
+                File target = new File(path);
+                if (target.isDirectory()) {
+                    FileDialogBridge.browseDirectory(target.getAbsolutePath());
+                } else {
+                    Tools.openPath(ctx, target, false);
+                }
             } catch (Throwable th) {
                 Tools.showError(ctx, th);
             }
@@ -134,7 +148,6 @@ public class CallbackBridge {
     static {
         System.loadLibrary("mojort");
         minibridgeInit();
-        FileDialogBridge.nativeInit();
     }
 }
 

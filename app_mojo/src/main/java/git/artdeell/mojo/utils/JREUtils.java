@@ -78,7 +78,7 @@ public class JREUtils {
     public static void setupFfmpegEnv(Context ctx, Map<String, String> envMap) {
         LibraryPlugin ffmpeg = LibraryPlugin.discoverPlugin(ctx, LibraryPlugin.ID_FFMPEG_PLUGIN);
         if(ffmpeg == null) return;
-        envMap.put("POJAV_FFMPEG_PATH", ffmpeg.resolveAbsolutePath("libffmpeg.so"));
+        envMap.put("MOJO_FFMPEG_PATH", ffmpeg.resolveAbsolutePath("libffmpeg.so"));
     }
     public static void setGameEnvironment(Context context, Map<String, String> versionSpecificEnv) throws Throwable {
         Map<String, String> envMap = new ArrayMap<>();
@@ -89,7 +89,6 @@ public class JREUtils {
 
         setupFfmpegEnv(context, envMap);
 
-        if(LauncherPreferences.PREF_BIG_CORE_AFFINITY) envMap.put("POJAV_BIG_CORE_AFFINITY", "1");
         if(LauncherPreferences.PREF_ALSOFT_FORCE_OPENSL) envMap.put("ALSOFT_DRIVERS", "opensl");
 
         overrideEnvVars(envMap);
