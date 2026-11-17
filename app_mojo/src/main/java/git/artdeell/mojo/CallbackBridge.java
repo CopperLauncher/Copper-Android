@@ -131,7 +131,12 @@ public class CallbackBridge {
     public static void openPath(String path) {
         ContextExecutor.executeActivity(ctx->{
             try {
-                Tools.openPath(ctx, new File(path), false);
+                File target = new File(path);
+                if (target.isDirectory()) {
+                    FileDialogBridge.browseDirectory(target.getAbsolutePath());
+                } else {
+                    Tools.openPath(ctx, target, false);
+                }
             } catch (Throwable th) {
                 Tools.showError(ctx, th);
             }
@@ -143,7 +148,6 @@ public class CallbackBridge {
     static {
         System.loadLibrary("mojort");
         minibridgeInit();
-        FileDialogBridge.nativeInit();
     }
 }
 

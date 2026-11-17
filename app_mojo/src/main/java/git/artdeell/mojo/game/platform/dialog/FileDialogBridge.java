@@ -2,9 +2,11 @@ package git.artdeell.mojo.game.platform.dialog;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.media.ToneGenerator;
 import android.text.InputType;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -43,6 +45,7 @@ public class FileDialogBridge {
     public static final int MESSAGE_CANCEL = 0;
 
     private static WeakReference<Activity> sHostActivity;
+    private static boolean sNativeInitialized;
 
     private FileDialogBridge() {
     }
@@ -56,6 +59,14 @@ public class FileDialogBridge {
      */
     public static void setHostActivity(Activity activity) {
         sHostActivity = new WeakReference<>(activity);
+        ensureNativeInitialized();
+    }
+
+    private static synchronized void ensureNativeInitialized() {
+        if (sNativeInitialized) return;
+        System.loadLibrary("mojort");
+        nativeInit();
+        sNativeInitialized = true;
     }
 
     /**
@@ -91,6 +102,8 @@ public class FileDialogBridge {
                                         boolean allowMultiple) {
         String[] paths = awaitDialog(DIALOG_OPEN_FILE, title, defaultPath,
                 filterPatterns, allowMultiple);
+        Log.i(TAG, "File dialog completed, selected="
+                + (paths != null ? paths.length : 0));
         if (paths == null || paths.length == 0) return null;
         return joinPaths(paths);
     }
@@ -100,6 +113,8 @@ public class FileDialogBridge {
                                         String[] filterPatterns, String singleFilterDescription) {
         String[] paths = awaitDialog(DIALOG_SAVE_FILE, title, defaultPath,
                 filterPatterns, false);
+        Log.i(TAG, "Save dialog completed, selected="
+                + (paths != null ? paths.length : 0));
         if (paths == null || paths.length == 0) return null;
         return paths[0];
     }
@@ -108,6 +123,8 @@ public class FileDialogBridge {
     public static String selectFolderDialog(String title, String defaultPath) {
         String[] paths = awaitDialog(DIALOG_OPEN_FOLDER, title, defaultPath,
                 null, false);
+        Log.i(TAG, "Folder dialog completed, selected="
+                + (paths != null ? paths.length : 0));
         if (paths == null || paths.length == 0) return null;
         return paths[0];
     }
@@ -197,6 +214,7 @@ public class FileDialogBridge {
             Log.w(TAG, "No host activity for file dialog");
             return null;
         }
+        Log.i(TAG, "Opening built-in file dialog, type=" + type);
         String[][] resultBox = new String[1][];
         CountDownLatch latch = new CountDownLatch(1);
         Tools.runOnUiThread(() -> {
@@ -271,7 +289,33 @@ public class FileDialogBridge {
         }
         builder.setCancelable(true);
         builder.setOnCancelListener(d -> finishMessageBox(MESSAGE_CANCEL, result, latch));
-        builder.show();
+        int defaultWhich;
+        switch (type) {
+            case "okcancel":
+            case "yesno":
+            case "retrycancel":
+                defaultWhich = defaultButton == 0
+                        ? DialogInterface.BUTTON_NEGATIVE : DialogInterface.BUTTON_POSITIVE;
+                break;
+            case "yesnocancel":
+                defaultWhich = defaultButton == 0
+                        ? DialogInterface.BUTTON_NEUTRAL
+                        : defaultButton == 2
+                        ? DialogInterface.BUTTON_NEGATIVE : DialogInterface.BUTTON_POSITIVE;
+                break;
+            default:
+                defaultWhich = DialogInterface.BUTTON_POSITIVE;
+                break;
+        }
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(d -> {
+            Button button = dialog.getButton(defaultWhich);
+            if (button != null) {
+                button.setFocusableInTouchMode(true);
+                button.requestFocus();
+            }
+        });
+        dialog.show();
     }
 
     private static void finishMessageBox(int value, int[] result, CountDownLatch latch) {

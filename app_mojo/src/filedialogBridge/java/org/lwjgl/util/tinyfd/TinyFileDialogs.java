@@ -2,6 +2,7 @@ package org.lwjgl.util.tinyfd;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,10 +22,19 @@ public class TinyFileDialogs {
             tinyfd_assumeGraphicDisplay = "tinyfd_assumeGraphicDisplay",
             tinyfd_winUtf8 = "tinyfd_winUtf8";
 
-    private static final Map<String, String> globalChars = new HashMap<>();
-    private static final Map<String, Integer> globalInts = new HashMap<>();
+    private static final Map<String, String> globalChars =
+            Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, Integer> globalInts =
+            Collections.synchronizedMap(new HashMap<>());
 
     static {
+        globalChars.put(tinyfd_version, "3.22.1");
+        globalChars.put(tinyfd_needs, "Android built-in dialogs");
+        globalChars.put(tinyfd_response, "");
+        globalInts.put(tinyfd_verbose, 0);
+        globalInts.put(tinyfd_silent, 1);
+        globalInts.put(tinyfd_allowCursesDialogs, 0);
+        globalInts.put(tinyfd_forceConsole, 0);
         try {
             System.loadLibrary("mojort");
         } catch (Throwable t) {
@@ -46,23 +56,20 @@ public class TinyFileDialogs {
 
     public static int tinyfd_getGlobalInt(ByteBuffer name) {
         Integer value = globalInts.get(bufferToString(name));
-        return value != null ? value : 0;
+        return value != null ? value : -1;
     }
 
     public static int tinyfd_getGlobalInt(CharSequence name) {
         Integer value = name != null ? globalInts.get(name.toString()) : null;
-        return value != null ? value : 0;
+        return value != null ? value : -1;
     }
 
     public static int tinyfd_setGlobalInt(ByteBuffer name, int value) {
-        globalInts.put(bufferToString(name), value);
-        return value;
+        return tinyfd_setGlobalInt(bufferToString(name), value);
     }
 
     public static int tinyfd_setGlobalInt(CharSequence name, int value) {
-        if (name == null) return 0;
-        globalInts.put(name.toString(), value);
-        return value;
+        return tinyfd_setGlobalInt(name != null ? name.toString() : null, value);
     }
 
     public static void tinyfd_beep() {
@@ -70,13 +77,11 @@ public class TinyFileDialogs {
     }
 
     public static int tinyfd_notifyPopup(ByteBuffer title, ByteBuffer message, ByteBuffer iconType) {
-        bridgeNotifyPopup(bufferToString(title), bufferToString(message), bufferToString(iconType));
-        return 1;
+        return notifyPopup(bufferToString(title), bufferToString(message), bufferToString(iconType));
     }
 
     public static int tinyfd_notifyPopup(CharSequence title, CharSequence message, CharSequence iconType) {
-        bridgeNotifyPopup(toString(title), toString(message), toString(iconType));
-        return 1;
+        return notifyPopup(toString(title), toString(message), toString(iconType));
     }
 
     public static boolean tinyfd_messageBox(ByteBuffer title, ByteBuffer message, ByteBuffer dialogType,
@@ -105,8 +110,11 @@ public class TinyFileDialogs {
 
     private static int messageBox(String title, String message, String dialogType,
                                   String iconType, int defaultButton) {
+        if (isQuery(title)) {
+            replyToQuery();
+            return 1;
+        }
         int result = bridgeMessageBox(title, message, dialogType, iconType, defaultButton);
-        globalChars.put(tinyfd_response, String.valueOf(result));
         return result;
     }
 
@@ -119,8 +127,11 @@ public class TinyFileDialogs {
     }
 
     private static String inputBox(String title, String message, String defaultInput) {
-        String result = bridgeInputBox(title, message, defaultInput, false);
-        globalChars.put(tinyfd_response, result != null ? result : "");
+        if (isQuery(title)) {
+            replyToQuery();
+            return "android";
+        }
+        String result = bridgeInputBox(title, message, defaultInput, defaultInput == null);
         return result;
     }
 
@@ -137,8 +148,11 @@ public class TinyFileDialogs {
 
     private static String saveFileDialog(String title, String defaultPath, PointerBuffer filterPatterns,
                                          String filterDescription) {
+        if (isQuery(title)) {
+            replyToQuery();
+            return "android";
+        }
         String result = bridgeSaveFileDialog(title, defaultPath, patternsToStrings(filterPatterns), filterDescription);
-        globalChars.put(tinyfd_response, result != null ? result : "");
         return result;
     }
 
@@ -158,9 +172,12 @@ public class TinyFileDialogs {
 
     private static String openFileDialog(String title, String defaultPath, PointerBuffer filterPatterns,
                                          String filterDescription, boolean allowMultiple) {
+        if (isQuery(title)) {
+            replyToQuery();
+            return "android";
+        }
         String result = bridgeOpenFileDialog(title, defaultPath, patternsToStrings(filterPatterns),
                 filterDescription, allowMultiple);
-        globalChars.put(tinyfd_response, result != null ? result : "");
         return result;
     }
 
@@ -173,8 +190,11 @@ public class TinyFileDialogs {
     }
 
     private static String selectFolderDialog(String title, String defaultPath) {
+        if (isQuery(title)) {
+            replyToQuery();
+            return "android";
+        }
         String result = bridgeSelectFolderDialog(title, defaultPath);
-        globalChars.put(tinyfd_response, result != null ? result : "");
         return result;
     }
 
@@ -190,6 +210,10 @@ public class TinyFileDialogs {
 
     private static String colorChooser(String title, String defaultHex,
                                        ByteBuffer defaultRGB, ByteBuffer resultRGB) {
+        if (isQuery(title)) {
+            replyToQuery();
+            return "android";
+        }
         int r = 0, g = 0, b = 0;
         boolean parsed = false;
         if (defaultHex != null && defaultHex.length() == 7 && defaultHex.charAt(0) == '#') {
@@ -207,7 +231,7 @@ public class TinyFileDialogs {
             g = defaultRGB.get(position + 1) & 0xFF;
             b = defaultRGB.get(position + 2) & 0xFF;
         }
-        String initialHex = parsed || defaultHex != null
+        String initialHex = parsed || (defaultHex != null && !defaultHex.isEmpty())
                 ? defaultHex : String.format("#%02X%02X%02X", r, g, b);
         String result = bridgeColorChooser(title, initialHex);
         if (result == null) return null;
@@ -228,8 +252,30 @@ public class TinyFileDialogs {
             resultRGB.put(position + 1, (byte) g);
             resultRGB.put(position + 2, (byte) b);
         }
-        globalChars.put(tinyfd_response, result);
         return result;
+    }
+
+    private static int tinyfd_setGlobalInt(String name, int value) {
+        if (name == null || !globalInts.containsKey(name)) return -1;
+        globalInts.put(name, value);
+        return value;
+    }
+
+    private static int notifyPopup(String title, String message, String iconType) {
+        if (isQuery(title)) {
+            replyToQuery();
+            return 1;
+        }
+        bridgeNotifyPopup(title, message, iconType);
+        return 1;
+    }
+
+    private static boolean isQuery(String title) {
+        return "tinyfd_query".equals(title);
+    }
+
+    private static void replyToQuery() {
+        globalChars.put(tinyfd_response, "android");
     }
 
     private static String[] patternsToStrings(PointerBuffer patterns) {

@@ -402,13 +402,21 @@ public class GameRunner {
             Map<String, byte[]> bridgeClasses = readBridgeClasses(bridgeJar);
             File[] result = new File[classpath.length];
             boolean patched = false;
+            boolean tinyfdClassFound = false;
             for (int i = 0; i < classpath.length; i++) {
                 File entry = classpath[i];
                 String name = entry.getName().toLowerCase();
-                if (name.contains("tinyfd") || containsClass(entry,
-                        "org/lwjgl/util/tinyfd/TinyFileDialogs.class")) {
+                boolean containsTinyfd = containsClass(entry,
+                        "org/lwjgl/util/tinyfd/TinyFileDialogs.class");
+                if (name.contains("tinyfd") || containsTinyfd) {
+                    tinyfdClassFound |= containsTinyfd;
                     result[i] = patchDialogJar(bridgeDir, entry, bridgeClasses,
                             "org/lwjgl/util/tinyfd/", DIALOG_BRIDGE_TINYFD_CLASSES);
+                    tinyfdClassFound |= result[i] != entry;
+                    if (containsTinyfd && result[i] == entry) {
+                        Log.e("GameRunner", "Failed to inject the TinyFD file-dialog bridge into "
+                                + entry.getName());
+                    }
                     patched |= result[i] != entry;
                 } else if (name.contains("-nfd") || containsClass(entry,
                         "org/lwjgl/util/nfd/NativeFileDialog.class")) {
@@ -416,6 +424,15 @@ public class GameRunner {
                     patched |= result[i] != entry;
                 } else {
                     result[i] = entry;
+                }
+            }
+            if (!tinyfdClassFound) {
+                File tinyfdJar = writeBridgePackageJar(bridgeDir, "filedialog_tinyfd.jar",
+                        bridgeClasses, "org/lwjgl/util/tinyfd/");
+                if (tinyfdJar != null) {
+                    result = java.util.Arrays.copyOf(result, result.length + 1);
+                    result[result.length - 1] = tinyfdJar;
+                    patched = true;
                 }
             }
             File nfdJar = writeBridgePackageJar(bridgeDir, "filedialog_nfd.jar",

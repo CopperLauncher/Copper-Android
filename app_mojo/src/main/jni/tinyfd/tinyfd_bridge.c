@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define TAG "TinyFdBridge"
+#include "log.h"
 #include "utils.h"
 
 #include "dialog_bridge.h"
@@ -67,6 +69,18 @@ Java_git_artdeell_mojo_game_platform_dialog_FileDialogBridge_nativeInit(JNIEnv *
     m_color_picker = (*env)->GetStaticMethodID(env, clazz, "colorPicker",
             "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;");
     m_beep = (*env)->GetStaticMethodID(env, clazz, "beep", "()V");
+    if (g_dialog_class == NULL || g_m_open_file_dialog == NULL
+            || g_m_save_file_dialog == NULL || g_m_select_folder_dialog == NULL
+            || m_message_box == NULL || m_input_box == NULL || m_notify_popup == NULL
+            || m_color_picker == NULL || m_beep == NULL) {
+        LOGE("Failed to initialize TinyFD callbacks");
+        if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionDescribe(env);
+            (*env)->ExceptionClear(env);
+        }
+    } else {
+        LOGI("TinyFD callbacks initialized");
+    }
 }
 
 
@@ -223,31 +237,40 @@ static char *file_dialog(int type, char const *title, char const *default_path,
     pthread_mutex_lock(&g_bridge_lock);
     char *result_ptr = NULL;
     JNIEnv *env = dialog_env();
-    if (env != NULL && (*env)->PushLocalFrame(env, 32) == 0) {
+    jmethodID callback = type == 0 ? g_m_open_file_dialog
+            : type == 1 ? g_m_save_file_dialog : g_m_select_folder_dialog;
+    if (env == NULL || g_dialog_class == NULL || callback == NULL) {
+        LOGE("TinyFD dialog has no initialized Android callback");
+    }
+    if (env != NULL && g_dialog_class != NULL && callback != NULL
+            && (*env)->PushLocalFrame(env, 32) == 0) {
         jstring result;
         if (type == 0) {
-            result = (*env)->CallStaticObjectMethod(env, g_dialog_class, g_m_open_file_dialog,
+            result = (*env)->CallStaticObjectMethod(env, g_dialog_class, callback,
                     export_string(env, title),
                     export_string(env, default_path),
                     export_patterns(env, pattern_count, patterns),
                     export_string(env, filter_description),
                     allow_multiple != 0);
         } else if (type == 1) {
-            result = (*env)->CallStaticObjectMethod(env, g_dialog_class, g_m_save_file_dialog,
+            result = (*env)->CallStaticObjectMethod(env, g_dialog_class, callback,
                     export_string(env, title),
                     export_string(env, default_path),
                     export_patterns(env, pattern_count, patterns),
                     export_string(env, filter_description));
         } else {
-            result = (*env)->CallStaticObjectMethod(env, g_dialog_class, g_m_select_folder_dialog,
+            result = (*env)->CallStaticObjectMethod(env, g_dialog_class, callback,
                     export_string(env, title),
                     export_string(env, default_path));
         }
         if ((*env)->ExceptionCheck(env)) {
+            (*env)->ExceptionDescribe(env);
             (*env)->ExceptionClear(env);
             result = NULL;
         }
         result_ptr = import_result(env, result, buffer, size);
+        LOGI("TinyFD dialog type %d completed with result=%s",
+                type, result_ptr != NULL ? "yes" : "no");
         (*env)->PopLocalFrame(env, NULL);
     }
     pthread_mutex_unlock(&g_bridge_lock);
@@ -290,13 +313,20 @@ char *mojo_tinyfd_selectFolderDialog(char const *title, char const *default_path
 char *mojo_tinyfd_colorChooser(char const *title, char const *default_hex,
         unsigned char const default_rgb[3], unsigned char result_rgb[3]) {
     static char hex[16];
+    char initial_hex[8];
     if (is_query_title(title)) {
         reply_to_query();
         return (char *) 1;
     }
+    if ((default_hex == NULL || default_hex[0] == '\0') && default_rgb != NULL) {
+        snprintf(initial_hex, sizeof(initial_hex), "#%02X%02X%02X",
+                default_rgb[0], default_rgb[1], default_rgb[2]);
+        default_hex = initial_hex;
+    }
     JNIEnv *env = dialog_env();
     char *chosen = NULL;
-    if (env != NULL && (*env)->PushLocalFrame(env, 16) == 0) {
+    if (env != NULL && g_dialog_class != NULL && m_color_picker != NULL
+            && (*env)->PushLocalFrame(env, 16) == 0) {
         pthread_mutex_lock(&g_bridge_lock);
         jstring result = (*env)->CallStaticObjectMethod(env, g_dialog_class, m_color_picker,
                 export_string(env, title),
