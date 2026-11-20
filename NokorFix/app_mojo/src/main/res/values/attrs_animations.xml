@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- Press animation for buttons, empty unless ThemeOverlay.Nokor.Animations.Buttons is applied -->
-    <attr name="nokorPressAnimator" format="reference" />
-    <!-- Window animation style used by dialogs, no animation unless ThemeOverlay.Nokor.Animations.Dialogs is applied -->
-    <attr name="nokorDialogAnimations" format="reference" />
-</resources>
