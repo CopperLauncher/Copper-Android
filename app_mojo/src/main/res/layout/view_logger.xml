@@ -30,7 +30,7 @@
 
         <com.google.android.material.chip.Chip
             android:id="@+id/content_log_toggle_log"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/Widget.Copper.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
@@ -39,7 +39,7 @@
 
         <com.google.android.material.chip.Chip
             android:id="@+id/content_log_toggle_autoscroll"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/Widget.Copper.Chip.Filter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="4dp"

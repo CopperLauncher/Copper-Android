@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 Expressive: the selected tab morphs to a full pill, the others stay softly rounded -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_selected="true">
         <shape android:shape="rectangle">
-            <corners android:radius="20dp" />
+            <corners android:radius="100dp" />
             <solid android:color="?attr/colorSecondaryContainer" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="10dp" />
+            <solid android:color="?attr/colorSurfaceContainerHighest" />
         </shape>
     </item>
     <item>
         <shape android:shape="rectangle">
-            <corners android:radius="20dp" />
+            <corners android:radius="16dp" />
             <solid android:color="?attr/colorSurfaceContainerHigh" />
         </shape>
     </item>

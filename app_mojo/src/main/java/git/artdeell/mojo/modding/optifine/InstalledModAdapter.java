@@ -334,7 +334,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
             try {
                 // Download to a temp file first so we never leave a half-written jar
                 File tmpFile = new File(entry.file.getParent(), targetName + ".tmp");
-                DownloadUtils.downloadFile(updateUrl, tmpFile);
+                git.artdeell.mojo.progresskeeper.ContentDownloadManager.download(updateName, updateUrl, tmpFile);
 
                 replaceModFile(oldFile, tmpFile, targetFile);
 
@@ -618,7 +618,7 @@ public class InstalledModAdapter extends RecyclerView.Adapter<InstalledModAdapte
         sUpdateCheckExecutor.execute(() -> {
             try {
                 File tmpFile = new File(entry.file.getParent(), targetName + ".tmp");
-                DownloadUtils.downloadFile(url, tmpFile);
+                git.artdeell.mojo.progresskeeper.ContentDownloadManager.download(fileName, url, tmpFile);
 
                 replaceModFile(oldFile, tmpFile, targetFile);
 

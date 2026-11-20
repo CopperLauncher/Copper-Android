@@ -80,7 +80,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_engine_modrinth"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -88,7 +88,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_engine_curseforge"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -96,7 +96,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_engine_both"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -189,7 +189,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_loader_any"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -197,7 +197,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_loader_fabric"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -206,7 +206,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_loader_forge"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -215,7 +215,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_loader_quilt"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -224,7 +224,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_loader_neoforge"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -233,7 +233,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_loader_legacy_fabric"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -242,7 +242,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_loader_bta"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -285,7 +285,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/filter_category_any"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    style="@style/Widget.Copper.Chip.Filter"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checkable="true"
@@ -304,7 +304,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/filter_reset"
-                style="@style/Widget.Material3.Button.TextButton"
+                style="@style/Widget.Copper.Button.TextButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/filter_reset" />

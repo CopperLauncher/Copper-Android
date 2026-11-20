@@ -12,7 +12,7 @@ public enum HomeTileType {
     DISCORD(R.string.mcl_button_social_media, R.drawable.ic_social_media, 4, 1, false, true),
     CONTROLLER_SETTINGS(R.string.home_tile_controller_settings, R.drawable.ic_px_gestures, 4, 1, false, true),
     CUSTOM_CONTROLS(R.string.mcl_option_customcontrol, R.drawable.ic_px_gamepad, 4, 1, false, true),
-    BROWSE_CONTENT(R.string.mcl_button_mod_store, R.drawable.ic_add, 4, 1, false, true),
+    BROWSE_CONTENT(R.string.mcl_button_mod_store, R.drawable.ic_px_search, 4, 1, false, true),
     MANAGE_CONTENT(R.string.mcl_button_manage_mods, R.drawable.ic_folder_managed, 4, 1, false, true),
     OPEN_FOLDER(R.string.mcl_button_open_directory, R.drawable.ic_px_folder, 4, 1, false, true),
     INSTALL_JAR(R.string.main_install_jar_file, R.drawable.ic_px_java_run, 4, 1, false, true),

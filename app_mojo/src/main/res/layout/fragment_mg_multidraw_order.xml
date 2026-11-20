@@ -60,14 +60,14 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/mg_order_bench"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Widget.Copper.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/md_bench_run_all" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/mg_order_reset"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.Copper.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"

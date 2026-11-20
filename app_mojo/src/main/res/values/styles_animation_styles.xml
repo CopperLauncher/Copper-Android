@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Animation styles the user can pick in the launcher appearance settings, see AnimationManager -->
+    <style name="Animation.Copper.Dialog.Fade" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_fade_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_fade_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Fade" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Fade</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Bounce" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_bounce_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_bounce_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Bounce" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Bounce</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Zoom" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_zoom_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_zoom_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Zoom" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Zoom</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Rise" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_rise_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_rise_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Rise" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Rise</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Drop" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_drop_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_drop_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Drop" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Drop</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Pop" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_pop_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_pop_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Pop" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Pop</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Vertical" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_vertical_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_vertical_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Vertical" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Vertical</item>
+    </style>
+    <style name="Animation.Copper.Activity.Fade" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_fade_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_fade_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_fade_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_fade_out</item>
+    </style>
+    <style name="Animation.Copper.Activity.Zoom" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_zoom_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_zoom_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_zoom_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_zoom_out</item>
+    </style>
+    <style name="Animation.Copper.Activity.Rise" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_rise_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_rise_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_rise_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_rise_out</item>
+    </style>
+    <style name="Animation.Copper.Activity.Drop" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_drop_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_drop_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_drop_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_drop_out</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Buttons.Fade" parent="">
+        <item name="copperPressAnimator">@animator/copper_press_fade</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Buttons.Squish" parent="">
+        <item name="copperPressAnimator">@animator/copper_press_squish</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Buttons.Grow" parent="">
+        <item name="copperPressAnimator">@animator/copper_press_grow</item>
+    </style>
+    <style name="Animation.Copper.Dialog.FromRight" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_from_right_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_from_right_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.FromRight" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.FromRight</item>
+    </style>
+    <style name="Animation.Copper.Activity.FromRight" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_from_right_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_from_right_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_from_right_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_from_right_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.FromLeft" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_from_left_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_from_left_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.FromLeft" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.FromLeft</item>
+    </style>
+    <style name="Animation.Copper.Activity.FromLeft" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_from_left_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_from_left_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_from_left_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_from_left_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Elastic" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_elastic_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_elastic_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Elastic" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Elastic</item>
+    </style>
+    <style name="Animation.Copper.Activity.Elastic" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_elastic_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_elastic_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_elastic_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_elastic_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Spin" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_spin_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_spin_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Spin" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Spin</item>
+    </style>
+    <style name="Animation.Copper.Activity.Spin" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_spin_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_spin_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_spin_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_spin_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Flip" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_flip_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_flip_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Flip" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Flip</item>
+    </style>
+    <style name="Animation.Copper.Activity.Flip" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_flip_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_flip_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_flip_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_flip_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Swing" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_swing_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_swing_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Swing" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Swing</item>
+    </style>
+    <style name="Animation.Copper.Activity.Swing" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_swing_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_swing_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_swing_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_swing_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Corner" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_corner_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_corner_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Corner" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Corner</item>
+    </style>
+    <style name="Animation.Copper.Activity.Corner" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_corner_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_corner_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_corner_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_corner_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Squash" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_squash_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_squash_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Squash" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Squash</item>
+    </style>
+    <style name="Animation.Copper.Activity.Squash" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_squash_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_squash_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_squash_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_squash_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Slam" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_slam_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_slam_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Slam" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Slam</item>
+    </style>
+    <style name="Animation.Copper.Activity.Slam" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_slam_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_slam_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_slam_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_slam_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Unfold" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_unfold_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_unfold_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Unfold" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Unfold</item>
+    </style>
+    <style name="Animation.Copper.Activity.Unfold" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_unfold_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_unfold_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_unfold_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_unfold_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Drift" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_drift_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_drift_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Drift" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Drift</item>
+    </style>
+    <style name="Animation.Copper.Activity.Drift" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_drift_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_drift_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_drift_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_drift_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Wobble" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_wobble_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_wobble_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Wobble" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Wobble</item>
+    </style>
+    <style name="Animation.Copper.Activity.Wobble" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_wobble_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_wobble_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_wobble_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_wobble_out</item>
+    </style>
+    <style name="Animation.Copper.Dialog.Tilt" parent="@android:style/Animation.Dialog">
+        <item name="android:windowEnterAnimation">@anim/copper_dialog_tilt_enter</item>
+        <item name="android:windowExitAnimation">@anim/copper_dialog_tilt_exit</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Dialogs.Tilt" parent="">
+        <item name="copperDialogAnimations">@style/Animation.Copper.Dialog.Tilt</item>
+    </style>
+    <style name="Animation.Copper.Activity.Tilt" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/copper_act_tilt_in</item>
+        <item name="android:activityOpenExitAnimation">@anim/copper_act_tilt_out</item>
+        <item name="android:activityCloseEnterAnimation">@anim/copper_act_tilt_in</item>
+        <item name="android:activityCloseExitAnimation">@anim/copper_act_tilt_out</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Buttons.Tilt" parent="">
+        <item name="copperPressAnimator">@animator/copper_press_tilt</item>
+    </style>
+    <style name="ThemeOverlay.Copper.Animations.Buttons.Sink" parent="">
+        <item name="copperPressAnimator">@animator/copper_press_sink</item>
+    </style>
+</resources>

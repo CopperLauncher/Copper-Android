@@ -64,6 +64,41 @@ public class DownloadUtils {
         }
     }
 
+    /** Receives the bytes copied so far, total is -1 when the server did not say how big the file is */
+    public interface ByteProgress {
+        void onBytes(long done, long total);
+    }
+
+    /** Downloads a file and reports the byte progress, with the same checks as {@link #download(URL, OutputStream)} */
+    public static void downloadFileTracked(String urlInput, File outputFile, ByteProgress progress) throws IOException {
+        FileUtils.ensureParentDirectory(outputFile);
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlInput).openConnection();
+        try {
+            conn.setRequestProperty("User-Agent", USER_AGENT);
+            conn.setConnectTimeout(10000);
+            conn.setDoInput(true);
+            conn.connect();
+            if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                throw new IOException("Server returned HTTP " + conn.getResponseCode()
+                        + ": " + conn.getResponseMessage() + " (" + urlInput + ")");
+            }
+            long total = conn.getContentLengthLong();
+            progress.onBytes(0, total);
+            try (InputStream in = conn.getInputStream(); FileOutputStream out = new FileOutputStream(outputFile)) {
+                byte[] buffer = new byte[32768];
+                long done = 0;
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, read);
+                    done += read;
+                    progress.onBytes(done, total);
+                }
+            }
+        } finally {
+            conn.disconnect();
+        }
+    }
+
     public static void downloadFileMonitored(String urlInput, File outputFile, @Nullable byte[] buffer,
                                              Tools.DownloaderFeedback monitor) throws IOException {
         FileUtils.ensureParentDirectory(outputFile);

@@ -4,11 +4,48 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class ProgressKeeper {
     private static final HashMap<String, List<ProgressListener>> sProgressListeners = new HashMap<>();
     private static final HashMap<String, ProgressState> sProgressStates = new HashMap<>();
     private static final List<TaskCountListener> sTaskCountListeners = new ArrayList<>();
+    private static final List<Runnable> sAnyProgressListeners = new CopyOnWriteArrayList<>();
+
+    /** A task that reports its progress here, as it stands now */
+    public static final class Entry {
+        public final String key;
+        /** 0 to 100, or -1 when it does not know how far it is */
+        public final int progress;
+        /** String resource of the text, -1 when the first of the arguments is the text */
+        public final int resid;
+        public final Object[] args;
+
+        private Entry(String key, ProgressState state) {
+            this.key = key;
+            this.progress = state.progress;
+            this.resid = state.resid;
+            this.args = state.varArg == null ? new Object[0] : state.varArg;
+        }
+    }
+
+    /** @return the tasks that run now, in no particular order */
+    public static synchronized List<Entry> getEntries() {
+        List<Entry> entries = new ArrayList<>();
+        for(java.util.Map.Entry<String, ProgressState> state : sProgressStates.entrySet()) {
+            entries.add(new Entry(state.getKey(), state.getValue()));
+        }
+        return entries;
+    }
+
+    /** The listener runs, on the thread that reports it, whenever any task starts, ends or makes progress */
+    public static void addAnyProgressListener(Runnable listener) {
+        if(!sAnyProgressListeners.contains(listener)) sAnyProgressListeners.add(listener);
+    }
+
+    public static void removeAnyProgressListener(Runnable listener) {
+        sAnyProgressListeners.remove(listener);
+    }
 
     public static synchronized void submitProgress(String progressRecord, int progress, int resid, Object... va) {
         ProgressState progressState = sProgressStates.get(progressRecord);
@@ -34,6 +71,7 @@ public class ProgressKeeper {
                     else if(shouldCallEnded) listener.onProgressEnded();
                     else listener.onProgressUpdated(progress, resid, va);
             }
+        for(Runnable listener : sAnyProgressListeners) listener.run();
     }
 
     private static void updateTaskCount(int count) {
@@ -104,6 +142,15 @@ public class ProgressKeeper {
             return false;
         };
         addTaskCountListener(listener);
+    }
+
+    /**
+     * @param taskCount a task count that was reported by this class
+     * @return the count without the content downloads. They run next to everything else, so the
+     * screens that browse content must not lock themselves while one runs
+     */
+    public static synchronized int withoutContentDownloads(int taskCount) {
+        return sProgressStates.containsKey(ContentDownloadManager.PROGRESS_KEY) ? taskCount - 1 : taskCount;
     }
 
     public static synchronized int getTaskCount() {

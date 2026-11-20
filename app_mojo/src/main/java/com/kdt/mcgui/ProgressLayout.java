@@ -41,6 +41,8 @@ public class ProgressLayout extends ConstraintLayout implements View.OnClickList
     public static final String INSTANCE_INSTALL = "instance_install";
     public static final String DATA_MIGRATION = "data_migration";
     public static final String DRIVER_INSTALL = "driver_install";
+    /** Summary of the content downloads that run at the same time, see ContentDownloadManager */
+    public static final String DOWNLOAD_CONTENT = "download_content";
 
     public ProgressLayout(@NonNull Context context) {
         super(context);
@@ -74,6 +76,10 @@ public class ProgressLayout extends ConstraintLayout implements View.OnClickList
         for(LayoutProgressListener progressListener : mMap) {
             ProgressKeeper.removeListener(progressListener.progressKey, progressListener);
         }
+    }
+
+    private boolean isLandscape() {
+        return getResources().getConfiguration().orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE;
     }
 
     public boolean hasProcesses(){
@@ -134,7 +140,9 @@ public class ProgressLayout extends ConstraintLayout implements View.OnClickList
     }
 
     @Override
-    public boolean onUpdateTaskCount(int tc) {
+    public boolean onUpdateTaskCount(int taskCount) {
+        // In landscape the indicator next to the settings button shows what runs, this bar stays hidden
+        final int tc = isLandscape() ? 0 : taskCount;
         post(()->{
             if(tc > 0) {
                 mTaskNumberDisplayer.setText(getContext().getString(R.string.progresslayout_tasks_in_progress, tc));

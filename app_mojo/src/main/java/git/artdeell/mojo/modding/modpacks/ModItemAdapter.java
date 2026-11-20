@@ -42,6 +42,7 @@ import git.artdeell.mojo.modding.modpacks.models.ModDetail;
 import git.artdeell.mojo.modding.modpacks.models.ModItem;
 import git.artdeell.mojo.modding.modpacks.models.SearchFilters;
 import git.artdeell.mojo.modding.modpacks.models.SearchResult;
+import git.artdeell.mojo.progresskeeper.ProgressKeeper;
 import git.artdeell.mojo.progresskeeper.TaskCountListener;
 
 import java.util.ArrayList;
@@ -83,6 +84,8 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     private SearchResult mCurrentResult;
     private boolean mLastPage;
     private boolean mTasksRunning;
+    /** Whether any task at all runs, the content downloads included */
+    private boolean mAnythingRunning;
 
 
     public ModItemAdapter(Resources resources, ModpackApi api, SearchResultCallback callback) {
@@ -165,9 +168,13 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
     @Override
     public boolean onUpdateTaskCount(int taskCount) {
+        final int withoutContent = ProgressKeeper.withoutContentDownloads(taskCount);
         Tools.runOnUiThread(()->{
-            boolean justFinished = mTasksRunning && taskCount == 0;
-            mTasksRunning = taskCount != 0;
+            // The content downloads run in parallel, so they don't lock the buttons, but when the
+            // last task of any kind ends the cards have to be checked again
+            boolean justFinished = mAnythingRunning && taskCount == 0;
+            mAnythingRunning = taskCount != 0;
+            mTasksRunning = withoutContent != 0;
             for(ViewHolder viewHolder : mViewHolderSet) {
                 viewHolder.updateInstallButtonState();
             }
@@ -182,6 +189,10 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         final InstalledStateResolver resolver = (InstalledStateResolver) mModpackApi;
         final List<ModDetail> details = new ArrayList<>(mDetailCache.snapshot().values());
         if(details.isEmpty()) return;
+        // The buttons show the loading indicator until the state is known again
+        for(ViewHolder viewHolder : mViewHolderSet) {
+            if(viewHolder.mCardDetail != null) viewHolder.showCardLoading();
+        }
         sCardStatePool.execute(() -> {
             for(ModDetail detail : details) {
                 try {
@@ -213,6 +224,8 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
         private final ImageView mIconView, mSourceView;
         private final TextView mDownloadsText, mFavoritesText;
         private final MineButton mCardAction;
+        /** Shows instead of the card action while it is not known whether the content is installed */
+        private final View mCardLoading;
         /* The versions of the item, loaded lazily for the install button of the card */
         private ModDetail mCardDetail;
         private Future<?> mCardFuture;
@@ -324,6 +337,7 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             mDownloadsText = view.findViewById(R.id.mod_downloads_text);
             mFavoritesText = view.findViewById(R.id.mod_favorites_text);
             mCardAction = view.findViewById(R.id.mod_action_button);
+            mCardLoading = view.findViewById(R.id.mod_action_loading);
             int iconSize = view.getResources().getDimensionPixelSize(R.dimen._14sdp);
             int iconTint = MaterialColors.getColor(view, com.google.android.material.R.attr.colorOnSurfaceVariant);
             setStatIcon(mDownloadsText, R.drawable.ic_download, iconSize, iconTint);
@@ -396,12 +410,7 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
                 return;
             }
 
-            mCardAction.setVisibility(View.VISIBLE);
-            InstallButtonStyle.apply(mCardAction, InstallButtonStyle.State.INSTALL);
-            mCardAction.setText(R.string.content_action_loading);
-            mCardAction.setEnabled(false);
-            mCardAction.setAlpha(0.5f);
-            mCardAction.setOnClickListener(null);
+            showCardLoading();
 
             final String key = item.getIconCacheTag();
             mCardFuture = sCardStatePool.submit(() -> {
@@ -422,6 +431,12 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             });
         }
 
+        private void showCardLoading() {
+            mCardAction.setOnClickListener(null);
+            mCardAction.setVisibility(View.GONE);
+            mCardLoading.setVisibility(View.VISIBLE);
+        }
+
         private void cancelCardState() {
             if (mCardFuture != null) {
                 mCardFuture.cancel(true);
@@ -431,6 +446,7 @@ public class ModItemAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         private void renderCardAction() {
             ModDetail detail = mCardDetail;
+            mCardLoading.setVisibility(View.GONE);
             if (detail == null || detail.versionNames == null || detail.versionNames.length == 0) {
                 mCardAction.setVisibility(View.GONE);
                 return;

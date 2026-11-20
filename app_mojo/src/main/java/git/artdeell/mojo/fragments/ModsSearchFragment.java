@@ -43,6 +43,7 @@ import git.artdeell.mojo.modding.modpacks.models.ContentType;
 import git.artdeell.mojo.prefs.LauncherPreferences;
 import git.artdeell.mojo.progresskeeper.ProgressKeeper;
 import git.artdeell.mojo.utils.profiles.VersionSelectorDialog;
+import git.artdeell.mojo.progresskeeper.ContentDownloadManager;
 import git.artdeell.mojo.utils.DownloadUtils;
 import git.artdeell.mojo.utils.WorldUtils;
 
@@ -662,11 +663,16 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             final File targetFile = new File(modsDir, fileName);
             final String installedInto = mFilters.contentType == ContentType.DATAPACK ? currentWorld() : null;
 
-            ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, R.string.global_waiting);
-            MojoApplication.sExecutorService.execute(() -> {
+            // Each download is a task of its own so several of them can run at the same time
+            final ContentDownloadManager.Task mainTask = ContentDownloadManager.start(fileName);
+            ContentDownloadManager.run(() -> {
                 try {
                     // Download main mod
-                    DownloadUtils.downloadFile(url, targetFile);
+                    try {
+                        DownloadUtils.downloadFileTracked(url, targetFile, mainTask::update);
+                    } finally {
+                        mainTask.finish();
+                    }
 
                     // This is an update/downgrade of an already-installed mod under a
                     // different file name — remove the old jar now that the new one
@@ -685,7 +691,6 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                         downloadDependency(depId);
                     }
 
-                    ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
                     Tools.runOnUiThread(() ->
                             Toast.makeText(context,
                                     installedInto != null
@@ -693,7 +698,6 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                                             : context.getString(R.string.mod_install_success, fileName),
                                     Toast.LENGTH_LONG).show());
                 } catch (Exception e) {
-                    ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
                     Tools.showErrorRemote(context, R.string.modpack_install_download_failed, e);
                 } finally {
                     mPickedWorld = null;
@@ -740,7 +744,7 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
                 if (targetDir == null) return;
                 if (!targetDir.exists()) targetDir.mkdirs();
 
-                DownloadUtils.downloadFile(depUrl, new File(targetDir, depName));
+                ContentDownloadManager.download(depName, depUrl, new File(targetDir, depName));
             } catch (Exception e) {
                 Log.w(TAG, "Failed to download dependency " + projectId + ": " + e.getMessage());
             }
@@ -942,24 +946,20 @@ public class ModsSearchFragment extends Fragment implements ModItemAdapter.Searc
             final File savesDir = WorldUtils.getSavesDirectory();
             final File tempZip = new File(Tools.DIR_CACHE, "world_download_" + System.nanoTime() + ".zip");
 
-            ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 0, R.string.global_waiting);
-            MojoApplication.sExecutorService.execute(() -> {
+            final ContentDownloadManager.Task task = ContentDownloadManager.start(title);
+            ContentDownloadManager.run(() -> {
                 try {
-                    DownloadUtils.downloadFileMonitored(url, tempZip, null, (current, max) ->
-                            ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK,
-                                    max > 0 ? (int) (current * 100L / max) : 0,
-                                    R.string.world_downloading, title));
-                    ProgressLayout.setProgress(ProgressLayout.INSTALL_MODPACK, 100, R.string.world_extracting, title);
+                    DownloadUtils.downloadFileTracked(url, tempZip, task::update);
+                    task.setExtracting();
                     File world = WorldUtils.extractWorldZip(tempZip, savesDir, fallbackName);
-                    ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
                     Tools.runOnUiThread(() ->
                             Toast.makeText(context,
                                     context.getString(R.string.world_install_success, world.getName()),
                                     Toast.LENGTH_LONG).show());
                 } catch (Exception e) {
-                    ProgressLayout.clearProgress(ProgressLayout.INSTALL_MODPACK);
                     Tools.showErrorRemote(context, R.string.modpack_install_download_failed, e);
                 } finally {
+                    task.finish();
                     tempZip.delete();
                 }
             });
