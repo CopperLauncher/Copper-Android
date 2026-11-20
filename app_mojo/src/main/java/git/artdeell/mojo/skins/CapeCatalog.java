@@ -41,7 +41,7 @@ public final class CapeCatalog {
     public static final String ID_PREFIX = "mc:";
     private static final String TEXTURE_URL = "https://textures.minecraft.net/texture/";
     private static final String WIKI_API = "https://minecraft.wiki/api.php";
-    private static final String USER_AGENT = "CopperLauncher (https://github.com/CopperLauncher/Copper-Android)";
+    private static final String USER_AGENT = "NokorLauncher (https://github.com/CopperLauncher/Copper-Android)";
     private static final long CATALOG_MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000;
     private static final int WIKI_BATCH = 20;
     private static final Pattern HASH = Pattern.compile("(?<![0-9a-fA-F])[0-9a-f]{64}(?![0-9a-fA-F])");

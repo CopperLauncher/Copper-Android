@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <!-- App name part -->
-    <string name="app_short_name">Copper</string>
+    <string name="app_short_name">Nokor</string>
     <!-- Action bar part -->
     <!-- Languages list part -->
     <!-- Login strings -->
@@ -14,7 +14,7 @@
     <!-- AlertDialog title -->
     <string name="alerttitle_installmod">حدد مشغل مودات لتثبيته</string>
     <!-- Error messages -->
-    <string name="error_fatal">لقد توقف Copper بشكل غير متوقع</string>
+    <string name="error_fatal">لقد توقف Nokor بشكل غير متوقع</string>
     <string name="error_no_version">لا يوجد إصدار!</string>
     <string name="error_show_more">اظهر المزيد</string>
     <string name="error_show_less">أظهِر أقل</string>
@@ -202,7 +202,7 @@
     <string name="pedit_java_runtime">بيئة تشغيل Java</string>
     <string name="pedit_renderer">عارض الرسوميات</string>
     <string name="notif_channel_name">عام</string>
-    <string name="lazy_service_default_title">خدمة Copper في المقدمة</string>
+    <string name="lazy_service_default_title">خدمة Nokor في المقدمة</string>
     <string name="mcl_setting_veroption_installed">مثبت</string>
     <string name="use_global_default">(استخدم الافتراضي العام)</string>
     <string name="default_control">مخطط التحكم الأفتراضي</string>
@@ -232,7 +232,7 @@
     <string name="preference_gyro_sample_rate_title">معدل أخذ العينات من الجايرسكوب</string>
     <string name="preference_gyro_sample_rate_description">اذا كان لديك مشاكل أداء في الجايروسكوب، زد هذا الخيار.</string>
     <string name="microsoft_login_retry_later">طلبات كثيرة جداً، الرجاء المحاولة مرة أخرى لاحقاً.</string>
-    <string name="storage_required">يتطلب Copper أن تكون وحدة التخزين الخارجية متصلة. الرجاء إعادة الاتصال بها وإعادة تشغيل التطبيق.</string>
+    <string name="storage_required">يتطلب Nokor أن تكون وحدة التخزين الخارجية متصلة. الرجاء إعادة الاتصال بها وإعادة تشغيل التطبيق.</string>
     <string name="mcl_setting_title_buttonallcaps">استخدم الأحرف الكبيرة فقط في اسماء الأزرار</string>
     <string name="mcl_setting_subtitle_buttonallcaps">عطل هذا اذا كنت تريد إستخدام الأحرف الصغيرة.</string>
     <string name="preference_shader_dump_title">تمكين افراغ الشادر</string>
@@ -283,7 +283,7 @@
     <string name="modpack_download_downloading_mods">تحميل المودات (%.2f MB / %.2f MB)</string>
     <string name="modpack_download_downloading_mods_fc">تحميل المودات (الملف %d من %d)</string>
     <string name="modpack_download_applying_overrides">تطبيق التجاوزات (%d/%d)</string>
-    <string name="modpack_install_notification_title">Copper Modpack Installerⁿ</string>
+    <string name="modpack_install_notification_title">Nokor Modpack Installerⁿ</string>
     <string name="modpack_install_notification_success">انقر هنا لإنهاء تثبيت modpack</string>
     <string name="modpack_install_notification_data_not_available">Не удалось загрузить информацию о загрузчике модов</string>
     <string name="modpack_install_modloader_download_failed">فشل تنزيل ملفات محمل المودات</string>
@@ -309,7 +309,7 @@
     <string name="preference_category_miscellaneous">أعدادات متنوعة</string>
     <string name="preference_category_video">إعدادات الفيديو</string>
     <string name="notification_permission_dialog_title">طلب السماح</string>
-    <string name="notification_permission_dialog_text">Copper requires a permission to post notifications to prevent game/modpack downloads from stopping when you leave the app. Without this permission, Android may shut down your downloads when you put Copper in background mode.</string>
+    <string name="notification_permission_dialog_text">Nokor requires a permission to post notifications to prevent game/modpack downloads from stopping when you leave the app. Without this permission, Android may shut down your downloads when you put Nokor in background mode.</string>
     <string name="notification_permission_toast">O</string>
     <string name="preference_ask_for_notification_title">السماح بالإشعارات</string>
     <string name="preference_ask_for_notification_description">.</string>
@@ -361,7 +361,7 @@
     <string name="controller_remapper_expand_entry">قم بالتوسعة لتغيير رمز الزر</string>
     <string name="preference_remap_controller_title">تغيير إعدادات مفاتيح التحكم</string>
     <string name="preference_remap_controller_description">يسمح لك بتعديل المفتاح المخصص لكل زر في وحدة التحكم</string>
-    <string name="mcl_button_social_media">سيرفر الديسكورد</string>
+    <string name="mcl_button_social_media">Telegram</string>
     <string name="ltw_render_distance_warning_msg">وحدة معالجة الرسوميات الخاصة بك غير قادرة على معالجة أكثر من 7 رندر ديستانس دون مود Sodium أو غيرها من المودات المشابهة. سيتم تخفيض الرندر ديستانس تلقائيًا عند النقر على \"موافق\".</string>
     <string name="mcl_button_open_directory">فتح ملفات اللعبة</string>
     <string name="local_login_bad_username_title">اسم المستخدم غير مناسب</string>

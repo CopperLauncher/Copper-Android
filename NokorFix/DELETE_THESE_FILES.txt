@@ -1,0 +1,11 @@
+ឯកសារដែលត្រូវលុបចេញពី repo:
+app_mojo/src/main/res/anim/copper_layout_list.xml
+app_mojo/src/main/res/anim/copper_none.xml
+app_mojo/src/main/res/anim/copper_dialog_enter.xml
+app_mojo/src/main/res/anim/copper_dialog_exit.xml
+app_mojo/src/main/res/anim/copper_list_item_enter.xml
+app_mojo/src/main/res/anim/copper_activity_open_enter.xml
+app_mojo/src/main/res/anim/copper_activity_close_enter.xml
+app_mojo/src/main/res/anim/copper_activity_open_exit.xml
+app_mojo/src/main/res/anim/copper_activity_close_exit.xml
+app_mojo/src/main/res/animator/copper_press_scale.xml

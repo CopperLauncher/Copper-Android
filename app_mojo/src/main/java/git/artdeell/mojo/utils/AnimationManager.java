@@ -75,14 +75,14 @@ public final class AnimationManager {
     public static void applyToActivity(@NonNull Activity activity) {
         Resources.Theme theme = activity.getTheme();
         if (isEnabled(activity, TYPE_DIALOGS)) {
-            theme.applyStyle(R.style.ThemeOverlay_Copper_Animations_Dialogs, true);
+            theme.applyStyle(R.style.ThemeOverlay_Nokor_Animations_Dialogs, true);
         }
         if (isEnabled(activity, TYPE_BUTTONS)) {
-            theme.applyStyle(R.style.ThemeOverlay_Copper_Animations_Buttons, true);
+            theme.applyStyle(R.style.ThemeOverlay_Nokor_Animations_Buttons, true);
         }
         activity.getWindow().setWindowAnimations(isEnabled(activity, TYPE_SCREENS)
-                ? R.style.Animation_Copper_Activity
-                : R.style.Animation_Copper_ActivityNone);
+                ? R.style.Animation_Nokor_Activity
+                : R.style.Animation_Nokor_ActivityNone);
     }
 
     /** Slide + fade fragment transitions for every fragment shown by this activity */
@@ -107,7 +107,7 @@ public final class AnimationManager {
         if (list == null) return;
         Context context = list.getContext();
         if (isEnabled(context, TYPE_CONTENT)) {
-            list.setLayoutAnimation(AnimationUtils.loadLayoutAnimation(context, R.anim.copper_layout_list));
+            list.setLayoutAnimation(AnimationUtils.loadLayoutAnimation(context, R.anim.nokor_layout_list));
         } else {
             list.setLayoutAnimation(null);
         }

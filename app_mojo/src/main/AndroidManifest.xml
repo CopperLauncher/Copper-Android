@@ -87,14 +87,14 @@
         <activity
             android:name=".FatalErrorActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:theme="@style/Theme.Copper.Dialog" />
+            android:theme="@style/Theme.Nokor.Dialog" />
         <activity android:name=".ShowErrorActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:theme="@style/Theme.Copper.Dialog" />
+            android:theme="@style/Theme.Nokor.Dialog" />
         <activity
             android:name=".ExitActivity"
             android:configChanges="keyboardHidden|orientation|screenSize|keyboard|navigation"
-            android:theme="@style/Theme.Copper.Dialog" />
+            android:theme="@style/Theme.Nokor.Dialog" />
         <activity
             android:process=":gui_installer"
             android:name=".awt.AWTActivity"
@@ -154,6 +154,5 @@
         <package android:name="git.artdeell.mojo"/>
         <package android:name="git.artdeell.mojo.debug"/>
         <package android:name="git.artdeell.mojo.pub"/>
-        <package android:name="git.mojo.natives"/>
     </queries>
 </manifest>

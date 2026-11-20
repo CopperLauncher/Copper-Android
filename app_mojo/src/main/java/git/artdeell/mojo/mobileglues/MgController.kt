@@ -238,7 +238,7 @@ class MgController private constructor(context: Context) {
     val angleSourcePrompt: StateFlow<AngleSourcePrompt?> = mutableAngleSourcePrompt.asStateFlow()
 
     private fun promptForAngle(use: AngleUse) {
-        // Copper ships its own ANGLE, so there is nothing to borrow from Zalith or FoldCraft
+        // Nokor ships its own ANGLE, so there is nothing to borrow from Zalith or FoldCraft
         // and nobody to ask: run with the bundled one right away
         AngleProvider.bundled(appContext)?.let { bundled ->
             resumeWithAngle(use, bundled.libraryDir)

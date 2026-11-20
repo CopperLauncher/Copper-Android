@@ -142,7 +142,7 @@ public final class MinecraftSkinApi {
 
     /** Uploads a PNG skin and makes it the active one */
     public static void uploadSkin(@NonNull String token, @NonNull byte[] png, boolean slim) throws IOException {
-        String boundary = "----CopperSkin" + System.currentTimeMillis();
+        String boundary = "----NokorSkin" + System.currentTimeMillis();
         HttpURLConnection conn = open(SKINS_URL, "POST", token);
         conn.setDoOutput(true);
         conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);

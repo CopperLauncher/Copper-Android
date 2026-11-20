@@ -279,8 +279,8 @@ public final class LocalSkinServer {
 
     private JSONObject root() throws JSONException {
         JSONObject meta = new JSONObject();
-        meta.put("serverName", "CopperLauncher");
-        meta.put("implementationName", "copper-local-skins");
+        meta.put("serverName", "NokorLauncher");
+        meta.put("implementationName", "nokor-local-skins");
         meta.put("implementationVersion", "1.0");
         meta.put("feature.non_email_login", true);
         meta.put("feature.legacy_skin_api", true);

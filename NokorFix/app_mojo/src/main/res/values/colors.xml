@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static Material 3 fallback palette (seed red #C0282D), used when dynamic color is unavailable or disabled. -->
+<resources>
+    <color name="md_primary">#C0282D</color>
+    <color name="md_on_primary">#FFFFFF</color>
+    <color name="md_primary_container">#FFDAD6</color>
+    <color name="md_on_primary_container">#410002</color>
+    <color name="md_secondary">#775653</color>
+    <color name="md_on_secondary">#FFFFFF</color>
+    <color name="md_secondary_container">#FFDAD6</color>
+    <color name="md_on_secondary_container">#2C1512</color>
+    <color name="md_tertiary">#725B2E</color>
+    <color name="md_on_tertiary">#FFFFFF</color>
+    <color name="md_tertiary_container">#FEDEA6</color>
+    <color name="md_on_tertiary_container">#261A00</color>
+    <color name="md_error">#BA1A1A</color>
+    <color name="md_on_error">#FFFFFF</color>
+    <color name="md_error_container">#FFDAD6</color>
+    <color name="md_on_error_container">#410002</color>
+    <color name="md_background">#FFF8F7</color>
+    <color name="md_on_background">#231918</color>
+    <color name="md_surface">#FFF8F7</color>
+    <color name="md_on_surface">#231918</color>
+    <color name="md_surface_variant">#F5DDDA</color>
+    <color name="md_on_surface_variant">#534341</color>
+    <color name="md_outline">#857370</color>
+    <color name="md_outline_variant">#D8C2BF</color>
+    <color name="md_inverse_surface">#392E2D</color>
+    <color name="md_inverse_on_surface">#FFEDEA</color>
+    <color name="md_inverse_primary">#FFB4AB</color>
+    <color name="md_surface_dim">#E8D6D3</color>
+    <color name="md_surface_bright">#FFF8F7</color>
+    <color name="md_surface_container_lowest">#FFFFFF</color>
+    <color name="md_surface_container_low">#FFF0EE</color>
+    <color name="md_surface_container">#FCEAE7</color>
+    <color name="md_surface_container_high">#F7E4E1</color>
+    <color name="md_surface_container_highest">#F1DFDC</color>
+    <color name="md_scrim">#000000</color>
+    <color name="md_shadow">#000000</color>
+    <color name="control_button_color">#4CC4C4C4</color>
+    <color name="control_button_pressed_color">#4D000000</color>
+
+    <!-- Mod manager / content browser -->
+    <color name="mod_version_incompatible">#F7A325</color>
+</resources>

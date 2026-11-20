@@ -1,0 +1,111 @@
+<H1 align="center">Nokor Launcher</H1>
+
+<a href="./README_RU.md">Readme на русском</a>
+
+<img src="./app_mojo/src/main/assets/mojo.png" align="left" width="150" height="150" alt="Nokor logo">
+
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/CopperLauncher/Copper-Android)
+![GitHub Downloads](https://img.shields.io/github/downloads/CopperLauncher/Copper-Android/total)
+![Platform](https://img.shields.io/badge/platform-Android-green)
+![Min SDK](https://img.shields.io/badge/minSdk-26-blue)
+![Android CI](https://github.com/CopperLauncher/Copper-Android/workflows/Android%20CI/badge.svg)
+![Crowdin](https://badges.crowdin.net/pojavlauncher/localized.svg)
+[![Discord](https://img.shields.io/discord/1355213558631366897?color=5865F2&logo=discord&logoColor=white&label=&style=flat)](https://discord.gg/j8GTQv3YvY)
+[![CurseForge](https://img.shields.io/badge/curseforge-maxjubayeryt-orange?logo=curseforge)](https://www.curseforge.com/members/maxjubayeryt/projects)
+[![Modrinth](https://img.shields.io/badge/modrinth-maxjubayeryt-green?logo=modrinth)](https://modrinth.com/user/maxjubayeryt)
+
+* Nokor is a launcher, based on [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher) & [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher), that allows you to play Minecraft: Java Edition on your Android device!
+
+* It can run almost every version of Minecraft, allowing you to use .jar only installers to install modloaders such as [Forge](https://files.minecraftforge.net/) and [Fabric](http://fabricmc.net/) and mods like [OptiFine](https://optifine.net).
+
+## Navigation
+- [Introduction](#introduction)
+- [Getting Nokor](#getting-mojolauncher)
+- [Building](#building) 
+- [Current roadmap](#current-roadmap) 
+- [License](#license) 
+- [Contributing](#contributing) 
+- [Credits & Third party components and their licenses](#credits--third-party-components-and-their-licenses-if-available)
+
+## Introduction 
+* Nokor is a Minecraft: Java Edition launcher for Android based on [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher) & [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher)
+* This launcher can launch almost all available Minecraft versions ranging from rd-132211 to 26.x snapshots (including Combat Test versions). 
+* Modding via Forge and Fabric are also supported. 
+
+## Getting Nokor
+
+You can get Nokor via four methods:
+
+1. You can get the prebuilt app from the [releases section](https://github.com/CopperLauncher/Copper-android/releases/).
+
+2. You can get it from Google Play by clicking on this badge:
+[![Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.nokorlauncher.mc)
+
+3. You can get early builds from [Github Actions](https://github.com/CopperLauncher/Copper-android/actions).
+
+4. You can [build](#building) from source.
+## Building   
+* Build the launcher (it will automatically download all required components)
+```
+./gradlew :app_mojo:assembleDebug
+```
+If you are building on Windows:
+* Replace `./gradlew` with `.\gradlew.bat`
+* Make sure `mojoexec`, `sdl`, `glfw` are symlinked into `app_mojo/src/main/jni/`
+
+## Current roadmap
+- [x] Instance system in favor of profiles
+- [x] Out-of-the box 1.21.5 support
+- [x] mrpack/CurseForge zip import
+- [x] LTW: enable compute shader/image extensions
+- [x] Add Mod/Content manager & browser
+- [x] Add option to share logs to mclo.gs
+- [x] Make the launcher fully m3
+- [x] MS skin manager
+- [ ] Ely.by skin manager (idk how ely.by api works but I will try)
+- [ ] LTW: resolve issues with Create
+- [ ] LTW: switch to a color-renderable format for framebuffers
+- [ ] Modpack management tool
+- [ ] MMC-compatible instance import
+- [ ] Vintage Story support
+- [ ] Implement common native library standard
+
+## Known Issues
+- Some physical mice may have very slow mouse speed
+- On Holy GL4ES, large texture atlases may be distorted (resulting in stretched/blocky textures in modpacks)
+- Probably more, that's why we have a bug tracker ;) 
+
+## License
+- Nokor is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-android/blob/v3_openjdk/LICENSE).
+
+## Contributing
+Contributions are welcome! We appreciate any type of contribution, not only code. For example, you can help the wiki shape up. You can help the [translation](https://mojolauncher.ru/translate/translator.html) too!
+
+
+Any code change to this repository should be submitted as a pull request. The description should explain what the code does and give steps to execute it.
+
+## Third party components, licenses and sources (when applicable)
+- [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher): [GNU LGPLv3 License](https://github.com/PojavLauncherTeam/PojavLauncher/blob/v3_openjdk/LICENSE)
+- [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher): [GNU LGPLv3 License](https://github.com/MojoLauncher/MojoLauncher/blob/v3_openjdk/LICENSE)
+- [Pojav-Reborn](https://github.com/TeamPojavLauncher/PojavLauncher): [GNU LGPLv3 License](https://github.com/TeamPojavLauncher/PojavLauncher/blob/v3_openjdk/LICENSE)
+- [PGW](https://github.com/Vera-Firefly/Pojav-Glow-Worm): [GPL-3 License](https://github.com/Vera-Firefly/Pojav-Glow-Worm/blob/main_v3/LICENSE)
+- Android Support Libraries: [Apache License 2.0](https://android.googlesource.com/platform/prebuilts/maven_repo/android/+/master/NOTICE.txt).
+- [Holy GL4ES](https://github.com/artdeell/gl4es_extra_extra/): [MIT License](https://github.com/ptitSeb/gl4es/blob/master/LICENSE).<br>
+- [OpenJDK](https://github.com/PojavLauncherTeam/openjdk-multiarch-jdk8u): [GNU GPLv2 License](https://openjdk.java.net/legal/gplv2+ce.html).<br>
+- [MobileGlues](https://github.com/MobileGL-Dev/MobileGlues): [LGPL-2.1 License](https://github.com/MobileGL-Dev/MobileGlues/blob/main/LICENSE)
+- [SFPEW](https://github.com/MobileGL-Dev/SimpleFPEWrapper): [GNU LGPLv3 License](https://github.com/MobileGL-Dev/SimpleFPEWrapper/blob/main/LICENSE)
+- [GLFW](https://github.com/MojoLauncher/glfw): [zlib license](https://github.com/MojoLauncher/glfw/blob/glfw34/LICENSE.md)
+- [SDL](https://github.com/MojoLauncher/MojoSDL): [zlib license](https://github.com/MojoLauncher/MojoSDL/blob/main/LICENSE.txt)
+- [LWJGL2-GLFW](https://github.com/MojoLauncher/lwjgl2-glfw): 3-Clause BSD license
+- [LWJGL3](https://github.com/LWJGL/lwjgl3): [BSD-3 License](https://github.com/LWJGL/lwjgl3/blob/master/LICENSE.md).
+- [mojoexec](https://github.com/MojoLauncher/mojoexec): [MIT License](https://github.com/MojoLauncher/mojoexec/blob/master/LICENSE)
+- [Mesa 3D Graphics Library](https://gitlab.freedesktop.org/mesa/mesa): [MIT License](https://docs.mesa3d.org/license.html).
+- [pro-grade](https://github.com/pro-grade/pro-grade) (Java sandboxing security manager): [Apache License 2.0](https://github.com/pro-grade/pro-grade/blob/master/LICENSE.txt).
+- [Authlib-Injector](https://github.com/yushijinhun/authlib-injector) (Used for authorisation via ely.by): [AGPL-3.0](https://github.com/yushijinhun/authlib-injector/blob/develop/LICENSE).
+- [alsoft](https://github.com/kcat/openal-soft/) (Audio output library): [GNU Library General Public License](https://github.com/kcat/openal-soft/blob/master/COPYING) and [Modified PFFFT](https://github.com/kcat/openal-soft/blob/master/LICENSE-pffft).
+- [oboe](https://github.com/google/oboe): [Apache License 2.0](https://github.com/google/oboe/blob/main/LICENSE).
+- Thanks to [Mineskin](https://mineskin.eu/) for providing Minecraft avatars.
+
+## Special thanks
+- Thanks to [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher/) for the android icons, Made by [Yarpopcat08](https://github.com/Yarpopcat08).
+- Thanks to [whynelo](https://github.com/whynelo) for the new nokor icons.

@@ -1,8 +1,8 @@
-<H1 align="center">Copper Launcher</H1>
+<H1 align="center">Nokor Launcher</H1>
 
 <a href="./README_RU.md">Readme на русском</a>
 
-<img src="./app_mojo/src/main/assets/mojo.png" align="left" width="150" height="150" alt="Copper logo">
+<img src="./app_mojo/src/main/assets/mojo.png" align="left" width="150" height="150" alt="Nokor logo">
 
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/CopperLauncher/Copper-Android)
 ![GitHub Downloads](https://img.shields.io/github/downloads/CopperLauncher/Copper-Android/total)
@@ -14,13 +14,13 @@
 [![CurseForge](https://img.shields.io/badge/curseforge-maxjubayeryt-orange?logo=curseforge)](https://www.curseforge.com/members/maxjubayeryt/projects)
 [![Modrinth](https://img.shields.io/badge/modrinth-maxjubayeryt-green?logo=modrinth)](https://modrinth.com/user/maxjubayeryt)
 
-* Copper is a launcher, based on [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher) & [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher), that allows you to play Minecraft: Java Edition on your Android device!
+* Nokor is a launcher, based on [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher) & [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher), that allows you to play Minecraft: Java Edition on your Android device!
 
 * It can run almost every version of Minecraft, allowing you to use .jar only installers to install modloaders such as [Forge](https://files.minecraftforge.net/) and [Fabric](http://fabricmc.net/) and mods like [OptiFine](https://optifine.net).
 
 ## Navigation
 - [Introduction](#introduction)
-- [Getting Copper](#getting-mojolauncher)
+- [Getting Nokor](#getting-mojolauncher)
 - [Building](#building) 
 - [Current roadmap](#current-roadmap) 
 - [License](#license) 
@@ -28,18 +28,18 @@
 - [Credits & Third party components and their licenses](#credits--third-party-components-and-their-licenses-if-available)
 
 ## Introduction 
-* Copper is a Minecraft: Java Edition launcher for Android based on [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher) & [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher)
+* Nokor is a Minecraft: Java Edition launcher for Android based on [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher) & [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher)
 * This launcher can launch almost all available Minecraft versions ranging from rd-132211 to 26.x snapshots (including Combat Test versions). 
 * Modding via Forge and Fabric are also supported. 
 
-## Getting Copper
+## Getting Nokor
 
-You can get Copper via four methods:
+You can get Nokor via four methods:
 
 1. You can get the prebuilt app from the [releases section](https://github.com/CopperLauncher/Copper-android/releases/).
 
 2. You can get it from Google Play by clicking on this badge:
-[![Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.maxjubayeryt.copper)
+[![Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.nokorlauncher.mc)
 
 3. You can get early builds from [Github Actions](https://github.com/CopperLauncher/Copper-android/actions).
 
@@ -76,7 +76,7 @@ If you are building on Windows:
 - Probably more, that's why we have a bug tracker ;) 
 
 ## License
-- Copper is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-android/blob/v3_openjdk/LICENSE).
+- Nokor is licensed under [GNU LGPLv3](https://github.com/CopperLauncher/Copper-android/blob/v3_openjdk/LICENSE).
 
 ## Contributing
 Contributions are welcome! We appreciate any type of contribution, not only code. For example, you can help the wiki shape up. You can help the [translation](https://mojolauncher.ru/translate/translator.html) too!
@@ -108,4 +108,4 @@ Any code change to this repository should be submitted as a pull request. The de
 
 ## Special thanks
 - Thanks to [MojoLauncher](https://github.com/MojoLauncher/MojoLauncher/) for the android icons, Made by [Yarpopcat08](https://github.com/Yarpopcat08).
-- Thanks to [whynelo](https://github.com/whynelo) for the new copper icons.
+- Thanks to [whynelo](https://github.com/whynelo) for the new nokor icons.

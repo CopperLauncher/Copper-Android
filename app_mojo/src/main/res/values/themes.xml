@@ -2,8 +2,8 @@
 <resources>
     <!--
         Material 3 base theme. Follows the system light/dark setting (AppCompatDelegate night mode).
-        The colors below are the static Copper palette. At runtime they are replaced by either
-        Material You wallpaper colors (Android 12+) or a ThemeOverlay.Copper.HueNNN overlay picked
+        The colors below are the static Nokor palette. At runtime they are replaced by either
+        Material You wallpaper colors (Android 12+) or a ThemeOverlay.Nokor.HueNNN overlay picked
         from the user's custom color, see ThemeManager.
     -->
     <style name="Base.AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
@@ -50,18 +50,18 @@
         <item name="android:textSize">@dimen/_12ssp</item>
 
         <!-- Rounded dialogs -->
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Copper.MaterialAlertDialog</item>
-        <item name="alertDialogTheme">@style/ThemeOverlay.Copper.Dialog.Alert</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Nokor.MaterialAlertDialog</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Nokor.Dialog.Alert</item>
 
         <!-- Animations, enabled at runtime through overlays, see AnimationManager -->
-        <item name="copperPressAnimator">@null</item>
-        <item name="copperDialogAnimations">@style/Animation.Copper.None</item>
-        <item name="materialButtonStyle">@style/Widget.Copper.Button</item>
-        <item name="imageButtonStyle">@style/Widget.Copper.ImageButton</item>
+        <item name="nokorPressAnimator">@null</item>
+        <item name="nokorDialogAnimations">@style/Animation.Nokor.None</item>
+        <item name="materialButtonStyle">@style/Widget.Nokor.Button</item>
+        <item name="imageButtonStyle">@style/Widget.Nokor.ImageButton</item>
     </style>
 
     <!-- Theme of the small dialog-styled activities (fatal error, exit, etc.) -->
-    <style name="Theme.Copper.Dialog" parent="Theme.Material3.DayNight.Dialog">
+    <style name="Theme.Nokor.Dialog" parent="Theme.Material3.DayNight.Dialog">
         <item name="colorPrimary">@color/md_primary</item>
         <item name="colorOnPrimary">@color/md_on_primary</item>
         <item name="colorPrimaryContainer">@color/md_primary_container</item>
@@ -97,32 +97,32 @@
         <item name="colorSurfaceContainerHigh">@color/md_surface_container_high</item>
         <item name="colorSurfaceContainerHighest">@color/md_surface_container_highest</item>
 
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Copper.MaterialAlertDialog</item>
-        <item name="alertDialogTheme">@style/ThemeOverlay.Copper.Dialog.Alert</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Nokor.MaterialAlertDialog</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Nokor.Dialog.Alert</item>
 
-        <item name="copperPressAnimator">@null</item>
-        <item name="copperDialogAnimations">@style/Animation.Copper.None</item>
+        <item name="nokorPressAnimator">@null</item>
+        <item name="nokorDialogAnimations">@style/Animation.Nokor.None</item>
     </style>
 
-    <style name="ShapeAppearance.Copper.Dialog" parent="">
+    <style name="ShapeAppearance.Nokor.Dialog" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">28dp</item>
     </style>
 
     <!-- Dialogs created with MaterialAlertDialogBuilder -->
-    <style name="MaterialAlertDialog.Copper" parent="MaterialAlertDialog.Material3">
-        <item name="shapeAppearance">@style/ShapeAppearance.Copper.Dialog</item>
+    <style name="MaterialAlertDialog.Nokor" parent="MaterialAlertDialog.Material3">
+        <item name="shapeAppearance">@style/ShapeAppearance.Nokor.Dialog</item>
         <item name="shapeAppearanceOverlay">@null</item>
     </style>
 
-    <style name="ThemeOverlay.Copper.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="alertDialogStyle">@style/MaterialAlertDialog.Copper</item>
-        <item name="android:windowAnimationStyle">?attr/copperDialogAnimations</item>
+    <style name="ThemeOverlay.Nokor.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="alertDialogStyle">@style/MaterialAlertDialog.Nokor</item>
+        <item name="android:windowAnimationStyle">?attr/nokorDialogAnimations</item>
     </style>
 
     <!-- Dialogs created by libraries with the plain AppCompat AlertDialog.Builder (e.g. list preferences) -->
-    <style name="ThemeOverlay.Copper.Dialog.Alert" parent="ThemeOverlay.Material3.Dialog.Alert">
+    <style name="ThemeOverlay.Nokor.Dialog.Alert" parent="ThemeOverlay.Material3.Dialog.Alert">
         <item name="android:windowBackground">@drawable/bg_dialog_rounded</item>
-        <item name="android:windowAnimationStyle">?attr/copperDialogAnimations</item>
+        <item name="android:windowAnimationStyle">?attr/nokorDialogAnimations</item>
     </style>
 </resources>

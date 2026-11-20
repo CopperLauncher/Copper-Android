@@ -21,7 +21,7 @@ import git.artdeell.mojo.R;
  * Applies the user's theme mode (system / light / dark) and color source:
  * <ul>
  *     <li>dynamic: Material You wallpaper colors, Android 12+ only</li>
- *     <li>default: the static Copper palette</li>
+ *     <li>default: the static Nokor palette</li>
  *     <li>custom: a Material 3 palette generated from a user picked color, works on every Android version</li>
  * </ul>
  * The custom palettes are pre-generated theme overlays, one for each 10 degrees of HCT hue.
@@ -40,7 +40,7 @@ public final class ThemeManager {
     public static final String SOURCE_DEFAULT = "default";
     public static final String SOURCE_CUSTOM = "custom";
 
-    public static final int DEFAULT_CUSTOM_COLOR = 0xFFB87333;
+    public static final int DEFAULT_CUSTOM_COLOR = 0xFFC0282D;
 
     private static final int HUE_STEP = 10;
 
@@ -70,7 +70,7 @@ public final class ThemeManager {
     /** Applies the color source selected in the preferences onto the activity theme */
     public static void applyColors(@NonNull Activity activity) {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(activity);
-        String source = preferences.getString(PREF_COLOR_SOURCE, SOURCE_DYNAMIC);
+        String source = preferences.getString(PREF_COLOR_SOURCE, SOURCE_DEFAULT);
         if (SOURCE_DYNAMIC.equals(source)) {
             if (DynamicColors.isDynamicColorAvailable()) {
                 DynamicColors.applyToActivityIfAvailable(activity);

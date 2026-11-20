@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public class McLogsApi {
     private static final String UPLOAD_URL = "https://api.mclo.gs/1/log";
-    private static final String SOURCE_NAME = "CopperLauncher";
+    private static final String SOURCE_NAME = "NokorLauncher";
 
     /** JSON body sent to the mclo.gs upload endpoint. */
     private static class UploadRequest {
