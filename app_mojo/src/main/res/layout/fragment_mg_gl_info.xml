@@ -39,14 +39,14 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/mg_glinfo_copy"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Widget.Copper.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/copy" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/mg_glinfo_borrow"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.Copper.Button.OutlinedButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
@@ -59,9 +59,9 @@
             android:layout_width="match_parent"
             android:layout_marginVertical="@dimen/padding_large" />
 
-        <ProgressBar
+        <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/mg_glinfo_loading"
-            style="?android:attr/progressBarStyleHorizontal"
+            style="@style/Widget.Copper.LinearProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:indeterminate="true" />

@@ -506,7 +506,7 @@ public class ContentDetailFragment extends Fragment {
         root.addView(picture, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        ProgressBar progress = new ProgressBar(requireContext());
+        ProgressBar progress = new com.kdt.mcgui.ExpressiveLoadingView(requireContext());
         root.addView(progress, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
 

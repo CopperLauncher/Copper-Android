@@ -37,15 +37,14 @@
             android:text="@string/mcl_button_manage_mods" />
 
         <!-- Shown in place of the refresh button while an update check is running -->
-        <com.google.android.material.progressindicator.CircularProgressIndicator
+        <com.kdt.mcgui.ExpressiveLoadingView
             android:id="@+id/manage_mods_update_progress"
+        android:padding="@dimen/_7sdp"
             android:layout_width="@dimen/_38sdp"
             android:layout_height="@dimen/_38sdp"
             android:layout_marginEnd="@dimen/padding_small"
             android:indeterminate="true"
-            android:visibility="gone"
-            app:indicatorSize="@dimen/_20sdp"
-            app:trackThickness="2dp" />
+            android:visibility="gone" />
 
         <ImageButton
             android:id="@+id/manage_mods_refresh"
@@ -63,7 +62,9 @@
             android:layout_height="@dimen/_38sdp"
             android:layout_marginEnd="@dimen/padding_small"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_folder"
+            android:src="@drawable/ic_px_file_add"
+            android:padding="@dimen/_8sdp"
+            android:scaleType="fitCenter"
             android:tint="?attr/colorOnSurfaceVariant"
             android:contentDescription="@string/content_import_from_storage" />
 
@@ -72,7 +73,9 @@
             android:layout_width="@dimen/_38sdp"
             android:layout_height="@dimen/_38sdp"
             android:background="?android:attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_add"
+            android:src="@drawable/ic_px_search"
+            android:padding="@dimen/_8sdp"
+            android:scaleType="fitCenter"
             android:tint="?attr/colorOnSurfaceVariant"
             android:contentDescription="@string/global_add" />
 

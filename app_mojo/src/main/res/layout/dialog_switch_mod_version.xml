@@ -75,7 +75,7 @@
             android:layout_marginTop="@dimen/padding_medium" />
 
         <!-- Progress bar while fetching versions -->
-        <com.google.android.material.progressindicator.CircularProgressIndicator
+        <com.kdt.mcgui.ExpressiveLoadingView
             android:id="@+id/switch_version_progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

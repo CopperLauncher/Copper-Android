@@ -10,7 +10,7 @@
     <!-- Upload the log to mclo.gs and share the resulting link -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/share_log_mclogs_button"
-        style="@style/Widget.Material3.Button.TonalButton"
+        style="@style/Widget.Copper.Button.TonalButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="56dp"
@@ -23,7 +23,7 @@
     <!-- Share the raw log file, same behaviour as before this dialog existed -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/share_log_file_button"
-        style="@style/Widget.Material3.Button.OutlinedButton"
+        style="@style/Widget.Copper.Button.OutlinedButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"

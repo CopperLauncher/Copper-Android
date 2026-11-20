@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thumb icon of the switches: a pixel check while on, nothing while off (Material 3 Expressive) -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_switch_thumb_check" android:state_checked="true" />
+    <item>
+        <shape android:shape="rectangle">
+            <size android:width="16dp" android:height="16dp" />
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+</selector>

@@ -100,7 +100,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/content_changelog_more"
-            style="@style/Widget.Material3.Button.TonalButton"
+            style="@style/Widget.Copper.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/padding_moderate"

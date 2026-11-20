@@ -48,10 +48,10 @@
                 android:text="@string/cropper_reset"/>
         </LinearLayout>
     </LinearLayout>
-    <ProgressBar
+    <com.google.android.material.progressindicator.LinearProgressIndicator
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        style="@style/Widget.Copper.LinearProgress"
         android:id="@+id/crop_dialog_progressbar"
         android:indeterminate="true"/>
 </LinearLayout>

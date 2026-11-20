@@ -170,9 +170,9 @@
         app:layout_constraintTop_toBottomOf="@+id/fabric_installer_only_stable_checkbox"
         app:layout_constraintVertical_bias="1.0" />
 
-    <ProgressBar
+    <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/fabric_installer_progress_bar"
-        style="?android:attr/progressBarStyleHorizontal"
+        style="@style/Widget.Copper.LinearProgress"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"

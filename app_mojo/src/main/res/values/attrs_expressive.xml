@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="ExpressiveLoadingView">
+        <!-- Color of the morphing shape, colorPrimary when not set -->
+        <attr name="copperLoaderColor" format="color" />
+        <!-- Draws the shape on a round tonal container, like the contained loading indicator of Material 3 Expressive -->
+        <attr name="copperLoaderContained" format="boolean" />
+    </declare-styleable>
+</resources>

@@ -3,8 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <ProgressBar
+    <com.kdt.mcgui.ExpressiveLoadingView
         android:id="@+id/progress_generic_progressbar"
+        android:padding="@dimen/padding_small"
         android:layout_width="@dimen/_40sdp"
         android:layout_height="@dimen/_30sdp"
         app:layout_constraintBottom_toBottomOf="parent"
