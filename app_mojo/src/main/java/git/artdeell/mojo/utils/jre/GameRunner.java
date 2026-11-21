@@ -33,6 +33,7 @@ import git.artdeell.mojo.utils.JREUtils;
 import git.artdeell.mojo.utils.JSONUtils;
 import git.artdeell.mojo.utils.MCOptionUtils;
 import git.artdeell.mojo.utils.OldVersionsUtils;
+import git.artdeell.mojo.utils.plugins.LibraryPlugin;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -302,10 +303,23 @@ public class GameRunner {
             javaArgList.add("-Dlog4j.configurationFile=" + configFile);
         }
 
+        // This allows some mods to use additional libs provided via plugin so we don't need to bloat our app with uncommon stuff
+        String additionalNativesDir;
+        LibraryPlugin natives;
+        if((natives = LibraryPlugin.discoverPlugin(activity, LibraryPlugin.ID_NATIVES_PLUGIN)) != null){
+            additionalNativesDir = natives.getLibraryPath();
+            File dir = new File(additionalNativesDir);
+            if(dir.isDirectory()){
+                String overrides = String.join(" ", dir.list((f, s) -> s.endsWith(".so")));
+                JREUtils.setLibraryOverrides(additionalNativesDir, overrides);
+            }
+            additionalNativesDir = ':' + additionalNativesDir;
+        } else additionalNativesDir = "";
+
         versionInfo.logging = null;
 
         File versionSpecificNativesDir = new File(Tools.DIR_CACHE, "natives/"+versionId);
-        String libraryPath = Tools.NATIVE_LIB_DIR;
+        String libraryPath = Tools.NATIVE_LIB_DIR+additionalNativesDir;
         if(versionSpecificNativesDir.exists()) {
             String dirPath = versionSpecificNativesDir.getAbsolutePath();
             libraryPath = dirPath+":"+libraryPath;

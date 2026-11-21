@@ -107,7 +107,7 @@ public class LauncherPreferenceFragment extends PreferenceFragmentCompat impleme
         if(ThemeManager.PREF_THEME_MODE.equals(s)) {
             ThemeManager.applyThemeMode(p.getString(s, "system"));
         }else if(ThemeManager.PREF_COLOR_SOURCE.equals(s) || ThemeManager.PREF_CUSTOM_COLOR.equals(s)
-                || AnimationManager.PREF_TYPES.equals(s)) {
+                || AnimationManager.PREF_TYPES.equals(s) || AnimationManager.PREF_STYLE.equals(s)) {
             scheduleRecreate();
         }else if(ThemeManager.PREF_FORCE_LANDSCAPE.equals(s)) {
             Activity activity = getActivity();

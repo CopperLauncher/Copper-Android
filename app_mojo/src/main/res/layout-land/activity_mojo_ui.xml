@@ -16,17 +16,44 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!--
+        The spinner is the background of the whole top bar and draws the login line under it, so it
+        stays as wide as the screen. The end padding keeps its content clear of the downloads
+        indicator and the settings button, whether the indicator shows or not.
+    -->
     <com.kdt.mcgui.AccountSpinner
         android:id="@+id/account_spinner"
         android:layout_width="match_parent"
         android:layout_height="@dimen/_42sdp"
+        android:paddingEnd="@dimen/_94sdp"
 
         android:popupBackground="@drawable/bg_popup_rounded"
         android:dropDownWidth="wrap_content"
         android:dropDownVerticalOffset="@dimen/_42sdp"
 
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="RtlSymmetry" />
+
+    <!-- Shown while the launcher works on something, tap for the details. It keeps its place when hidden -->
+    <FrameLayout
+        android:id="@+id/downloads_indicator"
+        android:layout_width="@dimen/_42sdp"
+        android:layout_height="@dimen/_42sdp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/content_downloads_indicator_description"
+        android:focusable="true"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toStartOf="@+id/setting_button"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.kdt.mcgui.ExpressiveLoadingView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="@dimen/_7sdp"
+            app:copperLoaderContained="true" />
+    </FrameLayout>
 
     <ImageButton
         android:id="@+id/setting_button"

@@ -71,6 +71,12 @@ public class LauncherActivity extends BaseActivity {
     private static final long SHORTCUT_LAUNCH_DELAY_MS = 500L;
     private FragmentContainerView mFragmentView;
     private ImageButton mSettingsButton;
+    /** Landscape only: shows while content downloads run, opens the list of them */
+    private View mDownloadsIndicator;
+    private final git.artdeell.mojo.progresskeeper.TaskCountListener mDownloadsListener = taskCount -> {
+        Tools.runOnUiThread(() -> updateDownloadsIndicator(taskCount));
+        return false;
+    };
     private LauncherWallpaperView mWallpaper;
     private ProgressLayout mProgressLayout;
     private ProgressServiceKeeper mProgressServiceKeeper;
@@ -312,6 +318,10 @@ public class LauncherActivity extends BaseActivity {
         ProgressKeeper.addTaskCountListener((mProgressServiceKeeper = new ProgressServiceKeeper(this)));
 
         mSettingsButton.setOnClickListener(mSettingButtonListener);
+        if(mDownloadsIndicator != null) {
+            mDownloadsIndicator.setOnClickListener(v -> git.artdeell.mojo.dialogs.ContentDownloadsDialog.show(this));
+            git.artdeell.mojo.progresskeeper.ProgressKeeper.addTaskCountListener(mDownloadsListener);
+        }
         ProgressKeeper.addTaskCountListener(mProgressLayout);
         ExtraCore.addExtraListener(ExtraConstants.BACK_PREFERENCE, mBackPreferenceListener);
         ExtraCore.addExtraListener(ExtraConstants.SELECT_AUTH_METHOD, mSelectAuthMethod);
@@ -323,6 +333,7 @@ public class LauncherActivity extends BaseActivity {
         mProgressLayout.observe(ProgressLayout.DOWNLOAD_GAME);
         mProgressLayout.observe(ProgressLayout.UNPACK_RUNTIME);
         mProgressLayout.observe(ProgressLayout.INSTALL_MODPACK);
+        mProgressLayout.observe(ProgressLayout.DOWNLOAD_CONTENT);
         mProgressLayout.observe(ProgressLayout.AUTHENTICATE);
         mProgressLayout.observe(ProgressLayout.DOWNLOAD_VERSION_LIST);
         mProgressLayout.observe(ProgressLayout.INSTANCE_INSTALL);
@@ -379,6 +390,7 @@ public class LauncherActivity extends BaseActivity {
         super.onDestroy();
         PreferenceManager.getDefaultSharedPreferences(this).unregisterOnSharedPreferenceChangeListener(mBackgroundPrefListener);
         mProgressLayout.cleanUpObservers();
+        git.artdeell.mojo.progresskeeper.ProgressKeeper.removeTaskCountListener(mDownloadsListener);
         ProgressKeeper.removeTaskCountListener(mProgressLayout);
         ProgressKeeper.removeTaskCountListener(mProgressServiceKeeper);
         ExtraCore.removeExtraListenerFromValue(ExtraConstants.BACK_PREFERENCE, mBackPreferenceListener);
@@ -486,10 +498,31 @@ public class LauncherActivity extends BaseActivity {
                 .apply();
     }
 
+    /**
+     * Shows the indicator while the launcher works on anything (the game, the runtime, modpacks,
+     * content downloads), it only exists in landscape. It stays in its place while hidden, so the
+     * top bar never changes its size.
+     */
+    private void updateDownloadsIndicator(int taskCount) {
+        if(mDownloadsIndicator == null) return;
+        boolean active = taskCount > 0;
+        if(active == (mDownloadsIndicator.getVisibility() == View.VISIBLE)) return;
+        mDownloadsIndicator.animate().cancel();
+        if(active) {
+            mDownloadsIndicator.setAlpha(0f);
+            mDownloadsIndicator.setVisibility(View.VISIBLE);
+            mDownloadsIndicator.animate().alpha(1f).setDuration(200).start();
+        } else {
+            mDownloadsIndicator.animate().alpha(0f).setDuration(200)
+                    .withEndAction(() -> mDownloadsIndicator.setVisibility(View.INVISIBLE)).start();
+        }
+    }
+
     /** Stuff all the view boilerplate here */
     private void bindViews(){
         mFragmentView = findViewById(R.id.container_fragment);
         mSettingsButton = findViewById(R.id.setting_button);
+        mDownloadsIndicator = findViewById(R.id.downloads_indicator);
         mProgressLayout = findViewById(R.id.progress_layout);
         mWallpaper = findViewById(R.id.launcher_wallpaper);
     }

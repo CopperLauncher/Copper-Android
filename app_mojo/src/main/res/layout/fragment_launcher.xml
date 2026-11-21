@@ -75,7 +75,7 @@
 				android:id="@+id/mod_store_button"
 				style="@style/LauncherMenuButton.Universal"
 				android:layout_width="match_parent"
-				android:drawableStart="@drawable/ic_add"
+				android:drawableStart="@drawable/ic_px_search"
 				android:text="@string/mcl_button_mod_store" />
 
 			<com.kdt.mcgui.LauncherMenuButton

@@ -140,7 +140,7 @@ public class SearchModFragment extends Fragment implements ModItemAdapter.Search
         mImportButton.setVisibility(View.VISIBLE);
         mImportButton.setOnClickListener(v -> mImportLauncher.launch("*/*"));
         mTaskCountListener = taskCount -> {
-            runOnUiThread(() -> mImportButton.setEnabled(taskCount == 0));
+            runOnUiThread(() -> mImportButton.setEnabled(ProgressKeeper.withoutContentDownloads(taskCount) == 0));
             return false;
         };
         ProgressKeeper.addTaskCountListener(mTaskCountListener);

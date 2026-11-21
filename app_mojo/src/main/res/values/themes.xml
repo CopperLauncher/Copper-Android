@@ -58,6 +58,20 @@
         <item name="copperDialogAnimations">@style/Animation.Copper.None</item>
         <item name="materialButtonStyle">@style/Widget.Copper.Button</item>
         <item name="imageButtonStyle">@style/Widget.Copper.ImageButton</item>
+
+        <!-- Material 3 Expressive, see styles_expressive.xml -->
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Copper.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Copper.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Copper.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Copper.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Copper.ExtraLarge</item>
+        <item name="materialButtonOutlinedStyle">@style/Widget.Copper.Button.OutlinedButton</item>
+        <item name="materialCardViewStyle">@style/Widget.Copper.CardView</item>
+        <item name="textInputStyle">@style/Widget.Copper.TextInputLayout</item>
+        <item name="chipStyle">@style/Widget.Copper.Chip</item>
+        <item name="materialSwitchStyle">@style/Widget.Copper.MaterialSwitch</item>
+        <item name="seekBarStyle">@style/Widget.Copper.SeekBar</item>
+        <item name="linearProgressIndicatorStyle">@style/Widget.Copper.LinearProgress</item>
     </style>
 
     <!-- Theme of the small dialog-styled activities (fatal error, exit, etc.) -->

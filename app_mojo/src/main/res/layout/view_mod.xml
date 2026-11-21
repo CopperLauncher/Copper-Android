@@ -103,6 +103,14 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             android:visibility="gone" />
 
+        <!-- Shows while it is not known yet whether the content is installed -->
+        <com.kdt.mcgui.ExpressiveLoadingView
+            android:id="@+id/mod_action_loading"
+            android:layout_width="@dimen/_30sdp"
+            android:layout_height="@dimen/_30sdp"
+            android:layout_marginTop="@dimen/padding_moderate"
+            android:visibility="gone" />
+
         <com.kdt.mcgui.MineButton
             android:id="@+id/mod_action_button"
             android:layout_width="wrap_content"

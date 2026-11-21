@@ -40,4 +40,50 @@
         <item>buttons</item>
         <item>content</item>
     </string-array>
+    <string-array name="animation_style_names">
+        <item>Default (slide)</item>
+        <item>Fade</item>
+        <item>Bounce</item>
+        <item>Zoom</item>
+        <item>Rise</item>
+        <item>Drop</item>
+        <item>Pop</item>
+        <item>Vertical slide</item>
+        <item>Slide from right</item>
+        <item>Slide from left</item>
+        <item>Elastic</item>
+        <item>Spin</item>
+        <item>Flip</item>
+        <item>Swing</item>
+        <item>Corner grow</item>
+        <item>Squash</item>
+        <item>Slam</item>
+        <item>Unfold</item>
+        <item>Drift</item>
+        <item>Wobble</item>
+        <item>Tilt</item>
+    </string-array>
+    <string-array name="animation_style_values">
+        <item>default</item>
+        <item>fade</item>
+        <item>bounce</item>
+        <item>zoom</item>
+        <item>rise</item>
+        <item>drop</item>
+        <item>pop</item>
+        <item>vertical</item>
+        <item>from_right</item>
+        <item>from_left</item>
+        <item>elastic</item>
+        <item>spin</item>
+        <item>flip</item>
+        <item>swing</item>
+        <item>corner</item>
+        <item>squash</item>
+        <item>slam</item>
+        <item>unfold</item>
+        <item>drift</item>
+        <item>wobble</item>
+        <item>tilt</item>
+    </string-array>
 </resources>

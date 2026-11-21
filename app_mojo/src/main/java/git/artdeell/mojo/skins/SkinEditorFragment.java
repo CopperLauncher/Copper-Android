@@ -85,6 +85,8 @@ public class SkinEditorFragment extends Fragment {
             registerForActivityResult(new ActivityResultContracts.GetContent(), this::onCapePicked);
 
     private PlayerPreviewView mPreview;
+    /** Spinner on top of the preview while the skin or the cape of the account has not loaded */
+    private View mPreviewLoading;
     private MaterialSwitch mSlimSwitch;
     private GridLayoutManager mLayoutManager;
     private LinearProgressIndicator mProgress;
@@ -122,6 +124,7 @@ public class SkinEditorFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         mPreview = view.findViewById(R.id.skin_preview);
+        mPreviewLoading = view.findViewById(R.id.skin_preview_loading);
         mSlimSwitch = view.findViewById(R.id.skin_slim_switch);
         mProgress = view.findViewById(R.id.skin_progress);
         mHint = view.findViewById(R.id.skin_hint);
@@ -327,6 +330,15 @@ public class SkinEditorFragment extends Fragment {
         mPreview.setCape(mCapeTextures.get(mSelectedCapeId));
         mAdapter.notifyDataSetChanged();
         updateHint();
+        updatePreviewLoading();
+    }
+
+    /** The loading indicator stays over the preview until the account and the cape that is worn are loaded */
+    private void updatePreviewLoading() {
+        if (mPreviewLoading == null) return;
+        boolean capePending = mSelectedCapeId != null && !mCapeTextures.containsKey(mSelectedCapeId)
+                && mThumbsLoading.contains("capetex:" + mSelectedCapeId);
+        mPreviewLoading.setVisibility(!mLoaded || capePending ? View.VISIBLE : View.GONE);
     }
 
     // ------------------------------------------------------------------ tabs
@@ -585,6 +597,7 @@ public class SkinEditorFragment extends Fragment {
         if (mCapeTextures.containsKey(cape.id)) return;
         final String key = "capetex:" + cape.id;
         if (!mThumbsLoading.add(key)) return;
+        updatePreviewLoading();
         MojoApplication.sExecutorService.execute(() -> {
             Bitmap texture = null;
             try {
@@ -595,6 +608,7 @@ public class SkinEditorFragment extends Fragment {
             final Bitmap result = texture;
             runIfAttached(() -> {
                 mThumbsLoading.remove(key);
+                updatePreviewLoading();
                 if (result == null) {
                     // An official cape that cannot be downloaded is hidden instead of shown empty
                     if (CapeCatalog.isOfficial(cape.id) && !cape.id.equals(mSelectedCapeId) && mCapes.remove(cape)) {
@@ -825,11 +839,13 @@ public class SkinEditorFragment extends Fragment {
     private static final class TileHolder extends RecyclerView.ViewHolder {
         final ImageView image;
         final TextView label;
+        final View loading;
 
         TileHolder(@NonNull View itemView) {
             super(itemView);
             image = itemView.findViewById(R.id.tile_image);
             label = itemView.findViewById(R.id.tile_label);
+            loading = itemView.findViewById(R.id.tile_loading);
         }
     }
 
@@ -856,6 +872,7 @@ public class SkinEditorFragment extends Fragment {
             tile.setLongClickable(false);
             tile.setSelected(false);
             holder.label.setVisibility(View.GONE);
+            holder.loading.setVisibility(View.GONE);
             holder.image.setImageDrawable(null);
 
             if (mTab == TAB_SKINS) bindSkinTile(holder, position);
@@ -875,6 +892,7 @@ public class SkinEditorFragment extends Fragment {
             SkinLibrary.Entry entry = mSkins.get(position);
             Bitmap thumb = skinThumb(entry);
             if (thumb != null) holder.image.setImageDrawable(new BitmapDrawable(getResources(), thumb));
+            else if (mThumbsLoading.contains("skin:" + entry.id)) holder.loading.setVisibility(View.VISIBLE);
             tile.setContentDescription(entry.name);
             tile.setSelected(entry.id.equals(mSelectedSkinId));
             tile.setOnClickListener(v -> onSkinTileClicked(entry));
@@ -905,6 +923,7 @@ public class SkinEditorFragment extends Fragment {
             MinecraftSkinApi.Cape cape = mCapes.get(position - 1);
             Bitmap thumb = capeThumb(cape);
             if (thumb != null) holder.image.setImageDrawable(new BitmapDrawable(getResources(), thumb));
+            else if (mThumbsLoading.contains("capetex:" + cape.id)) holder.loading.setVisibility(View.VISIBLE);
             tile.setContentDescription(cape.alias);
             tile.setSelected(cape.id.equals(mSelectedCapeId));
             tile.setOnClickListener(v -> onCapeTileClicked(cape));

@@ -15,6 +15,14 @@
         android:scaleType="fitCenter"
         android:importantForAccessibility="no" />
 
+    <!-- Shows while the skin or cape of the tile is still loading -->
+    <com.kdt.mcgui.ExpressiveLoadingView
+        android:id="@+id/tile_loading"
+        android:layout_width="@dimen/_28sdp"
+        android:layout_height="@dimen/_28sdp"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/tile_label"
         android:layout_width="wrap_content"

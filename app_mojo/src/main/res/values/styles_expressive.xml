@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Material 3 Expressive look for the whole app. The theme (Base.AppTheme) points every widget
+        type at the styles below, so screens get the look without styling each view by hand.
+    -->
+
+    <!-- Shape scale: rounder than the Material 3 baseline -->
+    <style name="ShapeAppearance.Copper.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="ShapeAppearance.Copper.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">14dp</item>
+    </style>
+    <style name="ShapeAppearance.Copper.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+    <style name="ShapeAppearance.Copper.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+    <style name="ShapeAppearance.Copper.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">36dp</item>
+    </style>
+
+    <!-- Progress: thick rounded bars -->
+    <style name="Widget.Copper.LinearProgress" parent="Widget.Material3.LinearProgressIndicator">
+        <item name="trackThickness">8dp</item>
+        <item name="trackCornerRadius">4dp</item>
+    </style>
+
+    <!-- Buttons: tall pills with a roomy label -->
+    <style name="Widget.Copper.Button.TonalButton" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:stateListAnimator">?attr/copperPressAnimator</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+    <style name="Widget.Copper.Button.OutlinedButton" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:stateListAnimator">?attr/copperPressAnimator</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:letterSpacing">0</item>
+    </style>
+
+    <!-- Cards: tonal, no outline, large corners -->
+    <style name="Widget.Copper.CardView" parent="Widget.Material3.CardView.Filled">
+        <item name="shapeAppearance">@style/ShapeAppearance.Copper.Large</item>
+        <item name="cardBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <!-- Text fields: outlined with soft corners -->
+    <style name="Widget.Copper.TextInputLayout" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxCornerRadiusTopStart">16dp</item>
+        <item name="boxCornerRadiusTopEnd">16dp</item>
+        <item name="boxCornerRadiusBottomStart">16dp</item>
+        <item name="boxCornerRadiusBottomEnd">16dp</item>
+    </style>
+
+    <!-- Chips -->
+    <style name="Widget.Copper.Chip" parent="Widget.Material3.Chip.Assist">
+        <item name="shapeAppearance">@style/ShapeAppearance.Copper.Small</item>
+    </style>
+
+    <style name="Widget.Copper.Chip.Filter" parent="Widget.Material3.Chip.Filter">
+        <item name="shapeAppearance">@style/ShapeAppearance.Copper.Small</item>
+    </style>
+
+    <!-- Switches -->
+    <style name="Widget.Copper.MaterialSwitch" parent="Widget.Material3.CompoundButton.MaterialSwitch" />
+
+    <!-- SeekBars -->
+    <style name="Widget.Copper.SeekBar" parent="Widget.AppCompat.SeekBar">
+        <item name="android:progressTint">?attr/colorPrimary</item>
+        <item name="android:progressBackgroundTint">?attr/colorSurfaceContainerHighest</item>
+        <item name="android:secondaryProgressTint">?attr/colorPrimaryContainer</item>
+        <item name="android:thumbTint">?attr/colorPrimary</item>
+    </style>
+</resources>

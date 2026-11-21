@@ -90,15 +90,14 @@
         app:layout_constraintBottom_toBottomOf="parent" />
 
     <!-- Takes the update button's place while the update is downloading -->
-    <com.google.android.material.progressindicator.CircularProgressIndicator
+    <com.kdt.mcgui.ExpressiveLoadingView
         android:id="@+id/installed_mod_update_progress"
+        android:padding="@dimen/_7sdp"
         android:layout_width="@dimen/_38sdp"
         android:layout_height="@dimen/_38sdp"
         android:layout_marginEnd="@dimen/padding_small"
         android:indeterminate="true"
         android:visibility="gone"
-        app:indicatorSize="@dimen/_20sdp"
-        app:trackThickness="2dp"
         app:layout_constraintEnd_toStartOf="@+id/installed_mod_switch_version"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />

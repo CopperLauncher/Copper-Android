@@ -54,6 +54,8 @@ public class ContentVersionsFragment extends Fragment {
     private RecyclerView mList;
     private TaskCountListener mTaskCountListener;
     private boolean mTasksRunning;
+    /** Whether any task at all runs, the content downloads included */
+    private boolean mAnythingRunning;
 
     public ContentVersionsFragment() {
         super(R.layout.fragment_content_versions);
@@ -74,7 +76,8 @@ public class ContentVersionsFragment extends Fragment {
         mList.setLayoutManager(new LinearLayoutManager(requireContext()));
         mList.setAdapter(mAdapter);
 
-        mTasksRunning = ProgressKeeper.getTaskCount() != 0;
+        mAnythingRunning = ProgressKeeper.getTaskCount() != 0;
+        mTasksRunning = ProgressKeeper.withoutContentDownloads(ProgressKeeper.getTaskCount()) != 0;
         mAdapter.setActionsEnabled(!mTasksRunning);
         mTaskCountListener = taskCount -> {
             Tools.runOnUiThread(() -> onTaskCountChanged(taskCount));
@@ -95,8 +98,10 @@ public class ContentVersionsFragment extends Fragment {
 
     private void onTaskCountChanged(int taskCount) {
         if (mAdapter == null) return;
-        boolean running = taskCount != 0;
-        boolean justFinished = mTasksRunning && !running;
+        // The content downloads run in parallel, so they don't lock the buttons
+        boolean running = ProgressKeeper.withoutContentDownloads(taskCount) != 0;
+        boolean justFinished = mAnythingRunning && taskCount == 0;
+        mAnythingRunning = taskCount != 0;
         mTasksRunning = running;
         mAdapter.setActionsEnabled(!running);
         // Whatever just got installed changes what the buttons should say

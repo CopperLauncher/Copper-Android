@@ -15,11 +15,24 @@
         android:background="@drawable/background_card"
         android:orientation="vertical">
 
-        <git.artdeell.mojo.skins.PlayerPreviewView
-            android:id="@+id/skin_preview"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1" />
+            android:layout_weight="1">
+
+            <git.artdeell.mojo.skins.PlayerPreviewView
+                android:id="@+id/skin_preview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <!-- Shows while the skin or the cape of the account is not loaded yet -->
+            <com.kdt.mcgui.ExpressiveLoadingView
+                android:id="@+id/skin_preview_loading"
+                android:layout_width="@dimen/_44sdp"
+                android:layout_height="@dimen/_44sdp"
+                android:layout_gravity="center"
+                app:copperLoaderContained="true" />
+        </FrameLayout>
 
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/skin_slim_switch"
@@ -39,7 +52,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/skin_tab_skins"
-            style="?attr/materialButtonOutlinedStyle"
+            style="@style/Widget.Copper.Button.OutlinedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -47,7 +60,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/skin_tab_capes"
-            style="?attr/materialButtonOutlinedStyle"
+            style="@style/Widget.Copper.Button.OutlinedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"

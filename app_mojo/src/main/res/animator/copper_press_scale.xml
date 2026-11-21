@@ -2,14 +2,14 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_pressed="true">
         <set>
-            <objectAnimator android:propertyName="scaleX" android:valueTo="0.94" android:valueType="floatType" android:duration="100" />
-            <objectAnimator android:propertyName="scaleY" android:valueTo="0.94" android:valueType="floatType" android:duration="100" />
+            <objectAnimator android:propertyName="scaleX" android:valueTo="0.94" android:valueType="floatType" android:duration="120" android:interpolator="@android:interpolator/fast_out_slow_in" />
+            <objectAnimator android:propertyName="scaleY" android:valueTo="0.94" android:valueType="floatType" android:duration="120" android:interpolator="@android:interpolator/fast_out_slow_in" />
         </set>
     </item>
     <item>
         <set>
-            <objectAnimator android:propertyName="scaleX" android:valueTo="1.0" android:valueType="floatType" android:duration="180" />
-            <objectAnimator android:propertyName="scaleY" android:valueTo="1.0" android:valueType="floatType" android:duration="180" />
+            <objectAnimator android:propertyName="scaleX" android:valueTo="1.0" android:valueType="floatType" android:duration="380" android:interpolator="@android:interpolator/overshoot" />
+            <objectAnimator android:propertyName="scaleY" android:valueTo="1.0" android:valueType="floatType" android:duration="380" android:interpolator="@android:interpolator/overshoot" />
         </set>
     </item>
 </selector>
