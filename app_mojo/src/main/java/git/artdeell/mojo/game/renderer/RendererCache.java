@@ -13,11 +13,15 @@ import static git.artdeell.mojo.game.renderer.def.Renderers.ZINK_RENDERER;
 import android.content.Context;
 
 import git.artdeell.mojo.game.renderer.impl.PluginRenderSpec;
+import git.artdeell.mojo.game.renderer.impl.PluginV2RenderSpec;
 import git.artdeell.mojo.utils.plugins.PluginManager;
 import git.artdeell.mojo.utils.plugins.RendererPlugin;
+import git.artdeell.mojo.utils.plugins.RendererV2Plugin;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Compatible renderers cache. Used for the UI renderer list
@@ -48,18 +52,36 @@ public class RendererCache {
         };
         ArrayList<String> rendererIds = new ArrayList<>(renderers.length);
         ArrayList<String> rendererNames = new ArrayList<>(rendererIds);
+        Set<String> seenIds = new LinkedHashSet<>();
+        Set<String> seenNames = new LinkedHashSet<>();
         for (String renderer : renderers) {
-            RenderSpec r = GameRenderer.getKnownRenderer(renderer);
+            RenderSpec r = GameRenderer.getKnownRenderer(renderer, context);
             assert r != null;
             if (!r.compatibleDevice(context)) continue;
-            rendererIds.add(renderer);
-            rendererNames.add(r.getDisplayName(context));
+            if (seenIds.add(renderer) && seenNames.add(r.getDisplayName(context))) {
+                rendererIds.add(renderer);
+                rendererNames.add(r.getDisplayName(context));
+            }
         }
         for (RendererPlugin plugin : PluginManager.getRendererPlugins(context)) {
             RenderSpec r = new PluginRenderSpec(plugin.packageName);
             if (!r.compatibleDevice(context)) continue;
-            rendererIds.add(r.tag());
-            rendererNames.add(r.getDisplayName(context));
+            String tag = r.tag();
+            String name = r.getDisplayName(context);
+            if (seenIds.add(tag) && seenNames.add(name)) {
+                rendererIds.add(tag);
+                rendererNames.add(name);
+            }
+        }
+        for (RendererV2Plugin plugin : PluginManager.getRendererV2Plugins(context)) {
+            RenderSpec r = new PluginV2RenderSpec(plugin.packageName);
+            if (!r.compatibleDevice(context)) continue;
+            String tag = r.tag();
+            String name = r.getDisplayName(context);
+            if (seenIds.add(tag) && seenNames.add(name)) {
+                rendererIds.add(tag);
+                rendererNames.add(name);
+            }
         }
         rendererIds.trimToSize();
         rendererNames.trimToSize();

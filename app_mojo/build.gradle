@@ -46,6 +46,14 @@ configurations {
         canBeConsumed = false
         canBeResolved = true
     }
+    fileDialogBridgeCompileClasspath {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+    fileDialogBridgeNfdTypes {
+        canBeConsumed = false
+        canBeResolved = true
+    }
 }
 
 android {
@@ -272,6 +280,17 @@ class AssetTaskRegistrar {
         }
     }
 
+    def generatedJarDependency(jarTask, String relativePath) {
+        def assetTargetDir = assetDestination(relativePath)
+        def copyTaskName = "copyGeneratedJar${assetTargetDir.getName()}${variantName}"
+        def copyTask = project.tasks.register(copyTaskName, Copy) {
+            from jarTask
+            into assetTargetDir
+            dependsOn jarTask
+        }
+        mergeAssetsTask.dependsOn copyTask
+    }
+
     def onlineJarDependency(String jarUrl, String jarProject, String dependency, String version, String suffix,  String relativePath) {
         File targetDir = assetDestination(relativePath)
         createDirectories targetDir
@@ -294,6 +313,30 @@ class AssetTaskRegistrar {
     }
 }
 
+def fileDialogBridgeSources = files(
+        'src/filedialogBridge/java/org/lwjgl/util/nfd/NativeFileDialog.java',
+        'src/filedialogBridge/java/org/lwjgl/util/nfd/NFDPathSet.java',
+        'src/filedialogBridge/java/org/lwjgl/util/tinyfd/TinyFileDialogs.java')
+
+def fileDialogBridgeCompile = tasks.register('compileFileDialogBridge', JavaCompile) {
+    source fileDialogBridgeSources
+    classpath = configurations.fileDialogBridgeCompileClasspath
+    destinationDirectory = layout.buildDirectory.dir('intermediates/filedialog_bridge/classes')
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+    options.encoding = 'UTF-8'
+}
+
+def fileDialogBridgeJar = tasks.register('fileDialogBridgeJar', Jar) {
+    archiveFileName = 'filedialog_bridge.jar'
+    destinationDirectory = layout.buildDirectory.dir('intermediates/filedialog_bridge')
+    from fileDialogBridgeCompile
+    from({ configurations.fileDialogBridgeNfdTypes.collect { zipTree(it) } }) {
+        include 'org/lwjgl/util/nfd/**'
+        exclude 'org/lwjgl/util/nfd/NativeFileDialog.class'
+    }
+}
+
 afterEvaluate {
     def registrar = new AssetTaskRegistrar(project)
 
@@ -302,7 +345,8 @@ afterEvaluate {
 
         registrar.projectJarDependency project(":forge_installer"), "components/forge_installer"
         registrar.projectJarDependency project(":NoBlocklist"), "components/noblocklist"
-        registrar.projectJarDependency project(":filedialog_bridge"), "components/filedialog_bridge"
+        registrar.generatedJarDependency(project.tasks.named("fileDialogBridgeJar"),
+                "components/filedialog_bridge")
 
 		if (variant.getName().toLowerCase().contains("full")) {
             registrar.jreRuntimeDependency 8, "components/jre"
@@ -318,6 +362,10 @@ afterEvaluate {
 }
 
 dependencies {
+    fileDialogBridgeCompileClasspath 'org.lwjgl:lwjgl:3.3.6'
+    fileDialogBridgeCompileClasspath 'org.lwjgl:lwjgl-nfd:3.3.6'
+    fileDialogBridgeNfdTypes 'org.lwjgl:lwjgl-nfd:3.3.6'
+
     implementation 'androidx.documentfile:documentfile:1.1.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'

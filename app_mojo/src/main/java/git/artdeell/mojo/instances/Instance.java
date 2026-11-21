@@ -25,6 +25,7 @@ public class Instance extends DisplayInstance {
     /** Id of the mod loader the instance was created with ("fabric", "legacy-fabric", "bta-babric"...), null when unknown */
     public String loader;
     public String renderer;
+    public String backend;
     public String jvmArgs;
     public int argsMode;
     public String selectedRuntime;
@@ -105,6 +106,11 @@ public class Instance extends DisplayInstance {
     public String getLaunchRenderer() {
         if(Tools.isValidString(renderer)) return renderer;
         return LauncherPreferences.PREF_RENDERER;
+    }
+
+    public String getLaunchBackend() {
+        if(Tools.isValidString(backend)) return backend;
+        return null;
     }
 
     public String getLaunchArgs() {

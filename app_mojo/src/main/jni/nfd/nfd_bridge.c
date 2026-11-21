@@ -234,6 +234,40 @@ static int collect_result(const char *utf, int split, char ***out_paths, int *ou
     return NFD_OKAY;
 }
 
+static int collect_java_paths(JNIEnv *env, jobjectArray result,
+        char ***out_paths, int *out_count) {
+    jsize count = (*env)->GetArrayLength(env, result);
+    if (count <= 0) {
+        *out_paths = NULL;
+        *out_count = 0;
+        return NFD_CANCEL;
+    }
+    char **paths = calloc((size_t) count, sizeof(char *));
+    if (paths == NULL) return NFD_ERROR;
+    for (jsize i = 0; i < count; i++) {
+        jstring path = (jstring) (*env)->GetObjectArrayElement(env, result, i);
+        if (path == NULL) {
+            free_path_array(paths, i);
+            return NFD_ERROR;
+        }
+        char *utf8 = dialog_java_string_to_utf8(env, path);
+        if (utf8 == NULL) {
+            (*env)->DeleteLocalRef(env, path);
+            free_path_array(paths, i);
+            return NFD_ERROR;
+        }
+        paths[i] = utf8;
+        (*env)->DeleteLocalRef(env, path);
+        if (paths[i] == NULL) {
+            free_path_array(paths, i);
+            return NFD_ERROR;
+        }
+    }
+    *out_paths = paths;
+    *out_count = count;
+    return NFD_OKAY;
+}
+
 // Runs one shared file dialog. Hands freshly allocated paths back on success.
 static int run_dialog(char **specs, int spec_count, const char *default_path,
                       int dialog_type, int allow_multiple, char ***out_paths, int *out_count) {
@@ -251,19 +285,26 @@ static int run_dialog(char **specs, int spec_count, const char *default_path,
     jclass string_class = (*android_env)->FindClass(android_env, "java/lang/String");
     jobjectArray specs_array = (*android_env)->NewObjectArray(android_env, (jsize) spec_count, string_class, NULL);
     for (int i = 0; i < spec_count && specs_array != NULL; i++) {
-        jstring spec = (*android_env)->NewStringUTF(android_env, specs[i]);
+        jstring spec = dialog_new_java_string(android_env, specs[i]);
         if (spec == NULL) break;
         (*android_env)->SetObjectArrayElement(android_env, specs_array, (jsize) i, spec);
         (*android_env)->DeleteLocalRef(android_env, spec);
     }
-    jstring default_string = default_path != NULL ? (*android_env)->NewStringUTF(android_env, default_path) : NULL;
+    jstring default_string = dialog_new_java_string(android_env, default_path);
     int code = NFD_ERROR;
     jstring result = NULL;
+    jobjectArray multiple_result = NULL;
     if (specs_array != NULL && (spec_count == 0 || (*android_env)->ExceptionCheck(android_env) == JNI_FALSE)) {
         if (dialog_type == NFD_DIALOG_OPEN) {
-            result = (*android_env)->CallStaticObjectMethod(android_env, g_dialog_class, g_m_open_file_dialog,
-                    NULL, default_string, specs_array, NULL,
-                    allow_multiple ? JNI_TRUE : JNI_FALSE);
+            if (allow_multiple) {
+                multiple_result = (*android_env)->CallStaticObjectMethod(android_env,
+                        g_dialog_class, g_m_open_file_dialog_paths,
+                        NULL, default_string, specs_array, NULL, JNI_TRUE);
+            } else {
+                result = (*android_env)->CallStaticObjectMethod(android_env,
+                        g_dialog_class, g_m_open_file_dialog,
+                        NULL, default_string, specs_array, NULL, JNI_FALSE);
+            }
         } else if (dialog_type == NFD_DIALOG_SAVE) {
             result = (*android_env)->CallStaticObjectMethod(android_env, g_dialog_class, g_m_save_file_dialog,
                     NULL, default_string, specs_array, NULL);
@@ -278,18 +319,32 @@ static int run_dialog(char **specs, int spec_count, const char *default_path,
         set_error("File picker failed");
         return NFD_ERROR;
     }
+    if (multiple_result != NULL) {
+        code = collect_java_paths(android_env, multiple_result, out_paths, out_count);
+        if ((*android_env)->ExceptionCheck(android_env)) {
+            (*android_env)->ExceptionClear(android_env);
+            free_path_array(*out_paths, *out_count);
+            *out_paths = NULL;
+            *out_count = 0;
+            code = NFD_ERROR;
+        }
+        (*android_env)->PopLocalFrame(android_env, NULL);
+        if (code != NFD_OKAY && code != NFD_CANCEL) set_error("File picker failed");
+        return code;
+    }
     if (result == NULL) {
         (*android_env)->PopLocalFrame(android_env, NULL);
         return NFD_CANCEL;
     }
-    const char *utf = (*android_env)->GetStringUTFChars(android_env, result, NULL);
-    if (utf == NULL) {
+    char *utf8 = dialog_java_string_to_utf8(android_env, result);
+    if (utf8 == NULL) {
         (*android_env)->PopLocalFrame(android_env, NULL);
         set_error("File picker failed");
         return NFD_ERROR;
     }
-    code = collect_result(utf, dialog_type == NFD_DIALOG_OPEN && allow_multiple, out_paths, out_count);
-    (*android_env)->ReleaseStringUTFChars(android_env, result, utf);
+    code = collect_result(utf8, dialog_type == NFD_DIALOG_OPEN && allow_multiple,
+            out_paths, out_count);
+    free(utf8);
     (*android_env)->PopLocalFrame(android_env, NULL);
     if (code != NFD_OKAY) set_error("File picker failed");
     return code;
@@ -329,12 +384,8 @@ static char **flatten_specs(JNIEnv *game_env, jobjectArray array, int *out_count
     for (jsize i = 0; i < length; i++) {
         jstring entry = (*game_env)->GetObjectArrayElement(game_env, array, i);
         if (entry == NULL) continue;
-        const char *utf = (*game_env)->GetStringUTFChars(game_env, entry, NULL);
-        if (utf != NULL) {
-            specs[count] = strdup(utf);
-            (*game_env)->ReleaseStringUTFChars(game_env, entry, utf);
-            if (specs[count] != NULL) count++;
-        }
+        specs[count] = dialog_java_string_to_utf8(game_env, entry);
+        if (specs[count] != NULL) count++;
         (*game_env)->DeleteLocalRef(game_env, entry);
         if ((*game_env)->ExceptionCheck(game_env)) break;
     }
@@ -353,12 +404,7 @@ static void release_specs(char **specs, int count) {
 
 static char *export_cstr(JNIEnv *game_env, jstring value) {
     if (value == NULL) return NULL;
-    // The caller frees the copy. Kept out of any local frame on purpose.
-    const char *utf = (*game_env)->GetStringUTFChars(game_env, value, NULL);
-    if (utf == NULL) return NULL;
-    char *copy = strdup(utf);
-    (*game_env)->ReleaseStringUTFChars(game_env, value, utf);
-    return copy;
+    return dialog_java_string_to_utf8(game_env, value);
 }
 
 static void write_slot(JNIEnv *game_env, jlongArray out, char *path) {

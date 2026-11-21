@@ -31,7 +31,8 @@ public class PluginRenderSpec implements RenderSpec {
 
     public boolean compatibleDevice(Context context) {
         RendererPlugin resolved = resolve(context);
-        return resolved != null && new File(resolved.resolveEglPath()).exists();
+        return resolved != null && resolved.resolveEglPath() != null
+                && new File(resolved.resolveEglPath()).exists();
     }
 
     public String name() {
@@ -62,20 +63,32 @@ public class PluginRenderSpec implements RenderSpec {
     public void setupEnvironment(Context context, Map<String, String> envMap) {
         RendererPlugin resolved = resolve(context);
         if (resolved == null) return;
-        envMap.putAll(resolved.env);
-        if (!envMap.containsKey("LIBGL_EGL")) envMap.put("LIBGL_EGL", resolved.resolveEglPath());
-        if (!envMap.containsKey("LIBGL_GLES")) envMap.put("LIBGL_GLES", resolved.resolveGlPath());
+        // POJAV_RENDERER is a PojavLauncher marker; Sodium refuses to start when
+        // it is present, so drop it before merging plugin env.
+        for (Map.Entry<String, String> e : resolved.env.entrySet()) {
+            if ("POJAV_RENDERER".equals(e.getKey())) continue;
+            envMap.put(e.getKey(), e.getValue());
+        }
+        String eglPath = resolved.resolveEglPath();
+        String glPath = resolved.resolveGlPath();
+        if (eglPath != null && !envMap.containsKey("LIBGL_EGL")) envMap.put("LIBGL_EGL", eglPath);
+        if (glPath != null && !envMap.containsKey("LIBGL_GLES")) envMap.put("LIBGL_GLES", glPath);
     }
 
     public boolean setupRenderer() {
         if (plugin == null) return false;
         for (String library : plugin.dlopen) {
+            if (library == null) continue;
+            String path = plugin.resolveLibrary(library);
+            if (path == null) continue;
             try {
-                System.load(new File(plugin.nativeLibraryDir, library).getAbsolutePath());
+                System.load(path);
             } catch (Throwable t) {
                 Log.w("PluginRenderSpec", "Failed to preload plugin library " + library, t);
             }
         }
-        return MojoExec.prepareEgl(plugin.resolveEglPath(), true, false, 0);
+        String eglPath = plugin.resolveEglPath();
+        if (eglPath == null) return false;
+        return MojoExec.prepareEgl(eglPath, true, false, 0);
     }
 }

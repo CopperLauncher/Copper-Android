@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -54,7 +55,7 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
     private Instance mInstance;
     private String mSelectedControlLayout;
     private Button mSaveButton, mDeleteButton, mControlSelectButton, mVersionSelectButton, mExportButton, mShortcutButton;
-    private Spinner mDefaultRuntime, mDefaultRenderer;
+    private Spinner mDefaultRuntime, mDefaultRenderer, mDefaultBackend;
     private EditText mDefaultName, mDefaultJvmArgument;
     private TextView mDefaultVersion, mDefaultControl;
     private ImageView mInstanceIcon;
@@ -65,6 +66,9 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
     private final ActivityResultLauncher<?> mCropperLauncher = CropperUtils.registerCropper(this, this);
 
     private List<String> mRenderNames;
+    private List<String> mBackendNames;
+    /** Raw preferredGraphicsBackend values written to options.txt, same order as mBackendNames */
+    private List<String> mBackendValues;
 
     public InstanceEditorFragment(){
         super(R.layout.fragment_instance_editor);
@@ -91,6 +95,23 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         renderList.addAll(Arrays.asList(list.rendererDisplayNames));
         renderList.add(view.getContext().getString(R.string.global_default));
         mDefaultRenderer.setAdapter(new ArrayAdapter<>(view.getContext(), R.layout.item_simple_list_1, renderList));
+
+        // Backend spinner (only for MC 26.2+), raw values go to options.txt preferredGraphicsBackend
+        mBackendValues = new ArrayList<>(Arrays.asList("default", "vulkan", "opengl"));
+        mBackendNames = new ArrayList<>();
+        mBackendNames.add(view.getContext().getString(R.string.backend_default));
+        mBackendNames.add(view.getContext().getString(R.string.backend_vulkan));
+        mBackendNames.add(view.getContext().getString(R.string.backend_opengl));
+        ArrayAdapter<String> backendAdapter = new ArrayAdapter<>(view.getContext(), R.layout.item_simple_list_1, mBackendNames);
+        mDefaultBackend.setAdapter(backendAdapter);
+        mDefaultBackend.setOnTouchListener((v, event) -> {
+            if(event.getAction() == MotionEvent.ACTION_UP) {
+                openBackendDialog();
+                return true;
+            }
+            return false;
+        });
+        updateBackendVisibility(view.getContext());
 
         // Set up behaviors
         mSaveButton.setOnClickListener(v -> {
@@ -209,12 +230,39 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
     }
 
     private View.OnClickListener getVersionSelectListener() {
-        return v -> VersionSelectorDialog.open(v.getContext(), false, (id, snapshot)-> mDefaultVersion.setText(id));
+        return v -> VersionSelectorDialog.open(v.getContext(), false, (id, snapshot)-> {
+            mDefaultVersion.setText(id);
+            updateBackendVisibility(v.getContext());
+        });
     }
 
     private static String nullToEmpty(String in) {
         if(in == null) return "";
         return in;
+    }
+
+    /**
+     * Show the backend spinner when the instance version is MC 26.2+.
+     */
+    private void updateBackendVisibility(Context context) {
+        String versionId = mDefaultVersion.getText().toString();
+        int visibility = Tools.isMcVersionAtLeast(versionId, 1, 21) ? View.VISIBLE : View.GONE;
+        mDefaultBackend.setVisibility(visibility);
+        View backendLabel = getView().findViewById(R.id.textView8);
+        if(backendLabel != null) backendLabel.setVisibility(visibility);
+    }
+
+    private void openBackendDialog() {
+        int checked = mDefaultBackend.getSelectedItemPosition();
+        if(checked < 0 || checked >= mBackendNames.size()) checked = 0;
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.pedit_backend)
+                .setSingleChoiceItems(mBackendNames.toArray(new String[0]), checked, (dialog, which) -> {
+                    mDefaultBackend.setSelection(which);
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.global_cancel, null)
+                .show();
     }
 
     private void loadValues(@NonNull Instance instance, @NonNull Context context){
@@ -241,16 +289,25 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
         mDefaultRenderer.setSelection(rendererIndex);
 
         mDefaultVersion.setText(instance.versionId);
+        updateBackendVisibility(context);
         mDefaultJvmArgument.setText(nullToEmpty(instance.jvmArgs));
         mDefaultName.setText(nullToEmpty(instance.name));
         mDefaultControl.setText(mSelectedControlLayout == null ? nullToEmpty(instance.controlLayout) : mSelectedControlLayout);
         mSharedDataCheckbox.setChecked(instance.sharedData);
+
+        // Backend spinner (only relevant for MC 26.2+)
+        if(mDefaultBackend.getVisibility() == View.VISIBLE) {
+            int backendIndex = mBackendValues.indexOf(instance.backend);
+            if(backendIndex == -1) backendIndex = 0;
+            mDefaultBackend.setSelection(backendIndex);
+        }
     }
 
     private void bindViews(@NonNull View view){
         mDefaultControl = view.findViewById(R.id.vprof_editor_ctrl_spinner);
         mDefaultRuntime = view.findViewById(R.id.vprof_editor_spinner_runtime);
         mDefaultRenderer = view.findViewById(R.id.vprof_editor_instance_renderer);
+        mDefaultBackend = view.findViewById(R.id.vprof_editor_backend_spinner);
         mDefaultVersion = view.findViewById(R.id.vprof_editor_version_spinner);
 
         mDefaultName = view.findViewById(R.id.vprof_editor_instance_name);
@@ -282,6 +339,13 @@ public class InstanceEditorFragment extends Fragment implements CropperUtils.Cro
 
         if(mDefaultRenderer.getSelectedItemPosition() == mRenderNames.size()) mInstance.renderer = null;
         else mInstance.renderer = mRenderNames.get(mDefaultRenderer.getSelectedItemPosition());
+
+        if(mDefaultBackend.getVisibility() == View.VISIBLE) {
+            int backendIndex = mDefaultBackend.getSelectedItemPosition();
+            String rawBackend = (backendIndex >= 0 && backendIndex < mBackendValues.size())
+                    ? mBackendValues.get(backendIndex) : "default";
+            mInstance.backend = "default".equals(rawBackend) ? null : rawBackend;
+        }
 
         try {
             if(mPendingStaticIcon != null) mInstance.useStaticIcon(mPendingStaticIcon);

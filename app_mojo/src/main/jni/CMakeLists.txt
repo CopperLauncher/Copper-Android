@@ -45,6 +45,7 @@ add_library(mojort SHARED
         jre_launcher/elf_hinter.c
         jre_launcher/abort_wait.c
         tinyfd/tinyfd_bridge.c
+        tinyfd/tinyfiledialogs.c
         nfd/nfd_bridge.c
         utils.c
         stdio_is.c
@@ -52,7 +53,7 @@ add_library(mojort SHARED
 )
 
 target_include_directories(mojort PRIVATE .)
-target_link_libraries(mojort PRIVATE log mojoexec)
+target_link_libraries(mojort PRIVATE log mojoexec dl)
 
 add_library(mojoawt SHARED
 		awt/awt.c

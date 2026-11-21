@@ -116,9 +116,21 @@ public class DriverManager {
      * @param driver A driver to set
      */
     public static void setPreferredDriver(Driver driver){
-        if(driver == null || driver instanceof BuiltinDriver) driver = DEFAULT_DRIVER;
-        LauncherPreferences.PREF_VULKAN_DRIVER = driver.getHash(); // Builtin will return null
+        if(driver == null || driver instanceof BuiltinDriver) {
+            clearPreferredDriver();
+            return;
+        }
+        LauncherPreferences.PREF_VULKAN_DRIVER = driver.getHash();
         LauncherPreferences.DEFAULT_PREF.edit().putString("customVulkanDriver", LauncherPreferences.PREF_VULKAN_DRIVER).apply();
+    }
+
+    /**
+     * Clears the preferred driver, switching back to the built-in driver.
+     * Does NOT remove any installed driver packages from disk.
+     */
+    public static void clearPreferredDriver() {
+        LauncherPreferences.PREF_VULKAN_DRIVER = null;
+        LauncherPreferences.DEFAULT_PREF.edit().putString("customVulkanDriver", (String) null).apply();
     }
 
     public static File getDriverRoot(Driver driver) {
@@ -301,7 +313,7 @@ public class DriverManager {
             return false;
         try {
             org.apache.commons.io.FileUtils.deleteDirectory(path);
-            setPreferredDriver(null);
+            clearPreferredDriver();
             return true;
         } catch (IOException e) {
             Log.e(TAG, "Unable to remove driver package " + name);

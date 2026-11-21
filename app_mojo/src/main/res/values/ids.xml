@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="file_manager_icon" />
+    <item type="id" name="file_manager_name" />
+    <item type="id" name="file_manager_detail" />
+    <item type="id" name="file_manager_check" />
+</resources>
