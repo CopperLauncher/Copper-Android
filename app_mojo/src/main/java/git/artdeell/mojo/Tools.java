@@ -103,7 +103,7 @@ public final class Tools {
             .setPrettyPrinting()
             .create();
 
-    public static final String URL_HOME = "https://copperlauncher.github.io/";
+    public static final String URL_HOME = "https://copper.maxjubayeryt.com/";
     public static String NATIVE_LIB_DIR;
     public static String DIR_DATA; //Initialized later to get context
     public static File DIR_CACHE;
