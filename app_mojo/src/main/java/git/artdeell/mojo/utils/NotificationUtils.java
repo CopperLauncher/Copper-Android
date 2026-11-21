@@ -30,11 +30,12 @@ public class NotificationUtils {
                 Build.VERSION.SDK_INT >=23 ? PendingIntent.FLAG_IMMUTABLE : 0);
 
         NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, context.getString(R.string.notif_channel_id));
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context, git.artdeell.mojo.Tools.notificationChannelId(context));
         if(contentTitle != -1) notificationBuilder.setContentTitle(context.getString(contentTitle));
         if(contentText != -1) notificationBuilder.setContentText(context.getString(contentText));
         if(actionIntent != null) notificationBuilder.setContentIntent(pendingIntent);
         notificationBuilder.setSmallIcon(R.drawable.notif_icon);
+        notificationBuilder.setSound(git.artdeell.mojo.Tools.notificationSoundUri(context));
 
         notificationManager.notify(notificationId, notificationBuilder.build());
     }

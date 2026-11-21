@@ -42,6 +42,8 @@ public class LauncherPreferenceAppearanceFragment extends LauncherPreferenceFrag
         setupBackground();
         setupWallpaperModes();
         setupAnimationPreference();
+        git.artdeell.mojo.prefs.CustomSeekBarPreference volume = findPreference("sounds_volume");
+        if (volume != null) volume.setSuffix(" %");
     }
 
     /**

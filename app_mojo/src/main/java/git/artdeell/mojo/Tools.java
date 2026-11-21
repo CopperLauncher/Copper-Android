@@ -103,7 +103,7 @@ public final class Tools {
             .setPrettyPrinting()
             .create();
 
-    public static final String URL_HOME = "https://mojolauncher.ru";
+    public static final String URL_HOME = "https://nokorlauncher.freesrv.com/";
     public static String NATIVE_LIB_DIR;
     public static String DIR_DATA; //Initialized later to get context
     public static File DIR_CACHE;
@@ -201,13 +201,37 @@ public final class Tools {
         CTRLDEF_FILE = DIR_GAME_HOME + "/controlmap/default.json";
     }
 
+    /** The Nokor notification sound, or null when the user has turned the sounds off */
+    public static android.net.Uri notificationSoundUri(Context context) {
+        if (!git.artdeell.mojo.utils.SoundSettings.isEnabled(context)) return null;
+        return android.net.Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.nokor_notify);
+    }
+
+    /** A channel's sound can't change once it exists, so the sounds switch picks between two channels */
+    public static String notificationChannelId(Context context) {
+        return context.getString(git.artdeell.mojo.utils.SoundSettings.isEnabled(context)
+                ? R.string.notif_channel_id : R.string.notif_channel_silent_id);
+    }
+
     public static void buildNotificationChannel(Context context){
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        NotificationManagerCompat manager = NotificationManagerCompat.from(context);
+
         NotificationChannel channel = new NotificationChannel(
                 context.getString(R.string.notif_channel_id),
                 context.getString(R.string.notif_channel_name), NotificationManager.IMPORTANCE_DEFAULT);
-        NotificationManagerCompat manager = NotificationManagerCompat.from(context);
+        channel.setSound(android.net.Uri.parse("android.resource://" + context.getPackageName() + "/" + R.raw.nokor_notify),
+                new android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build());
         manager.createNotificationChannel(channel);
+
+        NotificationChannel silent = new NotificationChannel(
+                context.getString(R.string.notif_channel_silent_id),
+                context.getString(R.string.notif_channel_silent_name), NotificationManager.IMPORTANCE_DEFAULT);
+        silent.setSound(null, null);
+        manager.createNotificationChannel(silent);
     }
 
 

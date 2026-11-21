@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <!-- App name part -->
-    <string name="app_short_name">Nokor</string>
+    <string name="app_short_name">NokorLauncher</string>
 
     <!-- Action bar part -->
 
@@ -263,7 +263,9 @@
     <string name="pedit_renderer">Renderer</string>
     <string name="color_default_hex" translatable="false">FFFF0000</string>
     <string name="notif_channel_name">General</string>
-    <string name="notif_channel_id" translatable="false">channel_id</string>
+    <string name="notif_channel_id" translatable="false">nokor_channel</string>
+    <string name="notif_channel_silent_id" translatable="false">nokor_channel_silent</string>
+    <string name="notif_channel_silent_name">General (no sound)</string>
     <string name="lazy_service_default_title">Nokor Foreground Service</string>
     <string name="mcl_setting_veroption_installed">Installed</string>
     <string name="use_global_default">(Use global default)</string>
@@ -561,6 +563,11 @@
     <string name="preference_appearance_description">Theme, colors, orientation and animations</string>
     <string name="preference_category_theme">Theme</string>
     <string name="preference_category_display">Display</string>
+    <string name="preference_category_sounds">Sounds</string>
+    <string name="preference_sounds_enabled_title">Sounds</string>
+    <string name="preference_sounds_enabled_summary">Startup chime, button clicks and notification sound</string>
+    <string name="preference_sounds_volume_title">Sound volume</string>
+    <string name="preference_sounds_volume_summary">Volume of the startup chime and button clicks. Notification volume follows the phone\'s notification volume.</string>
     <string name="preference_category_animations">Animations</string>
     <string name="preference_category_background">Background</string>
     <string name="preference_set_custom_bg_title">Set custom background</string>

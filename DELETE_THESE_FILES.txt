@@ -1,4 +1,4 @@
-ឯកសារដែលត្រូវលុបចេញពី repo:
+លុបឯកសារទាំងនេះចេញពី repo (ឈ្មោះចាស់ copper_*):
 app_mojo/src/main/res/anim/copper_layout_list.xml
 app_mojo/src/main/res/anim/copper_none.xml
 app_mojo/src/main/res/anim/copper_dialog_enter.xml

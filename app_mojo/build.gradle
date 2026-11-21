@@ -18,16 +18,7 @@ static def getDateSeconds() {
 }
 
 def getVersionName = {
-    def currentBranch = grgit.branch.current()
-    def latestCommit = grgit.log(maxCommits: 1)
-    def dateToday = getDate()
-    if(currentBranch == null || latestCommit == null) {
-        return "LOCAL-${dateToday}"
-    }else {
-        def branchName = currentBranch.getName()
-        def commitAbbreviation = latestCommit.abbreviatedId
-        return "1.0.3-${dateToday}-${commitAbbreviation}-${branchName}"
-    }
+    return "2026.1.0"
 }
 
 def getCFApiKey = {

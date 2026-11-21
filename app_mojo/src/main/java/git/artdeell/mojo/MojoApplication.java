@@ -75,6 +75,7 @@ public class MojoApplication extends Application {
 		try {
 			super.onCreate();
 			ThemeManager.init(this);
+			git.artdeell.mojo.utils.ClickSounds.init(this);
 			if(Tools.checkStorageRoot(this)){
 				// Implicitly initializes early constants and storage constants.
 				// Required to run the main activity properly.

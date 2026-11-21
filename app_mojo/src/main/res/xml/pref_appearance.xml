@@ -38,6 +38,28 @@
             android:icon="@drawable/ic_px_orientation" />
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/preference_category_sounds">
+        <SwitchPreferenceCompat
+            android:widgetLayout="@layout/preference_widget_material_switch"
+            android:defaultValue="true"
+            android:key="sounds_enabled"
+            android:title="@string/preference_sounds_enabled_title"
+            android:summary="@string/preference_sounds_enabled_summary"
+            android:icon="@drawable/ic_px_sound" />
+        <git.artdeell.mojo.prefs.CustomSeekBarPreference
+            android:key="sounds_volume"
+            android:defaultValue="70"
+            android:dependency="sounds_enabled"
+            android:title="@string/preference_sounds_volume_title"
+            android:summary="@string/preference_sounds_volume_summary"
+            app:showSeekBarValue="true"
+            app:selectable="false"
+            app:min="0"
+            android:max="100"
+            app:seekBarIncrement="5"
+            android:icon="@drawable/ic_px_sound" />
+    </PreferenceCategory>
+
     <PreferenceCategory android:title="@string/preference_category_background">
         <Preference
             android:key="set_custom_launcher_bg"
